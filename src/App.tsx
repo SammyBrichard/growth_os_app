@@ -3,6 +3,7 @@ import watsonImg from './assets/Watson.png'
 import belfortImg from './assets/Belfort.png'
 import warrenImg from './assets/Warren.png'
 import pepperImg from './assets/Pepper.png'
+import draperImg from './assets/Watson.png'
 import { useState } from 'react'
 import type { Employee } from './types/index'
 import supabase from './services/supabase'
@@ -12,11 +13,13 @@ import useUserDetails from './hooks/useUserDetails'
 import useMessages from './hooks/useMessages'
 import useMobilisation from './hooks/useMobilisation'
 import useBelfort from './hooks/useBelfort'
+import useCampaigns from './hooks/useCampaigns'
 
 import Layout from './components/Layout'
 import EmployeeList from './components/EmployeeList'
 import WatsonChat from './components/WatsonChat'
 import BelfortTargets from './components/BelfortTargets'
+import CampaignManager from './components/CampaignManager'
 import TargetDetailSidebar from './components/TargetDetailSidebar'
 import RightSidebar from './components/RightSidebar'
 import SettingsPanel from './components/SettingsPanel'
@@ -31,6 +34,7 @@ const employees: Employee[] = [
   { name: 'Belfort', role: 'Lead Generation Expert', img: belfortImg },
   { name: 'Warren', role: 'Business Analyst', img: warrenImg },
   { name: 'Pepper', role: 'Office Administrator', img: pepperImg },
+  { name: 'Draper', role: 'Campaign Manager', img: draperImg },
 ]
 
 export default function App() {
@@ -52,6 +56,10 @@ export default function App() {
   const bel = useBelfort({
     accountId: ud.accountId,
     userDetailsId: ud.userDetailsId,
+    selectedEmployee,
+  })
+  const camp = useCampaigns({
+    accountId: ud.accountId,
     selectedEmployee,
   })
 
@@ -91,7 +99,7 @@ export default function App() {
     if (mob.activeSidebar) {
       setTimeout(() => msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 150)
     }
-    if (mob.activeSidebar === 'select_itp' && ud.accountId) {
+    if ((mob.activeSidebar === 'select_itp' || mob.activeSidebar === 'select_campaign_itp') && ud.accountId) {
       mob.loadItpList()
     }
   }, [mob.activeSidebar])
@@ -191,6 +199,13 @@ export default function App() {
               onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedTargetId(null) }}
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedTarget(null) }}
               onSelectTarget={bel.setSelectedTarget}
+            />
+          ) : selectedEmployee.name === 'Draper' ? (
+            <CampaignManager
+              campaigns={camp.campaigns}
+              selectedCampaign={camp.selectedCampaign}
+              onSelectCampaign={camp.setSelectedCampaign}
+              campaignContacts={camp.campaignContacts}
             />
           ) : (
             <div id="main-body" />

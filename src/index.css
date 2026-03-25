@@ -804,3 +804,45 @@ body {
   background-color: #DBDBDB;
   cursor: not-allowed;
 }
+
+/* Campaign Manager */
+.campaign-list { padding: 30px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
+.campaign-card { padding: 16px 20px; border: 1px solid #E9E9E9; border-radius: 10px; cursor: pointer; transition: border-color 0.15s; display: flex; justify-content: space-between; align-items: center; }
+.campaign-card:hover { border-color: #999; }
+.campaign-card.selected { border-color: #7c3aed; }
+.campaign-card-info { display: flex; flex-direction: column; gap: 4px; }
+.campaign-card-name { font-size: 14px; font-weight: 600; color: #08060d; }
+.campaign-card-meta { font-size: 12px; color: #888; }
+.campaign-status { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 4px; }
+.campaign-status.draft { background: #f0f0f0; color: #666; }
+.campaign-status.active { background: #e8f5e9; color: #2e7d32; }
+.campaign-status.completed { background: #e3f2fd; color: #1565c0; }
+.campaign-status.paused { background: #fff3e0; color: #e65100; }
+
+.campaign-detail { padding: 30px; overflow-y: auto; flex: 1; }
+.campaign-detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.campaign-detail-name { font-size: 20px; font-weight: 700; color: #08060d; }
+.campaign-back-btn { background: none; border: 1px solid #E9E9E9; border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; color: #555; transition: border-color 0.15s; }
+.campaign-back-btn:hover { border-color: #999; }
+
+.campaign-detail-section { margin-bottom: 20px; }
+.campaign-detail-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; margin-bottom: 6px; }
+.campaign-detail-value { font-size: 14px; color: #08060d; line-height: 1.5; }
+.campaign-template-box { background: #f8f8f8; border: 1px solid #E9E9E9; border-radius: 8px; padding: 16px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; color: #333; }
+
+.campaign-contacts-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.campaign-contacts-table th { text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; padding: 8px 12px; border-bottom: 1px solid #E9E9E9; }
+.campaign-contacts-table td { padding: 10px 12px; font-size: 13px; color: #08060d; border-bottom: 1px solid #f0f0f0; }
+
+.contact-status { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 3px; }
+.contact-status.pending { background: #f0f0f0; color: #666; }
+.contact-status.sent { background: #e3f2fd; color: #1565c0; }
+.contact-status.opened { background: #e8f5e9; color: #2e7d32; }
+.contact-status.replied { background: #f3e5f5; color: #7b1fa2; }
+.contact-status.bounced { background: #ffebee; color: #c62828; }
+.contact-status.failed { background: #ffebee; color: #c62828; }
+
+.campaign-empty { text-align: center; padding: 60px 20px; color: #888; font-size: 14px; }
+.campaign-start-btn { padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; background: #7c3aed; color: #fff; transition: opacity 0.15s; }
+.campaign-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.campaign-start-btn:hover:not(:disabled) { opacity: 0.9; }

@@ -257,6 +257,51 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
         </>
       )}
 
+      {activeSidebar === 'select_campaign_itp' && (
+        <>
+          <div id="right-sidebar-header"></div>
+          <div id="right-sidebar-body">
+            {itpList.length === 0
+              ? <p className="sidebar-field-label">No ITPs found for this account.</p>
+              : itpList.map(itp => {
+                const isSelected = selectedItpId === itp.id
+                return (
+                  <div
+                    key={itp.id}
+                    className={`itp-select-card${isSelected ? ' selected' : ''}`}
+                  >
+                    <div className="itp-select-header" onClick={() => setSelectedItpId(isSelected ? null : itp.id)}>
+                      <span className="itp-select-name">{itp.name || 'Unnamed ITP'}</span>
+                      {isSelected
+                        ? <span className="itp-selected-label">Selected</span>
+                        : <span className="itp-chevron">{'\u25BE'}</span>
+                      }
+                    </div>
+                    {isSelected && (
+                      <div className="itp-select-body">
+                        {itp.itp_summary && <><p className="itp-field-heading">{'\uD83C\uDFAF'} ITP Summary</p><p className="itp-field-text">{itp.itp_summary}</p></>}
+                        {itp.itp_demographic && <><p className="itp-field-heading">{'\uD83D\uDC64'} Demographics</p><p className="itp-field-text">{itp.itp_demographic}</p></>}
+                        {itp.itp_pain_points && <><p className="itp-field-heading">{'\uD83D\uDE23'} Pain Points</p><p className="itp-field-text">{itp.itp_pain_points}</p></>}
+                        {itp.itp_buying_trigger && <><p className="itp-field-heading">{'\u26A1'} Buying Trigger</p><p className="itp-field-text">{itp.itp_buying_trigger}</p></>}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            }
+          </div>
+          <div id="right-sidebar-footer">
+            <button
+              className="option-pill"
+              disabled={!selectedItpId}
+              onClick={() => onSidebarAdvance('ITP selected')}
+            >
+              {selectedItpId ? 'Confirm selection' : 'Choose an ITP'}
+            </button>
+          </div>
+        </>
+      )}
+
       {activeSidebar === 'target_finder_upload_csv' && (
         <>
           <div id="right-sidebar-header"></div>
