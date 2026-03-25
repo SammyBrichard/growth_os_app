@@ -1,15 +1,15 @@
 import React from 'react'
-import { Lead } from '../types/index'
+import { Target } from '../types/index'
 
 interface BelfortTargetsProps {
   belfortItps: { id: string; name: string | null }[]
   belfortSelectedItpId: string | null
-  belfortTargets: Lead[]
+  belfortTargets: Target[]
   belfortSubTab: string
-  selectedTarget: Lead | null
+  selectedTarget: Target | null
   onSelectItp: (id: string) => void
   onSelectSubTab: (tab: string) => void
-  onSelectTarget: (lead: Lead | null) => void
+  onSelectTarget: (target: Target | null) => void
 }
 
 const BelfortTargets: React.FC<BelfortTargetsProps> = ({
@@ -55,10 +55,10 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
       </div>
       {belfortSubTab === 'needs_approval' && (
         <p style={{ margin: '12px 0 4px', fontSize: '13px', color: '#888' }}>
-          Please approve or reject all of the following leads that Belfort has found.
+          Please approve or reject all of the following targets that Belfort has found.
         </p>
       )}
-      <table className="leads-table">
+      <table className="targets-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -67,19 +67,19 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           </tr>
         </thead>
         <tbody>
-          {filtered.map(lead => (
+          {filtered.map(target => (
             <tr
-              key={lead.id}
-              className={`leads-row${selectedTarget?.id === lead.id ? ' selected' : ''}`}
-              onClick={() => onSelectTarget(lead)}
+              key={target.id}
+              className={`targets-row${selectedTarget?.id === target.id ? ' selected' : ''}`}
+              onClick={() => onSelectTarget(target)}
             >
-              <td>{lead.title ?? '\u2014'}</td>
-              <td><a href={lead.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{lead.link}</a></td>
-              <td className="leads-score">{lead.score}</td>
+              <td>{target.title ?? '\u2014'}</td>
+              <td><a href={target.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{target.link}</a></td>
+              <td className="targets-score">{target.score}</td>
             </tr>
           ))}
           {filtered.length === 0 && (
-            <tr><td colSpan={3} className="leads-empty">{belfortSubTab === 'approved' ? 'No approved leads yet.' : 'No leads awaiting approval.'}</td></tr>
+            <tr><td colSpan={3} className="targets-empty">{belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}</td></tr>
           )}
         </tbody>
       </table>

@@ -158,7 +158,7 @@ body {
   text-overflow: ellipsis;
 }
 
-.lead-detail-sidebar {
+.target-detail-sidebar {
   position: absolute;
   top: 0;
   right: 0;
@@ -172,7 +172,7 @@ body {
   animation: slide-in 0.2s ease;
 }
 
-.lead-detail-header {
+.target-detail-header {
   height: 56px;
   background-color: #f4f4f4;
   display: flex;
@@ -183,7 +183,7 @@ body {
   flex-shrink: 0;
 }
 
-.lead-detail-close {
+.target-detail-close {
   background: none;
   border: none;
   cursor: pointer;
@@ -192,17 +192,17 @@ body {
   padding: 4px 8px;
 }
 
-.lead-detail-close:hover {
+.target-detail-close:hover {
   color: #333;
 }
 
-.lead-detail-actions {
+.target-detail-actions {
   display: flex;
   gap: 10px;
   padding-top: 8px;
 }
 
-.lead-action-btn {
+.target-action-btn {
   flex: 1;
   padding: 10px;
   font-size: 13px;
@@ -212,21 +212,21 @@ body {
   cursor: pointer;
 }
 
-.lead-action-btn.reject {
+.target-action-btn.reject {
   background-color: #F6F5F5;
   color: #333;
 }
 
-.lead-action-btn.reject:hover {
+.target-action-btn.reject:hover {
   background-color: #ebebeb;
 }
 
-.lead-action-btn.approve {
+.target-action-btn.approve {
   background-color: #08060d;
   color: #fff;
 }
 
-.lead-action-btn.approve:hover {
+.target-action-btn.approve:hover {
   background-color: #2a2533;
 }
 
@@ -581,13 +581,13 @@ body {
   color: #fff;
 }
 
-.leads-table {
+.targets-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
 
-.leads-table th {
+.targets-table th {
   text-align: left;
   padding: 12px 16px;
   font-size: 11px;
@@ -598,38 +598,38 @@ body {
   border-bottom: 1px solid #E9E9E9;
 }
 
-.leads-row {
+.targets-row {
   cursor: pointer;
 }
 
-.leads-row:hover td,
-.leads-row.selected td {
+.targets-row:hover td,
+.targets-row.selected td {
   background-color: #F6F5F5;
 }
 
-.leads-row td {
+.targets-row td {
   padding: 12px 16px;
   border-bottom: 1px solid #F0F0F0;
   color: #08060d;
 }
 
-.leads-row td a {
+.targets-row td a {
   color: #555;
   text-decoration: none;
   font-size: 12px;
 }
 
-.leads-row td a:hover {
+.targets-row td a:hover {
   text-decoration: underline;
 }
 
-.leads-score {
+.targets-score {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
 
-.leads-empty {
+.targets-empty {
   padding: 32px 16px;
   color: #888;
   text-align: center;

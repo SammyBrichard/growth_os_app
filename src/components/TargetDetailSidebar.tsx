@@ -1,20 +1,20 @@
 import React, { useState } from 'react'
-import { Lead } from '../types/index'
+import { Target } from '../types/index'
 
 interface TargetDetailSidebarProps {
-  target: Lead
+  target: Target
   onClose: () => void
-  onApprove: (target: Lead) => void
-  onReject: (target: Lead, reason: string | null) => void
+  onApprove: (target: Target) => void
+  onReject: (target: Target, reason: string | null) => void
 }
 
 const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClose, onApprove, onReject }) => {
   const [rejectionReason, setRejectionReason] = useState<string>(target.rejection_reason ?? '')
 
   return (
-    <aside className="lead-detail-sidebar">
-      <div className="lead-detail-header">
-        <button onClick={onClose} className="lead-detail-close">{'\u2715'}</button>
+    <aside className="target-detail-sidebar">
+      <div className="target-detail-header">
+        <button onClick={onClose} className="target-detail-close">{'\u2715'}</button>
       </div>
       <div id="right-sidebar-body">
         <div className="sidebar-field">
@@ -39,20 +39,20 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClo
               <textarea
                 className="sidebar-field-input"
                 rows={4}
-                placeholder="Adding the reason you have rejected a lead will help Belfort find better ones next time."
+                placeholder="Adding the reason you have rejected a target will help Belfort find better ones next time."
                 value={rejectionReason}
                 onChange={e => setRejectionReason(e.target.value)}
               />
             </div>
-            <div className="lead-detail-actions">
+            <div className="target-detail-actions">
               <button
-                className="lead-action-btn reject"
+                className="target-action-btn reject"
                 onClick={() => onReject(target, rejectionReason || null)}
               >
                 Reject
               </button>
               <button
-                className="lead-action-btn approve"
+                className="target-action-btn approve"
                 onClick={() => onApprove(target)}
               >
                 Approve

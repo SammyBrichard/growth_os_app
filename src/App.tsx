@@ -176,12 +176,12 @@ export default function App() {
             <BelfortTargets
               belfortItps={bel.belfortItps}
               belfortSelectedItpId={bel.belfortSelectedItpId}
-              belfortTargets={bel.belfortLeads}
+              belfortTargets={bel.belfortTargets}
               belfortSubTab={bel.belfortSubTab}
-              selectedTarget={bel.selectedLead}
-              onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedLeadId(null) }}
-              onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
-              onSelectTarget={bel.setSelectedLead}
+              selectedTarget={bel.selectedTarget}
+              onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedTargetId(null) }}
+              onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedTarget(null) }}
+              onSelectTarget={bel.setSelectedTarget}
             />
           ) : (
             <div id="main-body" />
@@ -189,12 +189,12 @@ export default function App() {
         </div>
       )}
 
-      {activeNav === 'chat' && bel.selectedLead && (
+      {activeNav === 'chat' && bel.selectedTarget && (
         <TargetDetailSidebar
-          target={bel.selectedLead}
-          onClose={() => bel.setSelectedLead(null)}
-          onApprove={bel.approveLead}
-          onReject={(lead, reason) => bel.rejectLead({ ...lead, rejection_reason: reason })}
+          target={bel.selectedTarget}
+          onClose={() => bel.setSelectedTarget(null)}
+          onApprove={bel.approveTarget}
+          onReject={(target, reason) => bel.rejectTarget({ ...target, rejection_reason: reason })}
         />
       )}
 

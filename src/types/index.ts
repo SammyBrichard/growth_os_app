@@ -31,7 +31,7 @@ export interface StepOption {
   next_id?: string
 }
 
-export interface Lead {
+export interface Target {
   id: string
   title: string | null
   link: string
