@@ -894,3 +894,14 @@ body {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.6; transform: scale(0.85); }
 }
+
+/* Target contacts in sidebar */
+.target-contacts { margin-top: 8px; }
+.target-contacts-heading { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; margin-bottom: 8px; }
+.target-contact-card { padding: 10px 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 6px; }
+.target-contact-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.target-contact-role { font-size: 12px; color: #888; margin-top: 2px; }
+.target-contact-email { font-size: 12px; color: #555; margin-top: 2px; font-family: var(--mono); }
+.target-no-contacts { font-size: 13px; color: #aaa; font-style: italic; padding: 8px 0; }
+.contacts-count { font-size: 12px; color: #888; }
+.contacts-count.zero { color: #ccc; }

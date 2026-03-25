@@ -64,6 +64,7 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
             <th>Name</th>
             <th>URL</th>
             <th>Score</th>
+            <th>Contacts</th>
           </tr>
         </thead>
         <tbody>
@@ -76,10 +77,11 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
               <td>{target.title ?? '\u2014'}</td>
               <td><a href={target.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{target.link}</a></td>
               <td className="targets-score">{target.score}</td>
+              <td><span className={`contacts-count${(target.contacts?.length ?? 0) === 0 ? ' zero' : ''}`}>{target.contacts?.length ?? 0}</span></td>
             </tr>
           ))}
           {filtered.length === 0 && (
-            <tr><td colSpan={3} className="targets-empty">{belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}</td></tr>
+            <tr><td colSpan={4} className="targets-empty">{belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}</td></tr>
           )}
         </tbody>
       </table>

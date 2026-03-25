@@ -31,6 +31,14 @@ export interface StepOption {
   next_id?: string
 }
 
+export interface Contact {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string
+  role: string | null
+}
+
 export interface Target {
   id: string
   title: string | null
@@ -40,6 +48,7 @@ export interface Target {
   approved?: boolean
   rejected?: boolean
   rejection_reason?: string | null
+  contacts?: Contact[]
 }
 
 export interface ITP {

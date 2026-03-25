@@ -33,6 +33,22 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClo
           <label className="sidebar-field-label">Reason</label>
           <p style={{ margin: 0, fontSize: '13px', color: '#333', lineHeight: 1.6 }}>{target.score_reason ?? 'No reason provided.'}</p>
         </div>
+        <div className="target-contacts">
+          <div className="target-contacts-heading">Contacts</div>
+          {target.contacts && target.contacts.length > 0 ? (
+            target.contacts.map(contact => (
+              <div key={contact.id} className="target-contact-card">
+                <div className="target-contact-name">
+                  {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || '\u2014'}
+                </div>
+                {contact.role && <div className="target-contact-role">{contact.role}</div>}
+                <div className="target-contact-email">{contact.email}</div>
+              </div>
+            ))
+          ) : (
+            <div className="target-no-contacts">No contacts found for this company</div>
+          )}
+        </div>
         {!target.approved && (
           <>
             <div className="sidebar-field">

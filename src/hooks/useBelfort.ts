@@ -2,8 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
 import type { Employee, Target, ITP } from '../types/index'
 
-const API_URL = import.meta.env.VITE_API_URL
-
 interface UseBelfortParams {
   accountId: string | null
   userDetailsId: string | null
@@ -37,7 +35,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
   // Load targets when selected ITP changes
   useEffect(() => {
     if (!belfortSelectedItpId) { setBelfortTargets([]); return }
-    supabase.from('targets').select('id, title, link, score, score_reason, approved, rejected')
+    supabase.from('targets').select('id, title, link, score, score_reason, approved, rejected, contacts(id, first_name, last_name, email, role)')
       .eq('itp', belfortSelectedItpId)
       .gte('score', 70)
       .order('score', { ascending: false })
@@ -80,14 +78,9 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     await checkAndQueueTargetMobilisation(belfortSelectedItpId)
   }, [belfortSelectedItpId, checkAndQueueTargetMobilisation])
 
-  /** Approve a target, dispatch contact_finder, and check the queue. */
+  /** Approve a target and check the queue. */
   const approveTarget = useCallback(async (target: Target) => {
     await supabase.from('targets').update({ approved: true }).eq('id', target.id)
-    fetch(`${API_URL}/api/skills/dispatch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee: 'lead_gen_expert', skill: 'contact_finder', user_details_id: userDetailsId, inputs: { lead_id: target.id } }),
-    }).catch(err => console.error('[approve] contact_finder dispatch error:', err))
     const updated = { ...target, approved: true }
     setBelfortTargets(prev => prev.map(l => l.id === target.id ? updated : l))
     setSelectedTarget(null)
