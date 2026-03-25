@@ -3,6 +3,8 @@ import supabase from '../services/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { Message } from '../types/index'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface UserDetailsData {
   id: string
   account_id: string | null
@@ -64,7 +66,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     return []
   }, [])
 
-  /** Save a single message to the messages table. */
+  /** Save a single message to the messages table. Triggers message processor for user messages. */
   const saveMessage = useCallback(async (message_body: string, is_agent: boolean): Promise<Message | null> => {
     if (!userDetailsId) return null
     const { data } = await supabase
@@ -72,6 +74,16 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       .insert({ message_body, is_agent, user_details_id: userDetailsId })
       .select()
       .single()
+
+    // Trigger message processor directly for user messages (replaces Supabase webhook)
+    if (!is_agent && data) {
+      fetch(`${API_URL}/api/messages/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record: { user_details_id: userDetailsId, is_agent: false }, type: 'INSERT' }),
+      }).catch(err => console.error('[saveMessage] processor trigger error:', err))
+    }
+
     return data as Message | null
   }, [userDetailsId])
 
