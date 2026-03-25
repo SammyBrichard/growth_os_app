@@ -1,6 +1,8 @@
 import React from 'react'
 import { Message, StepOption } from '../types/index'
 import MessageBubble from './MessageBubble'
+import SkillStatusBubble from './SkillStatusBubble'
+import type { SkillStatus } from '../hooks/useSkillStatus'
 
 interface WatsonChatProps {
   messages: Message[]
@@ -9,6 +11,7 @@ interface WatsonChatProps {
   inputValue: string
   input_bar_enabled: boolean
   activeSidebar: string | null
+  activeSkills: SkillStatus[]
   messagesEndRef: React.RefObject<HTMLDivElement | null>
   onOptionSelect: (opt: StepOption) => void
   onSend: () => void
@@ -24,6 +27,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   inputValue,
   input_bar_enabled,
   activeSidebar,
+  activeSkills,
   messagesEndRef,
   onOptionSelect,
   onSend,
@@ -59,6 +63,8 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
             </div>
           </div>
         )}
+
+        <SkillStatusBubble activeSkills={activeSkills} />
 
         <div ref={messagesEndRef} />
       </div>

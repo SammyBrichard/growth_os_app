@@ -14,6 +14,7 @@ import useMessages from './hooks/useMessages'
 import useMobilisation from './hooks/useMobilisation'
 import useBelfort from './hooks/useBelfort'
 import useCampaigns from './hooks/useCampaigns'
+import useSkillStatus from './hooks/useSkillStatus'
 
 import Layout from './components/Layout'
 import EmployeeList from './components/EmployeeList'
@@ -62,6 +63,7 @@ export default function App() {
     accountId: ud.accountId,
     selectedEmployee,
   })
+  const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
 
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {
@@ -153,6 +155,7 @@ export default function App() {
           employees={employees}
           selectedEmployee={selectedEmployee}
           onSelect={setSelectedEmployee}
+          activeSkills={activeSkills}
         />
       }
     >
@@ -182,6 +185,7 @@ export default function App() {
               inputValue={mob.inputValue}
               input_bar_enabled={mob.input_bar_enabled}
               activeSidebar={mob.activeSidebar}
+              activeSkills={activeSkills}
               messagesEndRef={msg.messagesEndRef}
               onOptionSelect={mob.handleOptionSelect}
               onSend={mob.handleSend}
