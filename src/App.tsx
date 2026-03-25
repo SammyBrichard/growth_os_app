@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import watsonImg from './assets/Watson.png'
 import belfortImg from './assets/Belfort.png'
 import warrenImg from './assets/Warren.png'
@@ -96,8 +96,16 @@ export default function App() {
     }
   }, [mob.activeSidebar])
 
-  // Check for latest sidebar-bearing message
+  // Track previous message count to detect genuinely new messages
+  const prevMessageCount = useRef(0)
+
+  // Check for latest sidebar-bearing message (only on NEW messages, not initial load)
   useEffect(() => {
+    const isNewMessage = msg.messages.length > prevMessageCount.current
+    prevMessageCount.current = msg.messages.length
+
+    if (!isNewMessage) return
+
     const latest = msg.messages[msg.messages.length - 1]
     if (latest?.sidebar) {
       mob.setActiveSidebar(latest.sidebar)
