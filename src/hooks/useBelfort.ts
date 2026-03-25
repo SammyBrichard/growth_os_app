@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
 import type { Employee, Target, ITP } from '../types/index'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface UseBelfortParams {
   accountId: string | null
   userDetailsId: string | null
@@ -50,22 +52,56 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     if (!itpId || !userDetailsId) return
     const { data: targets } = await supabase
       .from('targets')
-      .select('id, approved, rejected')
+      .select('id, approved, rejected, rejection_reason')
       .eq('itp', itpId)
       .gte('score', 70)
     const approved = (targets ?? []).filter((l: any) => l.approved).length
     const needsApproval = (targets ?? []).filter((l: any) => !l.approved && !l.rejected).length
     console.log('[queue] checkAndQueue: approved=', approved, 'needsApproval=', needsApproval)
     if (needsApproval === 0) {
-      const mobilisationToQueue = approved >= 10 ? 'ten_approved_leads_found' : 'need_ten_more_leads'
-      const { data: ud, error } = await supabase.from('user_details').select('queued_mobilisations').eq('id', userDetailsId).single()
-      console.log('[queue] fetched user_details:', ud, error)
-      const queue = ud?.queued_mobilisations ?? []
-      if (!queue.some((q: any) => q.mobilisation === mobilisationToQueue)) {
-        const { error: updateError } = await supabase.from('user_details')
-          .update({ queued_mobilisations: [...queue, { mobilisation: mobilisationToQueue, queued_at: new Date().toISOString() }] })
-          .eq('id', userDetailsId)
-        console.log('[queue] queued', mobilisationToQueue, 'error:', updateError)
+      if (approved >= 10) {
+        // Enough approved — offer to find 100 more or create campaign
+        const mobilisationToQueue = 'ten_approved_leads_found'
+        const { data: ud, error } = await supabase.from('user_details').select('queued_mobilisations').eq('id', userDetailsId).single()
+        console.log('[queue] fetched user_details:', ud, error)
+        const queue = ud?.queued_mobilisations ?? []
+        if (!queue.some((q: any) => q.mobilisation === mobilisationToQueue)) {
+          const { error: updateError } = await supabase.from('user_details')
+            .update({ queued_mobilisations: [...queue, { mobilisation: mobilisationToQueue, queued_at: new Date().toISOString() }] })
+            .eq('id', userDetailsId)
+          console.log('[queue] queued', mobilisationToQueue, 'error:', updateError)
+        }
+      } else {
+        // Check if any rejections have reasons
+        const rejected = (targets ?? []).filter((l: any) => l.rejected)
+        const withReasons = rejected.filter((l: any) => l.rejection_reason?.trim())
+
+        if (withReasons.length > 0) {
+          // Dispatch itp_refiner — it will refine the ITP and auto-trigger target_finder
+          console.log('[queue] Dispatching itp_refiner with', withReasons.length, 'rejection reasons')
+          fetch(`${API_URL}/api/skills/dispatch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              employee: 'lead_gen_expert',
+              skill: 'itp_refiner',
+              user_details_id: userDetailsId,
+              inputs: { itp_id: itpId },
+            }),
+          }).catch(err => console.error('[queue] itp_refiner dispatch error:', err))
+        } else {
+          // No reasons — just find more targets
+          const mobilisationToQueue = 'need_ten_more_leads'
+          const { data: ud, error } = await supabase.from('user_details').select('queued_mobilisations').eq('id', userDetailsId).single()
+          console.log('[queue] fetched user_details:', ud, error)
+          const queue = ud?.queued_mobilisations ?? []
+          if (!queue.some((q: any) => q.mobilisation === mobilisationToQueue)) {
+            const { error: updateError } = await supabase.from('user_details')
+              .update({ queued_mobilisations: [...queue, { mobilisation: mobilisationToQueue, queued_at: new Date().toISOString() }] })
+              .eq('id', userDetailsId)
+            console.log('[queue] queued', mobilisationToQueue, 'error:', updateError)
+          }
+        }
       }
     }
   }, [userDetailsId])
