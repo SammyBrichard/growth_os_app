@@ -42,6 +42,7 @@ export default function App() {
   const msg = useMessages({ userFirstNameRef: ud.userFirstNameRef, saveMessage: ud.saveMessage })
   const mob = useMobilisation({
     userDetailsId: ud.userDetailsId,
+    accountId: ud.accountId,
     user,
     setMessages: msg.setMessages,
     setIsTyping: msg.setIsTyping,
@@ -91,7 +92,7 @@ export default function App() {
       setTimeout(() => msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 150)
     }
     if (mob.activeSidebar === 'select_itp' && ud.accountId) {
-      mob.loadItpList(ud.accountId)
+      mob.loadItpList()
     }
   }, [mob.activeSidebar])
 

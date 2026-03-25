@@ -11,6 +11,7 @@ function delay(ms: number): Promise<void> {
 
 interface UseMobilisationParams {
   userDetailsId: string | null
+  accountId: string | null
   user: User | null | undefined
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   setIsTyping: (v: boolean) => void
@@ -24,6 +25,7 @@ interface UseMobilisationParams {
  */
 export default function useMobilisation({
   userDetailsId,
+  accountId,
   user,
   setMessages,
   setIsTyping,
@@ -344,7 +346,7 @@ export default function useMobilisation({
 
   // ── Save company details sidebar ─────────────────────────────────────
 
-  const handleSaveCompanyDetails = useCallback(async (accountId: string | null) => {
+  const handleSaveCompanyDetails = useCallback(async () => {
     if (accountId) {
       await supabase.from('account').update({
         organisation_website: sidebarData.website_url ?? null,
@@ -363,7 +365,7 @@ export default function useMobilisation({
 
     setActiveSidebar(null)
     startMobilisation('signup_ideal_target_profile')
-  }, [sidebarData, setMessages, saveMessage, startMobilisation])
+  }, [accountId, sidebarData, setMessages, saveMessage, startMobilisation])
 
   // ── Save ITP sidebar ─────────────────────────────────────────────────
 
@@ -390,7 +392,7 @@ export default function useMobilisation({
 
   // ── Manual customer add ──────────────────────────────────────────────
 
-  const handleAddManualCustomer = useCallback(async (accountId: string | null) => {
+  const handleAddManualCustomer = useCallback(async () => {
     const { organisation_name, organisation_website } = manualCustomerInput
     if (!organisation_name.trim()) return
     if (accountId) {
@@ -405,11 +407,11 @@ export default function useMobilisation({
       organisation_website: organisation_website.trim(),
     }])
     setManualCustomerInput({ organisation_name: '', organisation_website: '' })
-  }, [manualCustomerInput])
+  }, [accountId, manualCustomerInput])
 
   // ── CSV handling ─────────────────────────────────────────────────────
 
-  const handleCsvDrop = useCallback((e: any, accountId: string | null) => {
+  const handleCsvDrop = useCallback((e: any) => {
     e.preventDefault()
     setCsvDragOver(false)
     const file = e.dataTransfer?.files[0] ?? e.target.files?.[0]
@@ -427,7 +429,7 @@ export default function useMobilisation({
       setCsvRows(rows)
     }
     reader.readAsText(file)
-  }, [])
+  }, [accountId])
 
   const downloadCsvTemplate = useCallback(() => {
     const csv = 'organisation_name,organisation_website\nAcme Corp,https://acmecorp.com\n'
@@ -442,7 +444,8 @@ export default function useMobilisation({
 
   // ── ITP list loading (for select_itp sidebar) ────────────────────────
 
-  const loadItpList = useCallback(async (accountId: string) => {
+  const loadItpList = useCallback(async () => {
+    if (!accountId) return
     setSelectedItpId(null)
     const { data } = await supabase
       .from('itp')
@@ -450,7 +453,7 @@ export default function useMobilisation({
       .eq('account_id', accountId)
       .order('created_at', { ascending: false })
     setItpList(data ?? [])
-  }, [])
+  }, [accountId])
 
   // ── Key handler ──────────────────────────────────────────────────────
 
