@@ -905,3 +905,127 @@ body {
 .target-no-contacts { font-size: 13px; color: #aaa; font-style: italic; padding: 8px 0; }
 .contacts-count { font-size: 12px; color: #888; }
 .contacts-count.zero { color: #ccc; }
+
+/* Approve Targets Sidebar */
+.approve-targets-progress {
+  padding: 16px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-bottom: 1px solid var(--border);
+}
+.approve-targets-list {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+.approve-target-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.approve-target-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.approve-target-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.approve-target-score {
+  font-size: 12px;
+  font-weight: 700;
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.approve-target-url {
+  font-size: 12px;
+  color: #888;
+  text-decoration: none;
+  word-break: break-all;
+}
+.approve-target-url:hover {
+  color: #555;
+}
+.approve-target-contacts {
+  font-size: 12px;
+  color: #888;
+}
+.approve-target-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.approve-target-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+.approve-target-btn:hover {
+  opacity: 0.85;
+}
+.approve-target-btn.approve {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.approve-target-btn.reject {
+  background: #ffebee;
+  color: #c62828;
+}
+.approve-target-reason {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  resize: vertical;
+  min-height: 60px;
+  font-family: var(--sans);
+  box-sizing: border-box;
+}
+.approve-target-reason-actions {
+  display: flex;
+  gap: 8px;
+}
+.approve-target-reason-confirm {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  background: #ffebee;
+  color: #c62828;
+}
+.approve-target-reason-cancel {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: #888;
+}
+.approve-targets-done {
+  padding: 40px 20px;
+  text-align: center;
+  color: #888;
+  font-size: 14px;
+}

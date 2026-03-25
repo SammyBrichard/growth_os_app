@@ -138,6 +138,48 @@ export default function App() {
     if (selectedEmployee.name !== 'Watson') mob.setQueueChecked(false)
   }, [selectedEmployee, mob.mobilisation_active, ud.userDetailsId])
 
+  async function handleApprovalComplete(approved: number, rejected: number, hasReasons: boolean) {
+    mob.setActiveSidebar(null)
+
+    // Check total approved across all rounds
+    const { data: allTargets } = await supabase
+      .from('targets')
+      .select('id')
+      .eq('itp', mob.sidebarData.itp_id)
+      .eq('approved', true)
+
+    const totalApproved = allTargets?.length ?? 0
+
+    if (totalApproved >= 10) {
+      // ITP is validated — trigger campaign creation
+      mob.startMobilisation('ten_approved_leads_found')
+    } else if (rejected > 0 && hasReasons) {
+      // Need to refine ITP and find more
+      fetch(`${API_URL}/api/skills/dispatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee: 'lead_gen_expert',
+          skill: 'itp_refiner',
+          user_details_id: ud.userDetailsId,
+          inputs: { itp_id: mob.sidebarData.itp_id },
+        }),
+      }).catch(err => console.error('itp_refiner dispatch error:', err))
+    } else {
+      // Rejections without reasons — just find more
+      fetch(`${API_URL}/api/skills/dispatch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee: 'lead_gen_expert',
+          skill: 'target_finder_ten_leads',
+          user_details_id: ud.userDetailsId,
+          inputs: { itp_id: mob.sidebarData.itp_id },
+        }),
+      }).catch(err => console.error('target_finder dispatch error:', err))
+    }
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     window.location.href = CLIENT_URL
@@ -248,6 +290,7 @@ export default function App() {
           onDownloadCsvTemplate={mob.downloadCsvTemplate}
           userDetailsId={ud.userDetailsId}
           API_URL={API_URL}
+          onApprovalComplete={handleApprovalComplete}
         />
       )}
     </Layout>

@@ -106,22 +106,20 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     }
   }, [userDetailsId])
 
-  /** Reject a target and check the queue. */
+  /** Reject a target. */
   const rejectTarget = useCallback(async (target: Target) => {
     await supabase.from('targets').update({ rejected: true, rejection_reason: target.rejection_reason ?? null }).eq('id', target.id)
     setBelfortTargets(prev => prev.filter(l => l.id !== target.id))
     setSelectedTarget(null)
-    await checkAndQueueTargetMobilisation(belfortSelectedItpId)
-  }, [belfortSelectedItpId, checkAndQueueTargetMobilisation])
+  }, [])
 
-  /** Approve a target and check the queue. */
+  /** Approve a target. */
   const approveTarget = useCallback(async (target: Target) => {
     await supabase.from('targets').update({ approved: true }).eq('id', target.id)
     const updated = { ...target, approved: true }
     setBelfortTargets(prev => prev.map(l => l.id === target.id ? updated : l))
     setSelectedTarget(null)
-    await checkAndQueueTargetMobilisation(belfortSelectedItpId)
-  }, [belfortSelectedItpId, userDetailsId, checkAndQueueTargetMobilisation])
+  }, [])
 
   return {
     belfortItps,

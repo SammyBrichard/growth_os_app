@@ -1,5 +1,6 @@
 import React from 'react'
 import { ITP, CustomerInput } from '../types/index'
+import ApproveTargetsSidebar from './ApproveTargetsSidebar'
 
 interface RightSidebarProps {
   activeSidebar: string
@@ -22,6 +23,7 @@ interface RightSidebarProps {
   onDownloadCsvTemplate: () => void
   userDetailsId: string | null
   API_URL: string
+  onApprovalComplete?: (approved: number, rejected: number, hasReasons: boolean) => void
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -45,6 +47,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   onDownloadCsvTemplate,
   userDetailsId,
   API_URL,
+  onApprovalComplete,
 }) => {
   return (
     <aside id="right-sidebar">
@@ -395,6 +398,19 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
             <button className="option-pill" onClick={() => onSidebarAdvance(manualCustomers.length > 0 ? 'Done' : 'Skip for now')}>
               {manualCustomers.length > 0 ? 'Done' : 'Skip for now'}
             </button>
+          </div>
+        </>
+      )}
+
+      {activeSidebar === 'approve_targets' && (
+        <>
+          <div id="right-sidebar-header"></div>
+          <div id="right-sidebar-body" style={{ padding: 0 }}>
+            <ApproveTargetsSidebar
+              itpId={sidebarData.itp_id}
+              userDetailsId={userDetailsId}
+              onComplete={onApprovalComplete ?? (() => {})}
+            />
           </div>
         </>
       )}
