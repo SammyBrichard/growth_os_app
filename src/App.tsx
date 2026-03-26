@@ -181,14 +181,16 @@ export default function App() {
   }
 
   async function handleTemplateApprove(updatedSubjectLine: string, updatedTemplate: string) {
+    const campaignId = mob.sidebarData.campaign_id
     await supabase
       .from('campaigns')
       .update({ subject_line: updatedSubjectLine, email_template: updatedTemplate })
-      .eq('id', mob.sidebarData.campaign_id)
+      .eq('id', campaignId)
 
     mob.setActiveSidebar(null)
-    mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, campaign_id: mob.sidebarData.campaign_id }))
-    mob.startMobilisation('review_campaign')
+    await mob.startMobilisation('review_campaign')
+    // Set campaign_id AFTER startMobilisation (which clears responses)
+    mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, campaign_id: campaignId }))
   }
 
   async function handleSenderSelect(senderId: string) {
