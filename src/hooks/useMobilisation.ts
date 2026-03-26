@@ -221,9 +221,10 @@ export default function useMobilisation({
         if (result.step) {
           setCurrentStep(result.step)
           if (result.step.type === 'end_flow') {
+            const finishingMobilisation = current_mobilisation!
             await clearMobilisationState()
             const addedMessages = await showStepMessages(result.step)
-            await completeMobilisation(current_mobilisation!, updatedResponses, addedMessages)
+            await completeMobilisation(finishingMobilisation, updatedResponses, addedMessages)
 
             // If we came from an option_set_with_input, trigger processor for the typed message
             if (current_step?.type === 'option_set_with_input') {
@@ -305,9 +306,10 @@ export default function useMobilisation({
             ? { ...mobilisation_responses, [responseKey]: option.message }
             : mobilisation_responses
           setMobilisationResponses(updatedResponses)
+          const finishingMobilisation = current_mobilisation!
           await clearMobilisationState()
           const addedMessages = await showStepMessages(result.step)
-          const completion = await completeMobilisation(current_mobilisation!, updatedResponses, addedMessages)
+          const completion = await completeMobilisation(finishingMobilisation, updatedResponses, addedMessages)
           if (completion?.next_mobilisation) {
             await startMobilisation(completion.next_mobilisation)
           } else {
@@ -358,9 +360,10 @@ export default function useMobilisation({
       if (result.step) {
         setCurrentStep(result.step)
         if (result.step.type === 'end_flow') {
+          const finishingMobilisation = current_mobilisation!
           await clearMobilisationState()
           const addedMessages = await showStepMessages(result.step)
-          await completeMobilisation(current_mobilisation!, mobilisation_responses, addedMessages)
+          await completeMobilisation(finishingMobilisation, mobilisation_responses, addedMessages)
         } else {
           await saveMobilisationState(current_mobilisation!, result.step.id)
           await showStepMessages(result.step)
