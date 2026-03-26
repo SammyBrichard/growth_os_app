@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import supabase from '../services/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { Message, MobilisationStep, StepOption, CustomerInput } from '../types/index'
@@ -35,7 +35,17 @@ export default function useMobilisation({
   const [mobilisation_active, setMobilisationActive] = useState(false)
   const [current_mobilisation, setCurrentMobilisation] = useState<string | null>(null)
   const [current_step, setCurrentStep] = useState<MobilisationStep | null>(null)
-  const [mobilisation_responses, setMobilisationResponses] = useState<Record<string, string>>({})
+  const [mobilisation_responses, _setMobilisationResponses] = useState<Record<string, string>>({})
+  const mobilisationResponsesRef = useRef<Record<string, string>>({})
+
+  // Wrapper that keeps both state and ref in sync
+  const setMobilisationResponses = useCallback((update: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => {
+    _setMobilisationResponses(prev => {
+      const next = typeof update === 'function' ? update(prev) : update
+      mobilisationResponsesRef.current = next
+      return next
+    })
+  }, [])
   const [input_bar_enabled, setInputBarEnabled] = useState(false)
   const [inputValue, setInputValue] = useState('')
   const [options, setOptions] = useState<StepOption[] | null>(null)
@@ -212,7 +222,7 @@ export default function useMobilisation({
 
     if (mobilisation_active && current_step?.next_id) {
       const responseKey = current_step.response_key ?? current_step.id
-      const updatedResponses = { ...mobilisation_responses, [responseKey]: text }
+      const updatedResponses = { ...mobilisationResponsesRef.current, [responseKey]: text }
       setMobilisationResponses(updatedResponses)
 
       try {
@@ -283,11 +293,11 @@ export default function useMobilisation({
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
 
-    // Store response for this step
+    // Store response for this step (use ref for latest value across async boundaries)
     const responseKey = current_step?.response_key ?? current_step?.id
     const updatedResponses = responseKey
-      ? { ...mobilisation_responses, [responseKey]: option.message }
-      : mobilisation_responses
+      ? { ...mobilisationResponsesRef.current, [responseKey]: option.message }
+      : { ...mobilisationResponsesRef.current }
     setMobilisationResponses(updatedResponses)
 
     if (!option.next_id && !current_step?.next_id) {
@@ -357,7 +367,7 @@ export default function useMobilisation({
     // Store selected ITP ID in responses if an ITP sidebar was active
     let currentResponses = mobilisation_responses
     if ((activeSidebar === 'select_campaign_itp' || activeSidebar === 'select_itp') && selectedItpId) {
-      currentResponses = { ...mobilisation_responses, itp_id: selectedItpId }
+      currentResponses = { ...mobilisationResponsesRef.current, itp_id: selectedItpId }
       setMobilisationResponses(currentResponses)
     }
     setActiveSidebar(null)
