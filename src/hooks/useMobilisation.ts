@@ -279,6 +279,13 @@ export default function useMobilisation({
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
 
+    // Store response for this step
+    const responseKey = current_step?.response_key ?? current_step?.id
+    const updatedResponses = responseKey
+      ? { ...mobilisation_responses, [responseKey]: option.message }
+      : mobilisation_responses
+    setMobilisationResponses(updatedResponses)
+
     if (!option.next_id && !current_step?.next_id) {
       console.warn('No next_id on current_step or option — returning early')
       return
@@ -301,11 +308,6 @@ export default function useMobilisation({
           setManualCustomers([])
           setCsvRows([])
         } else if (result.step.type === 'end_flow') {
-          const responseKey = current_step?.response_key ?? current_step?.id
-          const updatedResponses = responseKey
-            ? { ...mobilisation_responses, [responseKey]: option.message }
-            : mobilisation_responses
-          setMobilisationResponses(updatedResponses)
           const finishingMobilisation = current_mobilisation!
           await clearMobilisationState()
           const addedMessages = await showStepMessages(result.step)
