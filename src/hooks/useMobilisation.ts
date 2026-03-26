@@ -129,6 +129,10 @@ export default function useMobilisation({
           } else {
             setInputBarEnabled(true)
           }
+        } else if (result.step.type === 'sidebar') {
+          setActiveSidebar(result.step.sidebar)
+          setSidebarNextId(result.step.next_id)
+          setSidebarData({})
         } else if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') {
           setOptions(result.step.options)
         } else if (result.step.type === 'option_set_with_input') {
