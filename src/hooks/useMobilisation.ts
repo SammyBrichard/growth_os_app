@@ -403,7 +403,7 @@ export default function useMobilisation({
       console.error('sidebar advance error:', err)
     }
   }, [
-    sidebarNextId, current_mobilisation, mobilisation_responses, userDetailsId,
+    activeSidebar, selectedItpId, sidebarNextId, current_mobilisation, mobilisation_responses, userDetailsId,
     setMessages, saveMessage, showStepMessages,
     saveMobilisationState, clearMobilisationState, completeMobilisation,
   ])
