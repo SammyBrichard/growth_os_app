@@ -80,7 +80,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       fetch(`${API_URL}/api/messages/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ record: { user_details_id: userDetailsId, is_agent: false }, type: 'INSERT' }),
+        body: JSON.stringify({ record: { user_details_id: userDetailsId, is_agent: false, message_body }, type: 'INSERT' }),
       }).catch(err => console.error('[saveMessage] processor trigger error:', err))
     }
 
