@@ -1,59 +1,81 @@
 import React, { useState } from 'react'
 
+interface SequenceEmail {
+  seq_number: number
+  delay_in_days: number
+  subject: string
+  body: string
+}
+
 interface ReviewEmailTemplateSidebarProps {
   campaignId: string
-  subjectLine: string
-  emailTemplate: string
+  emailSequence: SequenceEmail[]
   campaignName: string
   tone: string | null
   numEmails: number
-  onApprove: (updatedSubjectLine: string, updatedTemplate: string) => void
+  onApprove: (updatedSequence: SequenceEmail[]) => void
 }
 
 const ReviewEmailTemplateSidebar: React.FC<ReviewEmailTemplateSidebarProps> = ({
   campaignId: _campaignId,
-  subjectLine,
-  emailTemplate,
+  emailSequence,
   campaignName,
   tone,
   numEmails,
   onApprove,
 }) => {
-  const [editableSubject, setEditableSubject] = useState(subjectLine)
-  const [editableTemplate, setEditableTemplate] = useState(emailTemplate)
+  const [sequence, setSequence] = useState<SequenceEmail[]>(
+    emailSequence.length > 0 ? emailSequence : [{ seq_number: 1, delay_in_days: 0, subject: '', body: '' }]
+  )
+
+  function updateEmail(index: number, field: 'subject' | 'body', value: string) {
+    setSequence(prev => prev.map((email, i) => i === index ? { ...email, [field]: value } : email))
+  }
 
   return (
     <div>
       <div className="review-template-heading">{campaignName}</div>
 
-      <div className="review-template-field">
-        <label className="review-template-label">Subject Line</label>
-        <input
-          className="review-template-input"
-          value={editableSubject}
-          onChange={e => setEditableSubject(e.target.value)}
-        />
-      </div>
-
-      <div className="review-template-field">
-        <label className="review-template-label">Email Template</label>
-        <textarea
-          className="review-template-textarea"
-          value={editableTemplate}
-          onChange={e => setEditableTemplate(e.target.value)}
-        />
-      </div>
-
       {tone && (
         <div className="review-template-info">Tone: {tone}</div>
       )}
-      <div className="review-template-info">Emails in sequence: {numEmails}</div>
+      <div className="review-template-info" style={{ marginBottom: '16px' }}>
+        {numEmails} email{numEmails !== 1 ? 's' : ''} in sequence
+      </div>
+
+      {sequence.map((email, index) => (
+        <div key={email.seq_number} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: index < sequence.length - 1 ? '1px solid #eee' : 'none' }}>
+          <div className="review-template-info" style={{ fontWeight: 600, marginBottom: '8px' }}>
+            {index === 0 ? 'Initial Email' : `Follow-up ${index}`}
+            {email.delay_in_days > 0 && ` (${email.delay_in_days} days after previous)`}
+          </div>
+
+          <div className="review-template-field">
+            <label className="review-template-label">Subject Line</label>
+            <input
+              className="review-template-input"
+              value={email.subject}
+              onChange={e => updateEmail(index, 'subject', e.target.value)}
+            />
+          </div>
+
+          <div className="review-template-field">
+            <label className="review-template-label">Email Body</label>
+            <textarea
+              className="review-template-textarea"
+              value={email.body}
+              onChange={e => updateEmail(index, 'body', e.target.value)}
+              rows={index === 0 ? 10 : 6}
+            />
+          </div>
+        </div>
+      ))}
 
       <button
         className="review-template-approve-btn"
-        onClick={() => onApprove(editableSubject, editableTemplate)}
+        onClick={() => onApprove(sequence)}
       >
-        Approve template
+        Approve sequence
       </button>
     </div>
   )

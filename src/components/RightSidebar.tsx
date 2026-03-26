@@ -27,7 +27,7 @@ interface RightSidebarProps {
   API_URL: string
   onApprovalComplete?: (approved: number, rejected: number, hasReasons: boolean) => void
   accountId: string | null
-  onTemplateApprove: (updatedSubjectLine: string, updatedTemplate: string) => void
+  onTemplateApprove: (updatedSequence: any[]) => void
   onSenderSelect: (senderId: string) => void
 }
 
@@ -429,8 +429,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
           <div id="right-sidebar-body">
             <ReviewEmailTemplateSidebar
               campaignId={sidebarData.campaign_id}
-              subjectLine={sidebarData.subject_line ?? ''}
-              emailTemplate={sidebarData.email_template ?? ''}
+              emailSequence={sidebarData.email_sequence ?? []}
               campaignName={sidebarData.campaign_name ?? ''}
               tone={sidebarData.tone}
               numEmails={sidebarData.num_emails ?? 1}

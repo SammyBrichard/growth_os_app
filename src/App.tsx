@@ -180,11 +180,16 @@ export default function App() {
     }
   }
 
-  async function handleTemplateApprove(updatedSubjectLine: string, updatedTemplate: string) {
+  async function handleTemplateApprove(updatedSequence: any[]) {
     const campaignId = mob.sidebarData.campaign_id
+    const firstEmail = updatedSequence[0] ?? {}
     await supabase
       .from('campaigns')
-      .update({ subject_line: updatedSubjectLine, email_template: updatedTemplate })
+      .update({
+        subject_line: firstEmail.subject ?? '',
+        email_template: firstEmail.body ?? '',
+        email_sequence: updatedSequence,
+      })
       .eq('id', campaignId)
 
     mob.setActiveSidebar(null)
