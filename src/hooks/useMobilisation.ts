@@ -474,6 +474,9 @@ export default function useMobilisation({
     options,
     setOptions,
 
+    // Mobilisation responses setter
+    setMobilisationResponses,
+
     // Sidebar state
     activeSidebar,
     setActiveSidebar,

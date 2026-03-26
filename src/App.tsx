@@ -180,6 +180,22 @@ export default function App() {
     }
   }
 
+  async function handleTemplateApprove(updatedSubjectLine: string, updatedTemplate: string) {
+    await supabase
+      .from('campaigns')
+      .update({ subject_line: updatedSubjectLine, email_template: updatedTemplate })
+      .eq('id', mob.sidebarData.campaign_id)
+
+    mob.setActiveSidebar(null)
+    mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, campaign_id: mob.sidebarData.campaign_id }))
+    mob.startMobilisation('review_campaign')
+  }
+
+  async function handleSenderSelect(senderId: string) {
+    mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
+    mob.handleSidebarAdvance('Sender selected')
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     window.location.href = CLIENT_URL
@@ -291,6 +307,9 @@ export default function App() {
           userDetailsId={ud.userDetailsId}
           API_URL={API_URL}
           onApprovalComplete={handleApprovalComplete}
+          accountId={ud.accountId}
+          onTemplateApprove={handleTemplateApprove}
+          onSenderSelect={handleSenderSelect}
         />
       )}
     </Layout>

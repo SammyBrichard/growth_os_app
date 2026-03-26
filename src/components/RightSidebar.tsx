@@ -1,6 +1,8 @@
 import React from 'react'
 import { ITP, CustomerInput } from '../types/index'
 import ApproveTargetsSidebar from './ApproveTargetsSidebar'
+import ReviewEmailTemplateSidebar from './ReviewEmailTemplateSidebar'
+import SelectSenderSidebar from './SelectSenderSidebar'
 
 interface RightSidebarProps {
   activeSidebar: string
@@ -24,6 +26,9 @@ interface RightSidebarProps {
   userDetailsId: string | null
   API_URL: string
   onApprovalComplete?: (approved: number, rejected: number, hasReasons: boolean) => void
+  accountId: string | null
+  onTemplateApprove: (updatedSubjectLine: string, updatedTemplate: string) => void
+  onSenderSelect: (senderId: string) => void
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -48,6 +53,9 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   userDetailsId,
   API_URL,
   onApprovalComplete,
+  accountId,
+  onTemplateApprove,
+  onSenderSelect,
 }) => {
   return (
     <aside id="right-sidebar">
@@ -410,6 +418,35 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               itpId={sidebarData.itp_id}
               userDetailsId={userDetailsId}
               onComplete={onApprovalComplete ?? (() => {})}
+            />
+          </div>
+        </>
+      )}
+
+      {activeSidebar === 'review_email_template' && (
+        <>
+          <div id="right-sidebar-header"></div>
+          <div id="right-sidebar-body">
+            <ReviewEmailTemplateSidebar
+              campaignId={sidebarData.campaign_id}
+              subjectLine={sidebarData.subject_line ?? ''}
+              emailTemplate={sidebarData.email_template ?? ''}
+              campaignName={sidebarData.campaign_name ?? ''}
+              tone={sidebarData.tone}
+              numEmails={sidebarData.num_emails ?? 1}
+              onApprove={onTemplateApprove}
+            />
+          </div>
+        </>
+      )}
+
+      {activeSidebar === 'select_sender' && (
+        <>
+          <div id="right-sidebar-header"></div>
+          <div id="right-sidebar-body">
+            <SelectSenderSidebar
+              accountId={accountId}
+              onSelect={onSenderSelect}
             />
           </div>
         </>

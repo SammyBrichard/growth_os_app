@@ -1,6 +1,9 @@
 :root {
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
+  --text: #08060d;
+  --border: #E9E9E9;
+  --accent: #7c3aed;
   font: 18px/145% var(--sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -1029,3 +1032,27 @@ body {
   color: #888;
   font-size: 14px;
 }
+
+/* Review Email Template Sidebar */
+.review-template-heading { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.review-template-field { margin-bottom: 16px; }
+.review-template-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; margin-bottom: 6px; display: block; }
+.review-template-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; font-family: var(--sans); color: var(--text); box-sizing: border-box; }
+.review-template-textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: var(--mono); line-height: 1.6; min-height: 250px; resize: vertical; color: var(--text); box-sizing: border-box; }
+.review-template-info { font-size: 12px; color: #888; margin-bottom: 4px; }
+.review-template-approve-btn { width: 100%; padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; background: var(--accent); color: #fff; margin-top: 16px; transition: opacity 0.15s; }
+.review-template-approve-btn:hover { opacity: 0.9; }
+
+/* Select Sender Sidebar */
+.sender-section-heading { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: #888; margin-bottom: 10px; margin-top: 16px; }
+.sender-card { padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: border-color 0.15s; margin-bottom: 8px; }
+.sender-card:hover { border-color: #999; }
+.sender-card-email { font-size: 13px; font-weight: 600; color: var(--text); }
+.sender-card-name { font-size: 12px; color: #888; margin-top: 2px; }
+.sender-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+.sender-create-form { display: flex; flex-direction: column; gap: 10px; }
+.sender-create-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: var(--sans); box-sizing: border-box; }
+.sender-create-btn { padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: var(--accent); color: #fff; transition: opacity 0.15s; }
+.sender-create-btn:hover { opacity: 0.9; }
+.sender-create-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.sender-empty { font-size: 13px; color: #aaa; font-style: italic; }
