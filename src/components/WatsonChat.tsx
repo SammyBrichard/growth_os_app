@@ -37,14 +37,21 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
 }) => {
   return (
     <>
-      <div id="main-body">
-        {messages.map((msg, i) => (
-          <MessageBubble key={msg.id ?? i} message={msg} formatTime={formatTime} />
-        ))}
+      <div className="chat-messages">
+        {messages.map((msg, i) => {
+          // Show agent label above first message in a consecutive run of agent messages
+          const showLabel = msg.is_agent && (i === 0 || !messages[i - 1]?.is_agent)
+          return (
+            <div key={msg.id ?? i} className="msg-animate">
+              {showLabel && <div className="agent-label">WATSON</div>}
+              <MessageBubble message={msg} formatTime={formatTime} />
+            </div>
+          )
+        })}
 
         {options && (
-          <div className="msg-row user">
-            <div id="option-pills">
+          <div className="msg-animate">
+            <div className="options-row">
               {options.map(opt => (
                 <button key={opt.id} className="option-pill" onClick={() => onOptionSelect(opt)}>
                   {opt.message}
@@ -55,8 +62,8 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
         )}
 
         {isTyping && (
-          <div className="msg-row agent">
-            <div className="bubble agent typing-bubble">
+          <div className="msg-animate">
+            <div className="typing-dots">
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
@@ -69,32 +76,23 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      <div id="input-bar">
-        <div id="input-wrap">
+      <div className="chat-input-area">
+        <div className="chat-input-line">
           <input
             type="text"
             placeholder="Your message"
-            id="message-input"
+            className="chat-input"
             value={inputValue}
             onChange={e => onInputChange(e.target.value)}
             onKeyDown={onKeyDown}
           />
-          <div id="input-actions">
-            <button id="mic-btn" aria-label="Voice input">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            </button>
-            <button id="send-btn" aria-label="Send" disabled={!input_bar_enabled || !!activeSidebar} onClick={onSend}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="19" x2="12" y2="5"/>
-                <polyline points="5 12 12 5 19 12"/>
-              </svg>
-            </button>
-          </div>
+          <button
+            className="chat-send-btn"
+            disabled={!input_bar_enabled || !!activeSidebar}
+            onClick={onSend}
+          >
+            Send
+          </button>
         </div>
       </div>
     </>

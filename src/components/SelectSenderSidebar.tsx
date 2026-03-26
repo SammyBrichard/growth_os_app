@@ -148,7 +148,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
         />
 
         {autoDetected && (
-          <div style={{ fontSize: '12px', color: '#4caf50', margin: '-4px 0 4px' }}>
+          <div style={{ fontSize: '12px', color: '#4a8c5c', margin: '-4px 0 4px' }}>
             Settings auto-detected for {newEmail.split('@')[1]}
           </div>
         )}

@@ -18,13 +18,15 @@ export default function SkillStatusBubble({ activeSkills }: SkillStatusBubblePro
   return (
     <>
       {activeSkills.map((skill) => (
-        <div key={`${skill.employee}/${skill.skill}`} className="msg-row agent">
-          <div className="bubble agent skill-status-bubble">
-            <div className="skill-status-content">
-              <span className="skill-status-spinner" />
-              <span className="skill-status-text">
-                {skill.message ?? `${employeeNames[skill.employee] ?? skill.employee} is working on it...`}
-              </span>
+        <div key={`${skill.employee}/${skill.skill}`} className="msg-animate">
+          <div className="msg-col msg-col-left">
+            <div className="skill-status-bubble">
+              <div className="skill-status-content">
+                <span className="skill-status-spinner" />
+                <span className="skill-status-text">
+                  {skill.message ?? `${employeeNames[skill.employee] ?? skill.employee} is working on it...`}
+                </span>
+              </div>
             </div>
           </div>
         </div>

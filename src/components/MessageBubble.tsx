@@ -10,13 +10,11 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, formatTime }) => {
   return (
-    <div className={message.is_agent ? 'msg-row agent' : 'msg-row user'}>
-      <div className={message.is_agent ? 'bubble agent' : 'bubble user'}>
-        <div className="bubble-body">
-          <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{message.message_body}</ReactMarkdown>
-        </div>
-        <p className="bubble-time">{formatTime(message.created_at ?? message.timestamp ?? new Date())}</p>
+    <div className={`msg-col ${message.is_agent ? 'msg-col-left' : 'msg-col-right'}`}>
+      <div className={message.is_agent ? 'bubble-agent' : 'bubble-user'}>
+        <ReactMarkdown rehypePlugins={[rehypeSanitize]}>{message.message_body}</ReactMarkdown>
       </div>
+      <span className="msg-timestamp">{formatTime(message.created_at ?? message.timestamp ?? new Date())}</span>
     </div>
   )
 }

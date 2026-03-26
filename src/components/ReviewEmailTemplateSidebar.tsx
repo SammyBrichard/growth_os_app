@@ -44,7 +44,7 @@ const ReviewEmailTemplateSidebar: React.FC<ReviewEmailTemplateSidebarProps> = ({
       </div>
 
       {sequence.map((email, index) => (
-        <div key={email.seq_number} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: index < sequence.length - 1 ? '1px solid #eee' : 'none' }}>
+        <div key={email.seq_number} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: index < sequence.length - 1 ? '1px solid var(--border)' : 'none' }}>
           <div className="review-template-info" style={{ fontWeight: 600, marginBottom: '8px' }}>
             {index === 0 ? 'Initial Email' : `Follow-up ${index}`}
             {email.delay_in_days > 0 && ` (${email.delay_in_days} days after previous)`}
