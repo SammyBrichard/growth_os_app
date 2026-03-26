@@ -142,13 +142,13 @@ export default function App() {
     mob.setActiveSidebar(null)
 
     // Check total approved across all rounds
-    const { data: allTargets } = await supabase
-      .from('targets')
+    const { data: allLeads } = await supabase
+      .from('leads')
       .select('id')
-      .eq('itp', mob.sidebarData.itp_id)
+      .eq('itp_id', mob.sidebarData.itp_id)
       .eq('approved', true)
 
-    const totalApproved = allTargets?.length ?? 0
+    const totalApproved = allLeads?.length ?? 0
 
     if (totalApproved >= 10) {
       // ITP is validated — trigger campaign creation
@@ -257,12 +257,12 @@ export default function App() {
             <BelfortTargets
               belfortItps={bel.belfortItps}
               belfortSelectedItpId={bel.belfortSelectedItpId}
-              belfortTargets={bel.belfortTargets}
+              belfortLeads={bel.belfortLeads}
               belfortSubTab={bel.belfortSubTab}
-              selectedTarget={bel.selectedTarget}
-              onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedTargetId(null) }}
-              onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedTarget(null) }}
-              onSelectTarget={bel.setSelectedTarget}
+              selectedLead={bel.selectedLead}
+              onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedLeadId(null) }}
+              onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
+              onSelectLead={bel.setSelectedLead}
             />
           ) : selectedEmployee.name === 'Draper' ? (
             <CampaignManager
@@ -277,12 +277,12 @@ export default function App() {
         </div>
       )}
 
-      {activeNav === 'chat' && bel.selectedTarget && (
+      {activeNav === 'chat' && bel.selectedLead && (
         <TargetDetailSidebar
-          target={bel.selectedTarget}
-          onClose={() => bel.setSelectedTarget(null)}
-          onApprove={bel.approveTarget}
-          onReject={(target, reason) => bel.rejectTarget({ ...target, rejection_reason: reason })}
+          lead={bel.selectedLead}
+          onClose={() => bel.setSelectedLead(null)}
+          onApprove={bel.approveLead}
+          onReject={(lead, reason) => bel.rejectLead({ ...lead, rejection_reason: reason })}
         />
       )}
 

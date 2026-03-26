@@ -1,15 +1,15 @@
 import React, { useState } from 'react'
-import { Target } from '../types/index'
+import { Lead } from '../types/index'
 
 interface TargetDetailSidebarProps {
-  target: Target
+  lead: Lead
   onClose: () => void
-  onApprove: (target: Target) => void
-  onReject: (target: Target, reason: string | null) => void
+  onApprove: (lead: Lead) => void
+  onReject: (lead: Lead, reason: string | null) => void
 }
 
-const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClose, onApprove, onReject }) => {
-  const [rejectionReason, setRejectionReason] = useState<string>(target.rejection_reason ?? '')
+const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ lead, onClose, onApprove, onReject }) => {
+  const [rejectionReason, setRejectionReason] = useState<string>(lead.rejection_reason ?? '')
 
   return (
     <aside className="target-detail-sidebar">
@@ -19,24 +19,24 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClo
       <div id="right-sidebar-body">
         <div className="sidebar-field">
           <label className="sidebar-field-label">Name</label>
-          <p style={{ margin: 0, fontSize: '13px', color: '#333' }}>{target.title ?? '\u2014'}</p>
+          <p style={{ margin: 0, fontSize: '13px', color: '#333' }}>{lead.targets?.title ?? '\u2014'}</p>
         </div>
         <div className="sidebar-field">
           <label className="sidebar-field-label">URL</label>
-          <a href={target.link} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#555', wordBreak: 'break-all' }}>{target.link}</a>
+          <a href={lead.targets?.link} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#555', wordBreak: 'break-all' }}>{lead.targets?.link}</a>
         </div>
         <div className="sidebar-field">
           <label className="sidebar-field-label">Score</label>
-          <span style={{ fontSize: '24px', fontWeight: 700 }}>{target.score}</span>
+          <span style={{ fontSize: '24px', fontWeight: 700 }}>{lead.score}</span>
         </div>
         <div className="sidebar-field">
           <label className="sidebar-field-label">Reason</label>
-          <p style={{ margin: 0, fontSize: '13px', color: '#333', lineHeight: 1.6 }}>{target.score_reason ?? 'No reason provided.'}</p>
+          <p style={{ margin: 0, fontSize: '13px', color: '#333', lineHeight: 1.6 }}>{lead.score_reason ?? 'No reason provided.'}</p>
         </div>
         <div className="target-contacts">
           <div className="target-contacts-heading">Contacts</div>
-          {target.contacts && target.contacts.length > 0 ? (
-            target.contacts.map(contact => (
+          {lead.targets?.contacts && lead.targets.contacts.length > 0 ? (
+            lead.targets.contacts.map(contact => (
               <div key={contact.id} className="target-contact-card">
                 <div className="target-contact-name">
                   {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || '\u2014'}
@@ -49,7 +49,7 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClo
             <div className="target-no-contacts">No contacts found for this company</div>
           )}
         </div>
-        {!target.approved && (
+        {!lead.approved && (
           <>
             <div className="sidebar-field">
               <textarea
@@ -63,13 +63,13 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ target, onClo
             <div className="target-detail-actions">
               <button
                 className="target-action-btn reject"
-                onClick={() => onReject(target, rejectionReason || null)}
+                onClick={() => onReject(lead, rejectionReason || null)}
               >
                 Reject
               </button>
               <button
                 className="target-action-btn approve"
-                onClick={() => onApprove(target)}
+                onClick={() => onApprove(lead)}
               >
                 Approve
               </button>

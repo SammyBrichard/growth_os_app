@@ -33,22 +33,44 @@ export interface StepOption {
 
 export interface Contact {
   id: string
+  target_id?: string
   first_name: string | null
   last_name: string | null
   email: string
   role: string | null
+  linkedin_url?: string | null
+  phone?: string | null
+  source?: string | null
 }
 
 export interface Target {
   id: string
+  domain: string | null
   title: string | null
   link: string
+  company_description?: string | null
+  industry?: string | null
+  employee_count?: number | null
+  company_phone?: string | null
+  company_linkedin?: string | null
+  company_location?: string | null
+  contacts?: Contact[]
+}
+
+export interface Lead {
+  id: string
+  target_id: string
+  itp_id: string
   score: number
   score_reason: string | null
   approved?: boolean
   rejected?: boolean
   rejection_reason?: string | null
-  contacts?: Contact[]
+  targets?: Target & { contacts?: Contact[] }
+}
+
+export type LeadWithTarget = Lead & {
+  targets: Target & { contacts: Contact[] }
 }
 
 export interface ITP {

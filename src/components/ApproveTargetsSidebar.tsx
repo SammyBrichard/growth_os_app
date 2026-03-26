@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
-import type { Target } from '../types/index'
+import type { Lead } from '../types/index'
 
 interface ApproveTargetsSidebarProps {
   itpId: string
@@ -9,7 +9,7 @@ interface ApproveTargetsSidebarProps {
 }
 
 const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, userDetailsId, onComplete }) => {
-  const [targets, setTargets] = useState<Target[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [approvedCount, setApprovedCount] = useState(0)
   const [rejectedCount, setRejectedCount] = useState(0)
@@ -17,35 +17,35 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const totalReviewed = approvedCount + rejectedCount
-  const totalTargets = targets.length + totalReviewed
+  const totalLeads = leads.length + totalReviewed
 
   useEffect(() => {
     if (!itpId) return
     setLoading(true)
     supabase
-      .from('targets')
-      .select('id, title, link, score, score_reason, approved, rejected, contacts(id, first_name, last_name, email, role)')
-      .eq('itp', itpId)
+      .from('leads')
+      .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
+      .eq('itp_id', itpId)
       .gte('score', 70)
       .eq('approved', false)
       .eq('rejected', false)
       .order('score', { ascending: false })
       .then(({ data }) => {
-        setTargets((data ?? []) as Target[])
+        setLeads((data ?? []) as Lead[])
         setLoading(false)
       })
   }, [itpId])
 
-  const handleApprove = useCallback(async (target: Target) => {
-    await supabase.from('targets').update({ approved: true }).eq('id', target.id)
-    setTargets(prev => prev.filter(t => t.id !== target.id))
+  const handleApprove = useCallback(async (lead: Lead) => {
+    await supabase.from('leads').update({ approved: true }).eq('id', lead.id)
+    setLeads(prev => prev.filter(t => t.id !== lead.id))
     setApprovedCount(prev => prev + 1)
   }, [])
 
-  const handleRejectConfirm = useCallback(async (target: Target) => {
+  const handleRejectConfirm = useCallback(async (lead: Lead) => {
     const reason = rejectionReason.trim()
-    await supabase.from('targets').update({ rejected: true, rejection_reason: reason || null }).eq('id', target.id)
-    setTargets(prev => prev.filter(t => t.id !== target.id))
+    await supabase.from('leads').update({ rejected: true, rejection_reason: reason || null }).eq('id', lead.id)
+    setLeads(prev => prev.filter(t => t.id !== lead.id))
     setRejectedCount(prev => prev + 1)
     if (reason) setHasReasons(true)
     setRejectingId(null)
@@ -54,43 +54,43 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
 
   // Check completion after state updates
   useEffect(() => {
-    if (!loading && totalTargets > 0 && targets.length === 0) {
+    if (!loading && totalLeads > 0 && leads.length === 0) {
       onComplete(approvedCount, rejectedCount, hasReasons)
     }
-  }, [targets.length, loading, totalTargets, approvedCount, rejectedCount, hasReasons, onComplete])
+  }, [leads.length, loading, totalLeads, approvedCount, rejectedCount, hasReasons, onComplete])
 
   if (loading) {
     return <div className="approve-targets-done">Loading targets...</div>
   }
 
-  if (targets.length === 0 && totalReviewed === 0) {
+  if (leads.length === 0 && totalReviewed === 0) {
     return <div className="approve-targets-done">No targets to review.</div>
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="approve-targets-progress">
-        {totalReviewed} of {totalTargets} reviewed
+        {totalReviewed} of {totalLeads} reviewed
       </div>
       <div className="approve-targets-list">
-        {targets.map(target => (
-          <div key={target.id} className="approve-target-card">
+        {leads.map(lead => (
+          <div key={lead.id} className="approve-target-card">
             <div className="approve-target-header">
-              <span className="approve-target-name">{target.title || 'Unnamed'}</span>
-              <span className="approve-target-score">{target.score}</span>
+              <span className="approve-target-name">{lead.targets?.title || 'Unnamed'}</span>
+              <span className="approve-target-score">{lead.score}</span>
             </div>
-            {target.link && (
-              <a className="approve-target-url" href={target.link} target="_blank" rel="noopener noreferrer">
-                {target.link}
+            {lead.targets?.link && (
+              <a className="approve-target-url" href={lead.targets.link} target="_blank" rel="noopener noreferrer">
+                {lead.targets.link}
               </a>
             )}
             <span className="approve-target-contacts">
-              {target.contacts && target.contacts.length > 0
-                ? `${target.contacts.length} contact${target.contacts.length !== 1 ? 's' : ''}`
+              {lead.targets?.contacts && lead.targets.contacts.length > 0
+                ? `${lead.targets.contacts.length} contact${lead.targets.contacts.length !== 1 ? 's' : ''}`
                 : 'No contacts'}
             </span>
 
-            {rejectingId === target.id ? (
+            {rejectingId === lead.id ? (
               <>
                 <textarea
                   className="approve-target-reason"
@@ -100,7 +100,7 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
                   autoFocus
                 />
                 <div className="approve-target-reason-actions">
-                  <button className="approve-target-reason-confirm" onClick={() => handleRejectConfirm(target)}>
+                  <button className="approve-target-reason-confirm" onClick={() => handleRejectConfirm(lead)}>
                     Reject
                   </button>
                   <button className="approve-target-reason-cancel" onClick={() => { setRejectingId(null); setRejectionReason('') }}>
@@ -110,10 +110,10 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
               </>
             ) : (
               <div className="approve-target-actions">
-                <button className="approve-target-btn approve" onClick={() => handleApprove(target)}>
+                <button className="approve-target-btn approve" onClick={() => handleApprove(lead)}>
                   Approve
                 </button>
-                <button className="approve-target-btn reject" onClick={() => setRejectingId(target.id)}>
+                <button className="approve-target-btn reject" onClick={() => setRejectingId(lead.id)}>
                   Reject
                 </button>
               </div>

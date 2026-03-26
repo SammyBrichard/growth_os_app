@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
-import type { Employee, Target, ITP } from '../types/index'
+import type { Employee, Lead, ITP } from '../types/index'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -12,15 +12,15 @@ interface UseBelfortParams {
 
 /**
  * Manages the Belfort (Lead Generation Expert) tab:
- * ITP selection, target list, target approval/rejection, and queue-checking.
+ * ITP selection, lead list, lead approval/rejection, and queue-checking.
  */
 export default function useBelfort({ accountId, userDetailsId, selectedEmployee }: UseBelfortParams) {
   const [belfortItps, setBelfortItps] = useState<Pick<ITP, 'id' | 'name'>[]>([])
   const [belfortSelectedItpId, setBelfortSelectedItpId] = useState<string | null>(null)
-  const [belfortTargets, setBelfortTargets] = useState<Target[]>([])
+  const [belfortLeads, setBelfortLeads] = useState<Lead[]>([])
   const [belfortSubTab, setBelfortSubTab] = useState<'needs_approval' | 'approved'>('needs_approval')
-  const [selectedTarget, setSelectedTarget] = useState<Target | null>(null)
-  const [expandedTargetId, setExpandedTargetId] = useState<string | null>(null)
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null)
 
   // Load ITPs when Belfort is selected
   useEffect(() => {
@@ -34,29 +34,30 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     }
   }, [selectedEmployee, accountId])
 
-  // Load targets when selected ITP changes
+  // Load leads when selected ITP changes
   useEffect(() => {
-    if (!belfortSelectedItpId) { setBelfortTargets([]); return }
-    supabase.from('targets').select('id, title, link, score, score_reason, approved, rejected, contacts(id, first_name, last_name, email, role)')
-      .eq('itp', belfortSelectedItpId)
+    if (!belfortSelectedItpId) { setBelfortLeads([]); return }
+    supabase.from('leads')
+      .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
+      .eq('itp_id', belfortSelectedItpId)
       .gte('score', 70)
       .order('score', { ascending: false })
-      .then(({ data }) => setBelfortTargets((data ?? []) as Target[]))
+      .then(({ data }) => setBelfortLeads((data ?? []) as Lead[]))
   }, [belfortSelectedItpId])
 
   /**
-   * After all targets for an ITP have been approved/rejected, queue
+   * After all leads for an ITP have been approved/rejected, queue
    * the appropriate follow-up mobilisation.
    */
   const checkAndQueueTargetMobilisation = useCallback(async (itpId: string | null) => {
     if (!itpId || !userDetailsId) return
-    const { data: targets } = await supabase
-      .from('targets')
+    const { data: leads } = await supabase
+      .from('leads')
       .select('id, approved, rejected, rejection_reason')
-      .eq('itp', itpId)
+      .eq('itp_id', itpId)
       .gte('score', 70)
-    const approved = (targets ?? []).filter((l: any) => l.approved).length
-    const needsApproval = (targets ?? []).filter((l: any) => !l.approved && !l.rejected).length
+    const approved = (leads ?? []).filter((l: any) => l.approved).length
+    const needsApproval = (leads ?? []).filter((l: any) => !l.approved && !l.rejected).length
     console.log('[queue] checkAndQueue: approved=', approved, 'needsApproval=', needsApproval)
     if (needsApproval === 0) {
       if (approved >= 10) {
@@ -73,7 +74,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
         }
       } else {
         // Check if any rejections have reasons
-        const rejected = (targets ?? []).filter((l: any) => l.rejected)
+        const rejected = (leads ?? []).filter((l: any) => l.rejected)
         const withReasons = rejected.filter((l: any) => l.rejection_reason?.trim())
 
         if (withReasons.length > 0) {
@@ -106,34 +107,34 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     }
   }, [userDetailsId])
 
-  /** Reject a target. */
-  const rejectTarget = useCallback(async (target: Target) => {
-    await supabase.from('targets').update({ rejected: true, rejection_reason: target.rejection_reason ?? null }).eq('id', target.id)
-    setBelfortTargets(prev => prev.filter(l => l.id !== target.id))
-    setSelectedTarget(null)
+  /** Reject a lead. */
+  const rejectLead = useCallback(async (lead: Lead) => {
+    await supabase.from('leads').update({ rejected: true, rejection_reason: lead.rejection_reason ?? null }).eq('id', lead.id)
+    setBelfortLeads(prev => prev.filter(l => l.id !== lead.id))
+    setSelectedLead(null)
   }, [])
 
-  /** Approve a target. */
-  const approveTarget = useCallback(async (target: Target) => {
-    await supabase.from('targets').update({ approved: true }).eq('id', target.id)
-    const updated = { ...target, approved: true }
-    setBelfortTargets(prev => prev.map(l => l.id === target.id ? updated : l))
-    setSelectedTarget(null)
+  /** Approve a lead. */
+  const approveLead = useCallback(async (lead: Lead) => {
+    await supabase.from('leads').update({ approved: true }).eq('id', lead.id)
+    const updated = { ...lead, approved: true }
+    setBelfortLeads(prev => prev.map(l => l.id === lead.id ? updated : l))
+    setSelectedLead(null)
   }, [])
 
   return {
     belfortItps,
     belfortSelectedItpId,
     setBelfortSelectedItpId,
-    belfortTargets,
+    belfortLeads,
     belfortSubTab,
     setBelfortSubTab,
-    selectedTarget,
-    setSelectedTarget,
-    expandedTargetId,
-    setExpandedTargetId,
+    selectedLead,
+    setSelectedLead,
+    expandedLeadId,
+    setExpandedLeadId,
     checkAndQueueTargetMobilisation,
-    rejectTarget,
-    approveTarget,
+    rejectLead,
+    approveLead,
   }
 }

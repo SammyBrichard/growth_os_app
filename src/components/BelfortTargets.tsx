@@ -1,28 +1,28 @@
 import React from 'react'
-import { Target } from '../types/index'
+import { Lead } from '../types/index'
 
 interface BelfortTargetsProps {
   belfortItps: { id: string; name: string | null }[]
   belfortSelectedItpId: string | null
-  belfortTargets: Target[]
+  belfortLeads: Lead[]
   belfortSubTab: string
-  selectedTarget: Target | null
+  selectedLead: Lead | null
   onSelectItp: (id: string) => void
   onSelectSubTab: (tab: string) => void
-  onSelectTarget: (target: Target | null) => void
+  onSelectLead: (lead: Lead | null) => void
 }
 
 const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   belfortItps,
   belfortSelectedItpId,
-  belfortTargets,
+  belfortLeads,
   belfortSubTab,
-  selectedTarget,
+  selectedLead,
   onSelectItp,
   onSelectSubTab,
-  onSelectTarget,
+  onSelectLead,
 }) => {
-  const filtered = belfortTargets.filter(l =>
+  const filtered = belfortLeads.filter(l =>
     belfortSubTab === 'approved' ? l.approved : (!l.approved && !l.rejected)
   )
 
@@ -33,7 +33,7 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           <button
             key={itp.id}
             className={`belfort-tab${belfortSelectedItpId === itp.id ? ' active' : ''}`}
-            onClick={() => { onSelectItp(itp.id); onSelectTarget(null) }}
+            onClick={() => { onSelectItp(itp.id); onSelectLead(null) }}
           >
             {itp.name ?? 'Unnamed ITP'}
           </button>
@@ -42,13 +42,13 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
       <div className="belfort-subtabs">
         <button
           className={`belfort-subtab${belfortSubTab === 'needs_approval' ? ' active' : ''}`}
-          onClick={() => { onSelectSubTab('needs_approval'); onSelectTarget(null) }}
+          onClick={() => { onSelectSubTab('needs_approval'); onSelectLead(null) }}
         >
           Need approval
         </button>
         <button
           className={`belfort-subtab${belfortSubTab === 'approved' ? ' active' : ''}`}
-          onClick={() => { onSelectSubTab('approved'); onSelectTarget(null) }}
+          onClick={() => { onSelectSubTab('approved'); onSelectLead(null) }}
         >
           Approved
         </button>
@@ -68,16 +68,16 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           </tr>
         </thead>
         <tbody>
-          {filtered.map(target => (
+          {filtered.map(lead => (
             <tr
-              key={target.id}
-              className={`targets-row${selectedTarget?.id === target.id ? ' selected' : ''}`}
-              onClick={() => onSelectTarget(target)}
+              key={lead.id}
+              className={`targets-row${selectedLead?.id === lead.id ? ' selected' : ''}`}
+              onClick={() => onSelectLead(lead)}
             >
-              <td>{target.title ?? '\u2014'}</td>
-              <td><a href={target.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{target.link}</a></td>
-              <td className="targets-score">{target.score}</td>
-              <td><span className={`contacts-count${(target.contacts?.length ?? 0) === 0 ? ' zero' : ''}`}>{target.contacts?.length ?? 0}</span></td>
+              <td>{lead.targets?.title ?? '\u2014'}</td>
+              <td><a href={lead.targets?.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{lead.targets?.link}</a></td>
+              <td className="targets-score">{lead.score}</td>
+              <td><span className={`contacts-count${(lead.targets?.contacts?.length ?? 0) === 0 ? ' zero' : ''}`}>{lead.targets?.contacts?.length ?? 0}</span></td>
             </tr>
           ))}
           {filtered.length === 0 && (
