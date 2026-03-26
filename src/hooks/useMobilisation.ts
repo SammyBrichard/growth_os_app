@@ -350,6 +350,10 @@ export default function useMobilisation({
       const saved = await saveMessage(messageText, false, false)
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     }
+    // Store selected ITP ID in responses if an ITP sidebar was active
+    if ((activeSidebar === 'select_campaign_itp' || activeSidebar === 'select_itp') && selectedItpId) {
+      setMobilisationResponses(prev => ({ ...prev, itp_id: selectedItpId }))
+    }
     setActiveSidebar(null)
     if (!sidebarNextId) return
     try {
