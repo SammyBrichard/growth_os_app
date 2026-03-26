@@ -355,8 +355,10 @@ export default function useMobilisation({
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     }
     // Store selected ITP ID in responses if an ITP sidebar was active
+    let currentResponses = mobilisation_responses
     if ((activeSidebar === 'select_campaign_itp' || activeSidebar === 'select_itp') && selectedItpId) {
-      setMobilisationResponses(prev => ({ ...prev, itp_id: selectedItpId }))
+      currentResponses = { ...mobilisation_responses, itp_id: selectedItpId }
+      setMobilisationResponses(currentResponses)
     }
     setActiveSidebar(null)
     if (!sidebarNextId) return
@@ -373,7 +375,7 @@ export default function useMobilisation({
           const finishingMobilisation = current_mobilisation!
           await clearMobilisationState()
           const addedMessages = await showStepMessages(result.step)
-          await completeMobilisation(finishingMobilisation, mobilisation_responses, addedMessages)
+          await completeMobilisation(finishingMobilisation, currentResponses, addedMessages)
         } else {
           await saveMobilisationState(current_mobilisation!, result.step.id)
           await showStepMessages(result.step)
