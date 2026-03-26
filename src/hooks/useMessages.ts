@@ -7,7 +7,7 @@ function delay(ms: number): Promise<void> {
 
 interface UseMessagesParams {
   userFirstNameRef: React.MutableRefObject<string>
-  saveMessage: (message_body: string, is_agent: boolean) => Promise<Message | null>
+  saveMessage: (message_body: string, is_agent: boolean, triggerProcessor?: boolean) => Promise<Message | null>
 }
 
 /**

@@ -16,7 +16,7 @@ interface UseMobilisationParams {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   setIsTyping: (v: boolean) => void
   showStepMessages: (step: { messages: string[] }) => Promise<Message[]>
-  saveMessage: (message_body: string, is_agent: boolean) => Promise<Message | null>
+  saveMessage: (message_body: string, is_agent: boolean, triggerProcessor?: boolean) => Promise<Message | null>
 }
 
 /**
@@ -99,6 +99,7 @@ export default function useMobilisation({
   // ── Start mobilisation ───────────────────────────────────────────────
 
   const startMobilisation = useCallback(async (name: string) => {
+    setMobilisationResponses({})
     setInputBarEnabled(false)
     try {
       const res = await fetch(`${API_URL}/api/mobilisation/start`, {
@@ -192,7 +193,7 @@ export default function useMobilisation({
     setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
     setInputValue('')
     setInputBarEnabled(false)
-    saveMessage(text, false).then(saved => {
+    saveMessage(text, false, !mobilisation_active).then(saved => {
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
 
@@ -247,7 +248,7 @@ export default function useMobilisation({
 
     const tempId = `temp_${Date.now()}_${Math.random()}`
     setMessages(prev => [...prev, { tempId, message_body: option.message, is_agent: false, timestamp: new Date() }])
-    saveMessage(option.message, false).then(saved => {
+    saveMessage(option.message, false, false).then(saved => {
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
 
@@ -310,7 +311,7 @@ export default function useMobilisation({
     if (messageText) {
       const tempId = `temp_${Date.now()}_${Math.random()}`
       setMessages(prev => [...prev, { tempId, message_body: messageText, is_agent: false, timestamp: new Date() }])
-      const saved = await saveMessage(messageText, false)
+      const saved = await saveMessage(messageText, false, false)
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     }
     setActiveSidebar(null)
@@ -359,7 +360,7 @@ export default function useMobilisation({
     const text = 'Looks good. Save my organisation details.'
     const tempId = `temp_${Date.now()}_${Math.random()}`
     setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
-    saveMessage(text, false).then(saved => {
+    saveMessage(text, false, false).then(saved => {
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
 
@@ -383,7 +384,7 @@ export default function useMobilisation({
     const text = 'Looks good.'
     const tempId = `temp_${Date.now()}_${Math.random()}`
     setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
-    saveMessage(text, false).then(saved => {
+    saveMessage(text, false, false).then(saved => {
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
     setActiveSidebar(null)

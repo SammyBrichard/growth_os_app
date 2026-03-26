@@ -66,8 +66,8 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     return []
   }, [])
 
-  /** Save a single message to the messages table. Triggers message processor for user messages. */
-  const saveMessage = useCallback(async (message_body: string, is_agent: boolean): Promise<Message | null> => {
+  /** Save a single message to the messages table. Triggers message processor for user messages unless triggerProcessor is false. */
+  const saveMessage = useCallback(async (message_body: string, is_agent: boolean, triggerProcessor = true): Promise<Message | null> => {
     if (!userDetailsId) return null
     const { data } = await supabase
       .from('messages')
@@ -76,7 +76,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       .single()
 
     // Trigger message processor directly for user messages (replaces Supabase webhook)
-    if (!is_agent && data) {
+    if (!is_agent && data && triggerProcessor) {
       fetch(`${API_URL}/api/messages/process`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
