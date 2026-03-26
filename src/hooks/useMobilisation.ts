@@ -131,6 +131,9 @@ export default function useMobilisation({
           }
         } else if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') {
           setOptions(result.step.options)
+        } else if (result.step.type === 'option_set_with_input') {
+          setOptions(result.step.options)
+          setInputBarEnabled(true)
         } else {
           setInputBarEnabled(true)
         }
@@ -155,8 +158,14 @@ export default function useMobilisation({
         setMobilisationActive(true)
         setCurrentMobilisation(mobilisationName)
         setCurrentStep(result.step)
-        if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') setOptions(result.step.options)
-        else if (result.step.type !== 'end_flow') setInputBarEnabled(true)
+        if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') {
+          setOptions(result.step.options)
+        } else if (result.step.type === 'option_set_with_input') {
+          setOptions(result.step.options)
+          setInputBarEnabled(true)
+        } else if (result.step.type !== 'end_flow') {
+          setInputBarEnabled(true)
+        }
       }
     } catch (err) {
       console.error('mobilisation resume error:', err)
@@ -215,11 +224,28 @@ export default function useMobilisation({
             await clearMobilisationState()
             const addedMessages = await showStepMessages(result.step)
             await completeMobilisation(current_mobilisation!, updatedResponses, addedMessages)
+
+            // If we came from an option_set_with_input, trigger processor for the typed message
+            if (current_step?.type === 'option_set_with_input') {
+              fetch(`${API_URL}/api/messages/process`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ record: { user_details_id: userDetailsId, is_agent: false }, type: 'INSERT' }),
+              }).catch(err => console.error('[handleSend] processor trigger after option_set_with_input:', err))
+            }
+
+            setInputBarEnabled(true)
           } else {
             await saveMobilisationState(current_mobilisation!, result.step.id)
             await showStepMessages(result.step)
-            if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') setOptions(result.step.options)
-            else setInputBarEnabled(true)
+            if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') {
+              setOptions(result.step.options)
+            } else if (result.step.type === 'option_set_with_input') {
+              setOptions(result.step.options)
+              setInputBarEnabled(true)
+            } else {
+              setInputBarEnabled(true)
+            }
           }
         }
       } catch (err) {
@@ -290,8 +316,14 @@ export default function useMobilisation({
         } else {
           await saveMobilisationState(current_mobilisation!, result.step.id)
           await showStepMessages(result.step)
-          if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') setOptions(result.step.options)
-          else setInputBarEnabled(true)
+          if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') {
+            setOptions(result.step.options)
+          } else if (result.step.type === 'option_set_with_input') {
+            setOptions(result.step.options)
+            setInputBarEnabled(true)
+          } else {
+            setInputBarEnabled(true)
+          }
         }
       }
     } catch (err) {
@@ -332,8 +364,14 @@ export default function useMobilisation({
         } else {
           await saveMobilisationState(current_mobilisation!, result.step.id)
           await showStepMessages(result.step)
-          if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') setOptions(result.step.options)
-          else setInputBarEnabled(true)
+          if (result.step.type === 'option_set' || result.step.type === 'ai_message_with_options') {
+            setOptions(result.step.options)
+          } else if (result.step.type === 'option_set_with_input') {
+            setOptions(result.step.options)
+            setInputBarEnabled(true)
+          } else {
+            setInputBarEnabled(true)
+          }
         }
       }
     } catch (err) {
