@@ -24,6 +24,8 @@ import CampaignManager from './components/CampaignManager'
 import TargetDetailSidebar from './components/TargetDetailSidebar'
 import RightSidebar from './components/RightSidebar'
 import SettingsPanel from './components/SettingsPanel'
+import ContactDetailSidebar from './components/ContactDetailSidebar'
+import type { CampaignContact } from './hooks/useCampaigns'
 
 import './App.css'
 
@@ -41,6 +43,7 @@ const employees: Employee[] = [
 export default function App() {
   const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
+  const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
   const [fromClient] = useState(() => {
     // Detect magic link redirect: Supabase puts tokens in the hash fragment
     const hash = window.location.hash
@@ -290,12 +293,14 @@ export default function App() {
               onSelectCampaign={camp.setSelectedCampaign}
               campaignContacts={camp.campaignContacts}
               campaignItp={camp.campaignItp}
+              selectedContact={selectedCampaignContact}
+              onSelectContact={setSelectedCampaignContact}
             />
           )}
         </div>
 
         {/* Watson chat — always rendered, transitions between full and sidebar */}
-        <div id="watson-panel" className={`${selectedEmployee.name === 'Watson' ? 'watson-full' : mob.activeSidebar ? 'watson-hidden' : 'watson-sidebar'}${fromClient ? ' from-client' : ''}`}>
+        <div id="watson-panel" className={`${selectedEmployee.name === 'Watson' ? 'watson-full' : (mob.activeSidebar || bel.selectedLead || selectedCampaignContact) ? 'watson-hidden' : 'watson-sidebar'}${fromClient ? ' from-client' : ''}${camp.selectedCampaign ? ' watson-narrow' : ''}`}>
           {selectedEmployee.name !== 'Watson' && (
             <div className="watson-sidebar-header">
               <div className="topbar-agent-status">
@@ -352,6 +357,13 @@ export default function App() {
         />
       )}
 
+      {activeNav === 'chat' && selectedCampaignContact && (
+        <ContactDetailSidebar
+          contact={selectedCampaignContact}
+          onClose={() => setSelectedCampaignContact(null)}
+        />
+      )}
+
       {activeNav === 'chat' && mob.activeSidebar && (
         <RightSidebar
           activeSidebar={mob.activeSidebar}
@@ -379,6 +391,7 @@ export default function App() {
           onTemplateApprove={handleTemplateApprove}
           onSenderSelect={handleSenderSelect}
           onClose={() => mob.setActiveSidebar(null)}
+          narrow={!!camp.selectedCampaign}
         />
       )}
     </Layout>

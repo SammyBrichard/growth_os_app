@@ -350,6 +350,11 @@ body {
   border-left-width: 1px;
 }
 
+#watson-panel.watson-sidebar.watson-narrow {
+  flex: 0.5;
+  min-width: 320px;
+}
+
 #watson-panel.watson-hidden {
   flex: 0 0 0px;
   min-width: 0;
@@ -642,6 +647,12 @@ body {
   background: var(--cream);
   flex-shrink: 0;
   animation: slide-in 0.3s ease forwards;
+  transition: flex 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+#right-sidebar.sidebar-narrow {
+  flex: 0.5;
+  min-width: 320px;
 }
 
 /* ============================================================
@@ -1260,6 +1271,115 @@ body {
   font-style: italic;
   padding: 12px 10px;
   text-align: center;
+}
+
+.kanban-card-selected {
+  border-color: var(--accent) !important;
+  background: var(--cream);
+}
+
+/* -- Contact detail panel -- */
+.contact-detail-panel {
+  margin-top: 24px;
+  padding: 20px 24px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.contact-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.contact-detail-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.contact-detail-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.contact-detail-close:hover { color: var(--fg); }
+
+.contact-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.contact-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.contact-detail-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.contact-detail-value {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.contact-detail-link {
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.contact-detail-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.contact-detail-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.contact-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contact-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.contact-timeline-label {
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.contact-timeline-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-left: auto;
 }
 
 /* ============================================================

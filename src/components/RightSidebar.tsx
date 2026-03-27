@@ -30,6 +30,7 @@ interface RightSidebarProps {
   onTemplateApprove: (updatedSequence: any[]) => void
   onSenderSelect: (senderId: string) => void
   onClose: () => void
+  narrow?: boolean
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -58,9 +59,10 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   onTemplateApprove,
   onSenderSelect,
   onClose,
+  narrow,
 }) => {
   return (
-    <aside id="right-sidebar">
+    <aside id="right-sidebar" className={narrow ? 'sidebar-narrow' : ''}>
       {activeSidebar === 'analyse_website' && (
         <>
           <div id="right-sidebar-header"></div>

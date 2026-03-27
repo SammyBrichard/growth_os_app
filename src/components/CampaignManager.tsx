@@ -7,6 +7,8 @@ interface CampaignManagerProps {
   onSelectCampaign: (campaign: Campaign | null) => void
   campaignContacts: CampaignContact[]
   campaignItp: CampaignItp | null
+  selectedContact: CampaignContact | null
+  onSelectContact: (contact: CampaignContact | null) => void
 }
 
 function formatDate(dateStr: string) {
@@ -32,6 +34,8 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   onSelectCampaign,
   campaignContacts,
   campaignItp,
+  selectedContact,
+  onSelectContact,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
   const [parsedSequence, setParsedSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
@@ -189,7 +193,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
               </div>
               <div className="kanban-column-body">
                 {(grouped[col.key] ?? []).map(cc => (
-                  <div key={cc.id} className="kanban-card" style={{ borderLeftColor: col.colour }}>
+                  <div key={cc.id} className={`kanban-card${selectedContact?.id === cc.id ? ' kanban-card-selected' : ''}`} style={{ borderLeftColor: col.colour, cursor: 'pointer' }} onClick={() => onSelectContact(selectedContact?.id === cc.id ? null : cc)}>
                     <div className="kanban-card-name">
                       {cc.contact?.first_name || cc.contact?.last_name
                         ? `${cc.contact.first_name ?? ''} ${cc.contact.last_name ?? ''}`.trim()
