@@ -145,6 +145,10 @@ export default function App() {
       mob.setActiveSidebar(latest.sidebar)
       mob.setSidebarData(() => latest.sidebar_info ?? {})
     }
+    if (latest?.navigate_to) {
+      const target = employees.find(e => e.name === latest.navigate_to)
+      if (target) setSelectedEmployee(target)
+    }
     if (latest?.is_agent && !mob.mobilisation_active) {
       mob.setInputBarEnabled(true)
     }

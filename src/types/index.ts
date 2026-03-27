@@ -14,6 +14,7 @@ export interface Message {
   sidebar?: string
   sidebar_info?: Record<string, any>
   is_status?: boolean
+  navigate_to?: string
 }
 
 export interface MobilisationStep {
