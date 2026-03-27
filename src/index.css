@@ -293,24 +293,75 @@ body {
 }
 
 /* ============================================================
-   MAIN CONTENT AREA
+   MAIN CONTENT PANELS
    ============================================================ */
 
-#main-content {
+#employee-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  box-sizing: border-box;
-  position: relative;
   height: 100svh;
   overflow: hidden;
-  transition: flex 0.3s ease;
+  will-change: flex, opacity;
+  transition: flex 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 0.2s ease;
 }
 
-#main-content.compressed {
+#employee-panel.panel-hidden {
+  flex: 0 0 0px;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#employee-panel.panel-visible {
   flex: 1;
   min-width: 0;
+  opacity: 1;
+}
+
+#watson-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  overflow: hidden;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-left: 0px solid var(--border);
+  will-change: flex, min-width;
+  transition: flex 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              min-width 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              border-left-width 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 0.2s ease;
+}
+
+#watson-panel.watson-full {
+  flex: 1;
+  min-width: 0;
+  border-left-width: 0;
+}
+
+#watson-panel.watson-sidebar {
+  flex: 1;
+  min-width: 0;
+  border-left-width: 1px;
+}
+
+#watson-panel.watson-sidebar.watson-narrow {
+  flex: 0.5;
+  min-width: 320px;
+}
+
+#watson-panel.watson-hidden {
+  flex: 0 0 0px;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  border-left-width: 0;
 }
 
 /* ============================================================
@@ -323,10 +374,14 @@ body {
   padding: 24px 32px 16px;
   display: flex;
   flex-direction: column;
+  transition: padding 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
   gap: 0;
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
+}
+
+.from-client .chat-messages {
   animation: chat-widen 1.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -492,7 +547,11 @@ body {
   flex-shrink: 0;
   max-width: 900px;
   margin: 0 auto;
+  transition: padding 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
   width: 100%;
+}
+
+.from-client .chat-input-area {
   animation: chat-widen 1.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -588,6 +647,41 @@ body {
   background: var(--cream);
   flex-shrink: 0;
   animation: slide-in 0.3s ease forwards;
+  transition: flex 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+#right-sidebar.sidebar-narrow {
+  flex: 0.5;
+  min-width: 320px;
+}
+
+/* ============================================================
+   WATSON SIDEBAR COMPACT MODE
+   ============================================================ */
+
+.watson-sidebar-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-compact {
+  padding-left: 20px;
+  padding-right: 20px;
+  max-width: 100%;
+  animation: none !important;
+}
+
+.chat-compact .bubble-agent,
+.chat-compact .bubble-user {
+  max-width: 95%;
+}
+
+.chat-compact .chat-input-line {
+  max-width: none;
 }
 
 #right-sidebar-header {
@@ -866,29 +960,120 @@ body {
 
 .campaign-list { padding: 30px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; flex: 1; }
 
-.campaign-card {
-  padding: 16px 20px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.draper-summary {
+  margin-bottom: 20px;
+}
+
+.draper-summary-bubble {
+  max-width: 80%;
+  padding: 14px 18px;
+  border-radius: 3px;
   background: var(--cream);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.draper-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 4px 0 16px;
+}
+
+.campaign-card {
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fff;
 }
 
 .campaign-card:hover {
   border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-.campaign-card.selected {
-  border-color: var(--accent);
+.campaign-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
-.campaign-card-info { display: flex; flex-direction: column; gap: 4px; }
-.campaign-card-name { font-size: 14px; font-weight: 600; color: var(--fg); }
-.campaign-card-meta { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+.campaign-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+
+.campaign-card-subject {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.campaign-card-meta-row {
+  display: flex;
+  gap: 24px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.campaign-card-meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+}
+
+.campaign-card-meta-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg);
+  font-family: 'DM Mono', monospace;
+  line-height: 1;
+}
+
+.campaign-card-meta-label {
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-top: 4px;
+}
+
+.campaign-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.campaign-card-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent);
+  font-family: 'DM Mono', monospace;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--cream);
+}
+
+.campaign-card-date {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-left: auto;
+}
 
 .campaign-status {
   font-size: 11px;
@@ -951,7 +1136,33 @@ body {
 .contact-status.bounced { background: color-mix(in srgb, #c44e2b 10%, transparent); color: #c44e2b; }
 .contact-status.failed { background: color-mix(in srgb, #c44e2b 10%, transparent); color: #c44e2b; }
 
-.campaign-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
+.campaign-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.campaign-empty-icon {
+  font-size: 28px;
+  color: var(--border);
+  margin-bottom: 14px;
+}
+
+.campaign-empty-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 8px;
+}
+
+.campaign-empty-text {
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 360px;
+  line-height: 1.6;
+}
 
 .campaign-start-btn {
   padding: 10px 24px;
@@ -968,6 +1179,325 @@ body {
 
 .campaign-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .campaign-start-btn:hover:not(:disabled) { opacity: 0.9; }
+
+/* -- Campaign stats row -- */
+.campaign-stats-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.campaign-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.campaign-stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg);
+  font-family: 'DM Mono', monospace;
+}
+
+.campaign-stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-top: 2px;
+}
+
+/* -- Campaign meta row -- */
+.campaign-meta-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.campaign-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.campaign-meta-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.campaign-meta-value {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+/* -- Email sequence viewer -- */
+.campaign-sequence {
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.campaign-sequence-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--cream);
+}
+
+.campaign-sequence-tab {
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.campaign-sequence-tab:hover { color: var(--fg); }
+.campaign-sequence-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.campaign-sequence-delay {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.campaign-sequence-content {
+  padding: 18px 20px;
+  background: #fff;
+}
+
+.campaign-sequence-subject {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.campaign-sequence-body {
+  font-size: 14px;
+  font-family: 'Source Serif 4', serif;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.campaign-sequence-body p { margin: 0 0 8px; }
+.campaign-sequence-body p:last-child { margin-bottom: 0; }
+.campaign-sequence-body a { color: var(--accent); text-decoration: underline; }
+
+/* -- Pipeline Kanban -- */
+.campaign-pipeline { margin-top: 8px; }
+
+.campaign-kanban {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.kanban-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.kanban-column-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'DM Mono', monospace;
+}
+
+.kanban-column-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.kanban-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.kanban-card {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 4px;
+  transition: border-color 0.15s;
+}
+
+.kanban-card:hover { border-color: var(--accent); border-left-color: inherit; }
+
+.kanban-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.kanban-card-company {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.kanban-card-role {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.kanban-card-time {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-top: 4px;
+}
+
+.kanban-empty {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.kanban-card-selected {
+  border-color: var(--accent) !important;
+  background: var(--cream);
+}
+
+/* -- Contact detail panel -- */
+.contact-detail-panel {
+  margin-top: 24px;
+  padding: 20px 24px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.contact-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.contact-detail-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.contact-detail-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.contact-detail-close:hover { color: var(--fg); }
+
+.contact-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.contact-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.contact-detail-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.contact-detail-value {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.contact-detail-link {
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.contact-detail-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+
+.contact-detail-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.contact-timeline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.contact-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.contact-timeline-label {
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.contact-timeline-time {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-left: auto;
+}
 
 /* ============================================================
    APPROVE TARGETS SIDEBAR

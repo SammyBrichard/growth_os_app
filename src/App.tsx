@@ -24,6 +24,8 @@ import CampaignManager from './components/CampaignManager'
 import TargetDetailSidebar from './components/TargetDetailSidebar'
 import RightSidebar from './components/RightSidebar'
 import SettingsPanel from './components/SettingsPanel'
+import ContactDetailSidebar from './components/ContactDetailSidebar'
+import type { CampaignContact } from './hooks/useCampaigns'
 
 import './App.css'
 
@@ -41,6 +43,12 @@ const employees: Employee[] = [
 export default function App() {
   const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
+  const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
+  const [fromClient] = useState(() => {
+    // Detect magic link redirect: Supabase puts tokens in the hash fragment
+    const hash = window.location.hash
+    return hash.includes('access_token') || hash.includes('type=magiclink')
+  })
 
   const { user } = useAuth()
   const ud = useUserDetails({ user })
@@ -62,6 +70,7 @@ export default function App() {
   const camp = useCampaigns({
     accountId: ud.accountId,
     selectedEmployee,
+    firstname: ud.userFirstNameRef?.current,
   })
   const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
 
@@ -87,6 +96,29 @@ export default function App() {
         }
       } else {
         mob.setInputBarEnabled(true)
+
+        // Welcome back: contextual greeting + state restoration
+        if (msgs.length > 0) {
+          try {
+            const wbRes = await fetch(`${API_URL}/api/messages/welcome-back`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_details_id: details.id }),
+            })
+            const wb = await wbRes.json()
+            if (!wb.skip && wb.restore) {
+              if (wb.restore.sidebar) {
+                mob.setActiveSidebar(wb.restore.sidebar)
+                mob.setSidebarData(() => wb.restore.sidebar_info ?? {})
+              }
+              if (wb.restore.mobilisation) {
+                mob.resumeMobilisation(wb.restore.mobilisation, wb.restore.step_id, details.id)
+              }
+            }
+          } catch (err) {
+            console.error('[welcome-back] error:', err)
+          }
+        }
       }
     })()
   }, [user])
@@ -112,6 +144,10 @@ export default function App() {
     if (latest?.sidebar) {
       mob.setActiveSidebar(latest.sidebar)
       mob.setSidebarData(() => latest.sidebar_info ?? {})
+    }
+    if (latest?.navigate_to) {
+      const target = employees.find(e => e.name === latest.navigate_to)
+      if (target) setSelectedEmployee(target)
     }
     if (latest?.is_agent && !mob.mobilisation_active) {
       mob.setInputBarEnabled(true)
@@ -219,8 +255,9 @@ export default function App() {
         <SettingsPanel userDetailsId={ud.userDetailsId} onLogout={handleLogout} />
       )}
 
-      {activeNav === 'chat' && (
-        <div id="main-content" className={mob.activeSidebar ? 'compressed' : ''}>
+      {activeNav === 'chat' && (<>
+        {/* Employee panel — visible when not on Watson */}
+        <div id="employee-panel" className={selectedEmployee.name === 'Watson' ? 'panel-hidden' : 'panel-visible'}>
           <div className="dashboard-topbar">
             <div className="topbar-agent-status">
               <span className="topbar-agent-icon">◆</span>
@@ -238,24 +275,7 @@ export default function App() {
               <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
             </div>
           </div>
-
-          {selectedEmployee.name === 'Watson' ? (
-            <WatsonChat
-              messages={msg.messages}
-              options={mob.options}
-              isTyping={msg.isTyping}
-              inputValue={mob.inputValue}
-              input_bar_enabled={mob.input_bar_enabled}
-              activeSidebar={mob.activeSidebar}
-              activeSkills={activeSkills}
-              messagesEndRef={msg.messagesEndRef}
-              onOptionSelect={mob.handleOptionSelect}
-              onSend={mob.handleSend}
-              onInputChange={(v) => mob.setInputValue(v)}
-              onKeyDown={mob.handleKeyDown}
-              formatTime={msg.formatTime}
-            />
-          ) : selectedEmployee.name === 'Belfort' ? (
+          {selectedEmployee.name === 'Belfort' && (
             <BelfortTargets
               belfortItps={bel.belfortItps}
               belfortSelectedItpId={bel.belfortSelectedItpId}
@@ -266,18 +286,69 @@ export default function App() {
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
             />
-          ) : selectedEmployee.name === 'Draper' ? (
+          )}
+          {selectedEmployee.name === 'Draper' && (
             <CampaignManager
               campaigns={camp.campaigns}
               selectedCampaign={camp.selectedCampaign}
               onSelectCampaign={camp.setSelectedCampaign}
               campaignContacts={camp.campaignContacts}
+              campaignItp={camp.campaignItp}
+              selectedContact={selectedCampaignContact}
+              onSelectContact={setSelectedCampaignContact}
+              draperSummary={camp.draperSummary}
             />
-          ) : (
-            <div id="main-body" />
           )}
         </div>
-      )}
+
+        {/* Watson chat — always rendered, transitions between full and sidebar */}
+        <div id="watson-panel" className={`${selectedEmployee.name === 'Watson' ? 'watson-full' : (mob.activeSidebar || bel.selectedLead || selectedCampaignContact) ? 'watson-hidden' : 'watson-sidebar'}${fromClient ? ' from-client' : ''}${camp.selectedCampaign ? ' watson-narrow' : ''}`}>
+          {selectedEmployee.name !== 'Watson' && (
+            <div className="watson-sidebar-header">
+              <div className="topbar-agent-status">
+                <span className="topbar-agent-icon">◆</span>
+                <span className="topbar-agent-name">Watson</span>
+                <span className="topbar-active-dot">● Active</span>
+              </div>
+            </div>
+          )}
+          {selectedEmployee.name === 'Watson' && (
+            <div className="dashboard-topbar">
+              <div className="topbar-agent-status">
+                <span className="topbar-agent-icon">◆</span>
+                <span className="topbar-agent-name">Watson</span>
+                <span className="topbar-active-dot">● Active</span>
+              </div>
+              <div className="topbar-nav">
+                <button
+                  className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
+                  onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
+                >
+                  Campaigns
+                </button>
+                <button className="topbar-nav-link">Analytics</button>
+                <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
+              </div>
+            </div>
+          )}
+          <WatsonChat
+            messages={msg.messages}
+            options={mob.options}
+            isTyping={msg.isTyping}
+            inputValue={mob.inputValue}
+            input_bar_enabled={mob.input_bar_enabled}
+            activeSidebar={mob.activeSidebar}
+            activeSkills={activeSkills}
+            messagesEndRef={msg.messagesEndRef}
+            onOptionSelect={mob.handleOptionSelect}
+            onSend={mob.handleSend}
+            onInputChange={(v) => mob.setInputValue(v)}
+            onKeyDown={mob.handleKeyDown}
+            formatTime={msg.formatTime}
+            compact={selectedEmployee.name !== 'Watson'}
+          />
+        </div>
+      </>)}
 
       {activeNav === 'chat' && bel.selectedLead && (
         <TargetDetailSidebar
@@ -285,6 +356,13 @@ export default function App() {
           onClose={() => bel.setSelectedLead(null)}
           onApprove={bel.approveLead}
           onReject={(lead, reason) => bel.rejectLead({ ...lead, rejection_reason: reason })}
+        />
+      )}
+
+      {activeNav === 'chat' && selectedCampaignContact && (
+        <ContactDetailSidebar
+          contact={selectedCampaignContact}
+          onClose={() => setSelectedCampaignContact(null)}
         />
       )}
 
@@ -314,6 +392,8 @@ export default function App() {
           accountId={ud.accountId}
           onTemplateApprove={handleTemplateApprove}
           onSenderSelect={handleSenderSelect}
+          onClose={() => mob.setActiveSidebar(null)}
+          narrow={!!camp.selectedCampaign}
         />
       )}
     </Layout>
