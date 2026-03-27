@@ -8,17 +8,17 @@ interface SettingsPanelProps {
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ userDetailsId, onLogout }) => {
   return (
     <div id="main-content">
-      <nav id="top-nav">
-        <div id="top-nav-profile">
-          <span id="top-nav-name">Settings</span>
+      <div className="dashboard-topbar">
+        <div className="topbar-agent-status">
+          <span className="topbar-agent-name">Settings</span>
         </div>
-      </nav>
-      <div id="main-body" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      </div>
+      <div className="settings-panel">
         <div>
-          <p style={{ margin: '0 0 4px', fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', color: '#5C5C5C' }}>User ID</p>
-          <p style={{ margin: 0, fontSize: '13px', color: '#08060d', fontFamily: 'var(--mono)' }}>{userDetailsId}</p>
+          <p className="settings-label">User ID</p>
+          <p className="settings-value">{userDetailsId}</p>
         </div>
-        <button onClick={onLogout} style={{ alignSelf: 'flex-start', padding: '0.6rem 1.4rem', borderRadius: '8px', background: '#e53e3e', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.9rem' }}>
+        <button onClick={onLogout} className="settings-logout-btn">
           Log out
         </button>
       </div>

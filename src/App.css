@@ -5,8 +5,8 @@
 }
 
 body {
-  background: #ffffff;
-  color: #111111;
+  background: var(--bg);
+  color: var(--fg);
 }
 
 #app {

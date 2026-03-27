@@ -19,19 +19,19 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ lead, onClose
       <div id="right-sidebar-body">
         <div className="sidebar-field">
           <label className="sidebar-field-label">Name</label>
-          <p style={{ margin: 0, fontSize: '13px', color: '#333' }}>{lead.targets?.title ?? '\u2014'}</p>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--fg)' }}>{lead.targets?.title ?? '\u2014'}</p>
         </div>
         <div className="sidebar-field">
           <label className="sidebar-field-label">URL</label>
-          <a href={lead.targets?.link} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: '#555', wordBreak: 'break-all' }}>{lead.targets?.link}</a>
+          <a href={lead.targets?.link} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: 'var(--muted)', wordBreak: 'break-all' }}>{lead.targets?.link}</a>
         </div>
         <div className="sidebar-field">
           <label className="sidebar-field-label">Score</label>
-          <span style={{ fontSize: '24px', fontWeight: 700 }}>{lead.score}</span>
+          <span style={{ fontSize: '24px', fontWeight: 700, color: 'var(--accent)' }}>{lead.score}</span>
         </div>
         <div className="sidebar-field">
           <label className="sidebar-field-label">Reason</label>
-          <p style={{ margin: 0, fontSize: '13px', color: '#333', lineHeight: 1.6 }}>{lead.score_reason ?? 'No reason provided.'}</p>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--fg)', lineHeight: 1.6 }}>{lead.score_reason ?? 'No reason provided.'}</p>
         </div>
         <div className="target-contacts">
           <div className="target-contacts-heading">Contacts</div>

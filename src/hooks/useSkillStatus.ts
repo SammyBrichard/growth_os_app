@@ -6,6 +6,7 @@ export interface SkillStatus {
   skill: string
   status: 'running' | 'complete'
   message: string | null
+  sidebar_message: string | null
 }
 
 interface UseSkillStatusParams {
@@ -13,8 +14,9 @@ interface UseSkillStatusParams {
 }
 
 /**
- * Listens for skill_status broadcast events and tracks which skills are currently running.
- * Returns the list of active (running) skills.
+ * Listens for skill_status broadcast events.
+ * Running statuses are tracked for display at the bottom of chat.
+ * Status messages are persisted to DB server-side, so no client-side injection needed.
  */
 export default function useSkillStatus({ userDetailsId }: UseSkillStatusParams) {
   const [activeSkills, setActiveSkills] = useState<SkillStatus[]>([])
@@ -22,14 +24,12 @@ export default function useSkillStatus({ userDetailsId }: UseSkillStatusParams) 
   useEffect(() => {
     if (!userDetailsId) return
 
-    // Subscribe to the existing user channel for skill_status events
     const channel = supabase
       .channel(`skill_status:${userDetailsId}`)
       .on('broadcast', { event: 'skill_status' }, ({ payload }) => {
         const status = payload as SkillStatus
         if (status.status === 'running') {
           setActiveSkills(prev => {
-            // Don't add duplicates
             if (prev.some(s => s.employee === status.employee && s.skill === status.skill)) return prev
             return [...prev, status]
           })

@@ -2,13 +2,13 @@ import React from 'react'
 import { Employee } from '../types/index'
 import type { SkillStatus } from '../hooks/useSkillStatus'
 
-// Map display names to employee keys used in skill_status events
-const employeeKeyMap: Record<string, string> = {
-  Watson: 'cmo',
-  Belfort: 'lead_gen_expert',
-  Warren: 'business_analyst',
-  Pepper: 'office_administrator',
-  Draper: 'email_campaign_manager',
+const AGENT_EMOJIS: Record<string, string> = {
+  Watson: '◆', Belfort: '◇', Warren: '△', Pepper: '○', Draper: '▽'
+}
+
+const AGENT_SKILL_MAP: Record<string, string> = {
+  Watson: 'cmo', Belfort: 'lead_gen_expert', Warren: 'business_analyst',
+  Pepper: 'office_administrator', Draper: 'email_campaign_manager'
 }
 
 interface EmployeeListProps {
@@ -22,21 +22,22 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, selectedEmployee
   return (
     <div id="employee-list">
       {employees.map(emp => {
-        const empKey = employeeKeyMap[emp.name]
-        const isActive = activeSkills.some(s => s.employee === empKey)
+        const empKey = AGENT_SKILL_MAP[emp.name]
+        const activeSkill = activeSkills.find(s => s.employee === empKey)
+        const isActive = selectedEmployee.name === emp.name
         return (
           <div
             key={emp.name}
-            className={`employee-row${selectedEmployee.name === emp.name ? ' selected' : ''}`}
+            className={`agent-item${isActive ? ' active' : ''}`}
             onClick={() => onSelect(emp)}
           >
-            <div className="employee-avatar">
-              {emp.img ? <img src={emp.img} alt={emp.name} /> : emp.name[0]}
-              {isActive && <span className="employee-activity-dot" />}
-            </div>
-            <div className="employee-info">
-              <span className="employee-name">{emp.name}</span>
-              <span className="employee-role">{emp.role}</span>
+            <span className="agent-emoji">{AGENT_EMOJIS[emp.name] ?? '●'}</span>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span className={`agent-name${isActive ? ' active' : ''}`}>{emp.name}</span>
+              <span className="agent-role">{emp.role}</span>
+              {activeSkill && (
+                <span className="agent-working">{activeSkill.sidebar_message ?? 'Working...'}</span>
+              )}
             </div>
           </div>
         )

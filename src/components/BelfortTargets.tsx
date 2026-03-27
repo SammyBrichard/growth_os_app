@@ -54,7 +54,7 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
         </button>
       </div>
       {belfortSubTab === 'needs_approval' && (
-        <p style={{ margin: '12px 0 4px', fontSize: '13px', color: '#888' }}>
+        <p style={{ margin: '12px 0 4px', fontSize: '13px', color: 'var(--muted)' }}>
           Please approve or reject all of the following targets that Belfort has found.
         </p>
       )}

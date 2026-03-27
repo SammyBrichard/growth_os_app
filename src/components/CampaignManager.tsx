@@ -122,7 +122,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             ))}
             {campaignContacts.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ textAlign: 'center', color: '#888', padding: '24px' }}>
+                <td colSpan={4} style={{ textAlign: 'center', color: 'var(--muted)', padding: '24px' }}>
                   No contacts in this campaign.
                 </td>
               </tr>

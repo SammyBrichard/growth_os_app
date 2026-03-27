@@ -91,16 +91,8 @@ export default function App() {
     })()
   }, [user])
 
-  // Auto-scroll on new messages or typing
+  // Load ITPs when sidebar opens
   useEffect(() => {
-    msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [msg.messages, msg.isTyping])
-
-  // Auto-scroll when sidebar opens
-  useEffect(() => {
-    if (mob.activeSidebar) {
-      setTimeout(() => msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 150)
-    }
     if ((mob.activeSidebar === 'select_itp' || mob.activeSidebar === 'select_campaign_itp') && ud.accountId) {
       mob.loadItpList()
     }
@@ -129,7 +121,6 @@ export default function App() {
   // Watson tab: check queued mobilisations
   useEffect(() => {
     if (selectedEmployee.name === 'Watson') {
-      setTimeout(() => msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
       if (ud.userDetailsId && !mob.mobilisation_active && !mob.queueChecked) {
         mob.setQueueChecked(true)
         mob.checkQueuedMobilisations()
@@ -230,17 +221,23 @@ export default function App() {
 
       {activeNav === 'chat' && (
         <div id="main-content" className={mob.activeSidebar ? 'compressed' : ''}>
-          <nav id="top-nav">
-            <div id="top-nav-profile">
-              <div id="top-nav-avatar">
-                {selectedEmployee.img ? <img src={selectedEmployee.img} alt={selectedEmployee.name} /> : selectedEmployee.name[0]}
-              </div>
-              <div id="top-nav-name-wrap">
-                <span id="top-nav-name">{selectedEmployee.name}</span>
-                <span id="top-nav-title">{selectedEmployee.role}</span>
-              </div>
+          <div className="dashboard-topbar">
+            <div className="topbar-agent-status">
+              <span className="topbar-agent-icon">◆</span>
+              <span className="topbar-agent-name">{selectedEmployee.name}</span>
+              <span className="topbar-active-dot">● Active</span>
             </div>
-          </nav>
+            <div className="topbar-nav">
+              <button
+                className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
+                onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
+              >
+                Campaigns
+              </button>
+              <button className="topbar-nav-link">Analytics</button>
+              <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
+            </div>
+          </div>
 
           {selectedEmployee.name === 'Watson' ? (
             <WatsonChat

@@ -14,22 +14,73 @@ interface SelectSenderSidebarProps {
   onSelect: (senderId: string) => void
 }
 
-// Auto-detect SMTP/IMAP settings for common providers
-function detectProviderSettings(email: string) {
-  const domain = email.split('@')[1]?.toLowerCase()
-  if (!domain) return null
+import gmailLogo from '../assets/gmail.png'
+import outlookLogo from '../assets/outlook.png'
+import yahooLogo from '../assets/yahoo.png'
 
-  if (domain === 'gmail.com' || domain === 'googlemail.com') {
-    return { smtp_host: 'smtp.gmail.com', smtp_port: 587, imap_host: 'imap.gmail.com', imap_port: 993 }
-  }
-  if (domain === 'outlook.com' || domain === 'hotmail.com' || domain === 'live.com') {
-    return { smtp_host: 'smtp.office365.com', smtp_port: 587, imap_host: 'outlook.office365.com', imap_port: 993 }
-  }
-  if (domain === 'yahoo.com' || domain === 'yahoo.co.uk') {
-    return { smtp_host: 'smtp.mail.yahoo.com', smtp_port: 587, imap_host: 'imap.mail.yahoo.com', imap_port: 993 }
-  }
-  return null
+type Provider = 'gmail' | 'outlook' | 'yahoo' | 'custom'
+
+const PROVIDER_ICONS: Record<Provider, React.ReactNode> = {
+  gmail: <img src={gmailLogo} alt="Gmail" className="sender-provider-logo" />,
+  outlook: <img src={outlookLogo} alt="Outlook" className="sender-provider-logo" />,
+  yahoo: <img src={yahooLogo} alt="Yahoo" className="sender-provider-logo" />,
+  custom: (
+    <svg className="sender-provider-logo" width="32" height="32" viewBox="0 0 24 24" fill="none">
+      <rect x="2" y="4" width="20" height="16" rx="2" stroke="var(--muted)" strokeWidth="1.5"/>
+      <path d="M2 6L12 13L22 6" stroke="var(--muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ),
 }
+
+const PROVIDERS: { id: Provider; name: string; domains: string[]; smtp_host: string; smtp_port: number; imap_host: string; imap_port: number; instructions: string[] }[] = [
+  {
+    id: 'gmail',
+    name: 'Gmail',
+    domains: ['gmail.com', 'googlemail.com'],
+    smtp_host: 'smtp.gmail.com',
+    smtp_port: 587,
+    imap_host: 'imap.gmail.com',
+    imap_port: 993,
+    instructions: [
+      'Go to myaccount.google.com/security',
+      'Enable 2-Step Verification if not already on',
+      'Search for "App passwords" in the security page',
+      'Create a new app password (select "Mail")',
+      'Copy the 16-character password and paste it below',
+    ],
+  },
+  {
+    id: 'outlook',
+    name: 'Outlook',
+    domains: ['outlook.com', 'hotmail.com', 'live.com'],
+    smtp_host: 'smtp.office365.com',
+    smtp_port: 587,
+    imap_host: 'outlook.office365.com',
+    imap_port: 993,
+    instructions: [
+      'Go to account.microsoft.com/security',
+      'Enable two-step verification',
+      'Under "App passwords", create a new one',
+      'Copy the generated password and paste it below',
+    ],
+  },
+  {
+    id: 'yahoo',
+    name: 'Yahoo',
+    domains: ['yahoo.com', 'yahoo.co.uk'],
+    smtp_host: 'smtp.mail.yahoo.com',
+    smtp_port: 587,
+    imap_host: 'imap.mail.yahoo.com',
+    imap_port: 993,
+    instructions: [
+      'Go to login.yahoo.com/account/security',
+      'Enable two-step verification',
+      'Scroll down to "Generate app password"',
+      'Select "Other App" and generate a password',
+      'Copy the password and paste it below',
+    ],
+  },
+]
 
 const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
   accountId,
@@ -37,6 +88,9 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
 }) => {
   const [senders, setSenders] = useState<Sender[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+
+  // Form fields
   const [newEmail, setNewEmail] = useState('')
   const [newDisplayName, setNewDisplayName] = useState('')
   const [smtpHost, setSmtpHost] = useState('')
@@ -44,7 +98,6 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
   const [smtpPassword, setSmtpPassword] = useState('')
   const [imapHost, setImapHost] = useState('')
   const [imapPort, setImapPort] = useState('993')
-  const [autoDetected, setAutoDetected] = useState(false)
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
@@ -59,25 +112,24 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
     })()
   }, [accountId])
 
-  // Auto-detect when email changes
-  useEffect(() => {
-    const detected = detectProviderSettings(newEmail)
-    if (detected) {
-      setSmtpHost(detected.smtp_host)
-      setSmtpPort(String(detected.smtp_port))
-      setImapHost(detected.imap_host)
-      setImapPort(String(detected.imap_port))
-      setAutoDetected(true)
+  function selectProvider(provider: Provider) {
+    setSelectedProvider(provider)
+    const preset = PROVIDERS.find(p => p.id === provider)
+    if (preset) {
+      setSmtpHost(preset.smtp_host)
+      setSmtpPort(String(preset.smtp_port))
+      setImapHost(preset.imap_host)
+      setImapPort(String(preset.imap_port))
     } else {
-      if (autoDetected) {
-        setSmtpHost('')
-        setSmtpPort('587')
-        setImapHost('')
-        setImapPort('993')
-      }
-      setAutoDetected(false)
+      setSmtpHost('')
+      setSmtpPort('587')
+      setImapHost('')
+      setImapPort('993')
     }
-  }, [newEmail])
+    setSmtpPassword('')
+    setNewEmail('')
+    setNewDisplayName('')
+  }
 
   async function handleCreateSender() {
     if (!newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim() || !accountId) return
@@ -107,11 +159,13 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
     return <div className="sender-empty">Loading senders...</div>
   }
 
+  const activePreset = PROVIDERS.find(p => p.id === selectedProvider)
+
   return (
-    <div>
+    <div className="sender-sidebar">
       {senders.length > 0 && (
         <>
-          <div className="sender-section-heading">Existing Senders</div>
+          <div className="sender-section-label">Existing Senders</div>
           {senders.map(sender => (
             <div
               key={sender.id}
@@ -128,68 +182,131 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
         </>
       )}
 
-      <div className="sender-section-heading">
-        {senders.length > 0 ? 'Or Create New Sender' : 'Set Up Your Sender'}
+      <div className="sender-section-label">
+        {senders.length > 0 ? 'Add New Sender' : 'Connect Your Email'}
       </div>
-      <div className="sender-create-form">
-        <input
-          className="sender-create-input"
-          type="email"
-          placeholder="your@email.com"
-          value={newEmail}
-          onChange={e => setNewEmail(e.target.value)}
-        />
-        <input
-          className="sender-create-input"
-          type="text"
-          placeholder="Display name (e.g. John from Acme)"
-          value={newDisplayName}
-          onChange={e => setNewDisplayName(e.target.value)}
-        />
 
-        {autoDetected && (
-          <div style={{ fontSize: '12px', color: '#4caf50', margin: '-4px 0 4px' }}>
-            Settings auto-detected for {newEmail.split('@')[1]}
+      {!selectedProvider ? (
+        <div className="sender-provider-grid">
+          {PROVIDERS.map(p => (
+            <button
+              key={p.id}
+              className="sender-provider-card"
+              onClick={() => selectProvider(p.id)}
+            >
+              {PROVIDER_ICONS[p.id]}
+              <span className="sender-provider-name">{p.name}</span>
+              <span className="sender-provider-domains">{p.domains.join(', ')}</span>
+            </button>
+          ))}
+          <button
+            className="sender-provider-card"
+            onClick={() => selectProvider('custom')}
+          >
+            {PROVIDER_ICONS.custom}
+            <span className="sender-provider-name">Custom</span>
+            <span className="sender-provider-domains">Any other provider</span>
+          </button>
+        </div>
+      ) : (
+        <div className="sender-setup">
+          <button className="sender-back-btn" onClick={() => setSelectedProvider(null)}>
+            &larr; Back to providers
+          </button>
+
+          <div className="sender-setup-title">
+            {selectedProvider === 'custom' ? 'Custom Provider' : `${activePreset?.name} Setup`}
           </div>
-        )}
 
-        <input
-          className="sender-create-input"
-          type="text"
-          placeholder="SMTP Host (e.g. smtp.gmail.com)"
-          value={smtpHost}
-          onChange={e => setSmtpHost(e.target.value)}
-        />
-        <input
-          className="sender-create-input"
-          type="text"
-          placeholder="SMTP Port (default: 587)"
-          value={smtpPort}
-          onChange={e => setSmtpPort(e.target.value)}
-        />
-        <input
-          className="sender-create-input"
-          type="password"
-          placeholder="App password (not your regular password)"
-          value={smtpPassword}
-          onChange={e => setSmtpPassword(e.target.value)}
-        />
-        <input
-          className="sender-create-input"
-          type="text"
-          placeholder="IMAP Host (e.g. imap.gmail.com)"
-          value={imapHost}
-          onChange={e => setImapHost(e.target.value)}
-        />
+          {activePreset && (
+            <div className="sender-instructions">
+              <div className="sender-instructions-heading">How to get your app password</div>
+              <ol className="sender-instructions-list">
+                {activePreset.instructions.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ol>
+            </div>
+          )}
 
-        <button
-          className="sender-create-btn"
-          onClick={handleCreateSender}
-          disabled={!newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim() || creating}
-        >
-          {creating ? 'Creating...' : 'Create Sender'}
-        </button>
-      </div>
+          <div className="sender-create-form">
+            <label className="sender-field-label">Email Address</label>
+            <input
+              className="sender-create-input"
+              type="email"
+              placeholder="your@email.com"
+              value={newEmail}
+              onChange={e => setNewEmail(e.target.value)}
+            />
+
+            <label className="sender-field-label">Display Name</label>
+            <input
+              className="sender-create-input"
+              type="text"
+              placeholder="e.g. John from Acme"
+              value={newDisplayName}
+              onChange={e => setNewDisplayName(e.target.value)}
+            />
+
+            <label className="sender-field-label">App Password</label>
+            <input
+              className="sender-create-input"
+              type="password"
+              placeholder={activePreset ? 'Paste your app password here' : 'SMTP password'}
+              value={smtpPassword}
+              onChange={e => setSmtpPassword(e.target.value)}
+            />
+
+            {selectedProvider === 'custom' && (
+              <>
+                <label className="sender-field-label">SMTP Host</label>
+                <input
+                  className="sender-create-input"
+                  type="text"
+                  placeholder="e.g. smtp.yourprovider.com"
+                  value={smtpHost}
+                  onChange={e => setSmtpHost(e.target.value)}
+                />
+
+                <label className="sender-field-label">SMTP Port</label>
+                <input
+                  className="sender-create-input"
+                  type="text"
+                  placeholder="587"
+                  value={smtpPort}
+                  onChange={e => setSmtpPort(e.target.value)}
+                />
+
+                <label className="sender-field-label">IMAP Host</label>
+                <input
+                  className="sender-create-input"
+                  type="text"
+                  placeholder="e.g. imap.yourprovider.com"
+                  value={imapHost}
+                  onChange={e => setImapHost(e.target.value)}
+                />
+
+                <label className="sender-field-label">IMAP Port</label>
+                <input
+                  className="sender-create-input"
+                  type="text"
+                  placeholder="993"
+                  value={imapPort}
+                  onChange={e => setImapPort(e.target.value)}
+                />
+              </>
+            )}
+
+            <button
+              className="sender-create-btn"
+              onClick={handleCreateSender}
+              disabled={!newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim() || creating}
+            >
+              {creating ? 'Connecting...' : 'Connect Sender'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

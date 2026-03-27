@@ -1,7 +1,6 @@
-import React from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Message, StepOption } from '../types/index'
 import MessageBubble from './MessageBubble'
-import SkillStatusBubble from './SkillStatusBubble'
 import type { SkillStatus } from '../hooks/useSkillStatus'
 
 interface WatsonChatProps {
@@ -20,6 +19,8 @@ interface WatsonChatProps {
   formatTime: (date: string | Date) => string
 }
 
+const SCROLL_THRESHOLD = 150
+
 const WatsonChat: React.FC<WatsonChatProps> = ({
   messages,
   options,
@@ -35,18 +36,73 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   onKeyDown,
   formatTime,
 }) => {
+  const chatRef = useRef<HTMLDivElement>(null)
+  const [userScrolledUp, setUserScrolledUp] = useState(false)
+  const [hasNewMessages, setHasNewMessages] = useState(false)
+  const isAutoScrolling = useRef(false)
+
+  const isNearBottom = useCallback(() => {
+    const el = chatRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    if (!messagesEndRef.current) return
+    isAutoScrolling.current = true
+    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    setTimeout(() => { isAutoScrolling.current = false }, 500)
+  }, [messagesEndRef])
+
+  // Track user scroll position
+  useEffect(() => {
+    const el = chatRef.current
+    if (!el) return
+    const handleScroll = () => {
+      if (isAutoScrolling.current) return
+      const nearBottom = isNearBottom()
+      setUserScrolledUp(!nearBottom)
+      if (nearBottom) setHasNewMessages(false)
+    }
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [isNearBottom])
+
+  // Auto-scroll when new content arrives (unless user scrolled up)
+  useEffect(() => {
+    if (userScrolledUp) {
+      setHasNewMessages(true)
+    } else {
+      scrollToBottom()
+    }
+  }, [messages, options, isTyping, activeSkills, userScrolledUp, scrollToBottom])
+
+  function handleJumpToBottom() {
+    setUserScrolledUp(false)
+    setHasNewMessages(false)
+    scrollToBottom()
+  }
+
   return (
     <>
-      <div id="main-body">
-        {messages.map((msg, i) => (
-          <MessageBubble key={msg.id ?? i} message={msg} formatTime={formatTime} />
-        ))}
+      <div className="chat-messages" ref={chatRef}>
+        {messages.map((msg, i) => {
+          // Hide status messages that match a currently active skill (shown at bottom instead)
+          if (msg.is_status && activeSkills.some(s => s.message === msg.message_body)) return null
+          const showLabel = msg.is_agent && !msg.is_status && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status)
+          return (
+            <div key={msg.id ?? i} className="msg-animate">
+              {showLabel && <div className="agent-label">WATSON</div>}
+              <MessageBubble message={msg} formatTime={formatTime} />
+            </div>
+          )
+        })}
 
         {options && (
-          <div className="msg-row user">
-            <div id="option-pills">
+          <div className="msg-animate">
+            <div className="options-row">
               {options.map(opt => (
-                <button key={opt.id} className="option-pill" onClick={() => onOptionSelect(opt)}>
+                <button key={opt.id} className="chat-option" onClick={() => onOptionSelect(opt)}>
                   {opt.message}
                 </button>
               ))}
@@ -54,9 +110,17 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
           </div>
         )}
 
+        {activeSkills.map((skill) => (
+          <div key={`${skill.employee}/${skill.skill}`} className="msg-animate">
+            <p className="skill-status-text">
+              {skill.message ?? 'Working on it...'}
+            </p>
+          </div>
+        ))}
+
         {isTyping && (
-          <div className="msg-row agent">
-            <div className="bubble agent typing-bubble">
+          <div className="msg-animate">
+            <div className="typing-dots">
               <span className="typing-dot" />
               <span className="typing-dot" />
               <span className="typing-dot" />
@@ -64,37 +128,32 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
           </div>
         )}
 
-        <SkillStatusBubble activeSkills={activeSkills} />
-
         <div ref={messagesEndRef} />
       </div>
 
-      <div id="input-bar">
-        <div id="input-wrap">
+      {hasNewMessages && (
+        <button className="chat-new-messages-btn" onClick={handleJumpToBottom}>
+          New messages below
+        </button>
+      )}
+
+      <div className="chat-input-area">
+        <div className="chat-input-line">
           <input
             type="text"
             placeholder="Your message"
-            id="message-input"
+            className="chat-input"
             value={inputValue}
             onChange={e => onInputChange(e.target.value)}
             onKeyDown={onKeyDown}
           />
-          <div id="input-actions">
-            <button id="mic-btn" aria-label="Voice input">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                <line x1="12" y1="19" x2="12" y2="23"/>
-                <line x1="8" y1="23" x2="16" y2="23"/>
-              </svg>
-            </button>
-            <button id="send-btn" aria-label="Send" disabled={!input_bar_enabled || !!activeSidebar} onClick={onSend}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="19" x2="12" y2="5"/>
-                <polyline points="5 12 12 5 19 12"/>
-              </svg>
-            </button>
-          </div>
+          <button
+            className="chat-send-btn"
+            disabled={!input_bar_enabled || !!activeSidebar}
+            onClick={onSend}
+          >
+            Send
+          </button>
         </div>
       </div>
     </>

@@ -13,6 +13,7 @@ export interface Message {
   timestamp?: Date
   sidebar?: string
   sidebar_info?: Record<string, any>
+  is_status?: boolean
 }
 
 export interface MobilisationStep {
