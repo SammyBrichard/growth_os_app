@@ -41,6 +41,15 @@ const employees: Employee[] = [
 export default function App() {
   const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
+  const [fromClient] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('from') === 'client') {
+      // Clean up the URL param without reload
+      window.history.replaceState({}, '', window.location.pathname)
+      return true
+    }
+    return false
+  })
 
   const { user } = useAuth()
   const ud = useUserDetails({ user })
@@ -242,8 +251,9 @@ export default function App() {
         <SettingsPanel userDetailsId={ud.userDetailsId} onLogout={handleLogout} />
       )}
 
-      {activeNav === 'chat' && (
-        <div id="main-content" className={mob.activeSidebar ? 'compressed' : ''}>
+      {activeNav === 'chat' && (<>
+        {/* Employee panel — visible when not on Watson */}
+        <div id="employee-panel" className={selectedEmployee.name === 'Watson' ? 'panel-hidden' : 'panel-visible'}>
           <div className="dashboard-topbar">
             <div className="topbar-agent-status">
               <span className="topbar-agent-icon">◆</span>
@@ -261,24 +271,7 @@ export default function App() {
               <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
             </div>
           </div>
-
-          {selectedEmployee.name === 'Watson' ? (
-            <WatsonChat
-              messages={msg.messages}
-              options={mob.options}
-              isTyping={msg.isTyping}
-              inputValue={mob.inputValue}
-              input_bar_enabled={mob.input_bar_enabled}
-              activeSidebar={mob.activeSidebar}
-              activeSkills={activeSkills}
-              messagesEndRef={msg.messagesEndRef}
-              onOptionSelect={mob.handleOptionSelect}
-              onSend={mob.handleSend}
-              onInputChange={(v) => mob.setInputValue(v)}
-              onKeyDown={mob.handleKeyDown}
-              formatTime={msg.formatTime}
-            />
-          ) : selectedEmployee.name === 'Belfort' ? (
+          {selectedEmployee.name === 'Belfort' && (
             <BelfortTargets
               belfortItps={bel.belfortItps}
               belfortSelectedItpId={bel.belfortSelectedItpId}
@@ -289,18 +282,65 @@ export default function App() {
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
             />
-          ) : selectedEmployee.name === 'Draper' ? (
+          )}
+          {selectedEmployee.name === 'Draper' && (
             <CampaignManager
               campaigns={camp.campaigns}
               selectedCampaign={camp.selectedCampaign}
               onSelectCampaign={camp.setSelectedCampaign}
               campaignContacts={camp.campaignContacts}
             />
-          ) : (
-            <div id="main-body" />
           )}
         </div>
-      )}
+
+        {/* Watson chat — always rendered, transitions between full and sidebar */}
+        <div id="watson-panel" className={`${selectedEmployee.name === 'Watson' ? 'watson-full' : mob.activeSidebar ? 'watson-hidden' : 'watson-sidebar'}${fromClient ? ' from-client' : ''}`}>
+          {selectedEmployee.name !== 'Watson' && (
+            <div className="watson-sidebar-header">
+              <div className="topbar-agent-status">
+                <span className="topbar-agent-icon">◆</span>
+                <span className="topbar-agent-name">Watson</span>
+                <span className="topbar-active-dot">● Active</span>
+              </div>
+            </div>
+          )}
+          {selectedEmployee.name === 'Watson' && (
+            <div className="dashboard-topbar">
+              <div className="topbar-agent-status">
+                <span className="topbar-agent-icon">◆</span>
+                <span className="topbar-agent-name">Watson</span>
+                <span className="topbar-active-dot">● Active</span>
+              </div>
+              <div className="topbar-nav">
+                <button
+                  className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
+                  onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
+                >
+                  Campaigns
+                </button>
+                <button className="topbar-nav-link">Analytics</button>
+                <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
+              </div>
+            </div>
+          )}
+          <WatsonChat
+            messages={msg.messages}
+            options={mob.options}
+            isTyping={msg.isTyping}
+            inputValue={mob.inputValue}
+            input_bar_enabled={mob.input_bar_enabled}
+            activeSidebar={mob.activeSidebar}
+            activeSkills={activeSkills}
+            messagesEndRef={msg.messagesEndRef}
+            onOptionSelect={mob.handleOptionSelect}
+            onSend={mob.handleSend}
+            onInputChange={(v) => mob.setInputValue(v)}
+            onKeyDown={mob.handleKeyDown}
+            formatTime={msg.formatTime}
+            compact={selectedEmployee.name !== 'Watson'}
+          />
+        </div>
+      </>)}
 
       {activeNav === 'chat' && bel.selectedLead && (
         <TargetDetailSidebar

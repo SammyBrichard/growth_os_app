@@ -293,24 +293,70 @@ body {
 }
 
 /* ============================================================
-   MAIN CONTENT AREA
+   MAIN CONTENT PANELS
    ============================================================ */
 
-#main-content {
+#employee-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  box-sizing: border-box;
-  position: relative;
   height: 100svh;
   overflow: hidden;
-  transition: flex 0.3s ease;
+  will-change: flex, opacity;
+  transition: flex 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 0.2s ease;
 }
 
-#main-content.compressed {
+#employee-panel.panel-hidden {
+  flex: 0 0 0px;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#employee-panel.panel-visible {
   flex: 1;
   min-width: 0;
+  opacity: 1;
+}
+
+#watson-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  overflow: hidden;
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  border-left: 0px solid var(--border);
+  will-change: flex, min-width;
+  transition: flex 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              min-width 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              border-left-width 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+              opacity 0.2s ease;
+}
+
+#watson-panel.watson-full {
+  flex: 1;
+  min-width: 0;
+  border-left-width: 0;
+}
+
+#watson-panel.watson-sidebar {
+  flex: 1;
+  min-width: 0;
+  border-left-width: 1px;
+}
+
+#watson-panel.watson-hidden {
+  flex: 0 0 0px;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  border-left-width: 0;
 }
 
 /* ============================================================
@@ -323,10 +369,14 @@ body {
   padding: 24px 32px 16px;
   display: flex;
   flex-direction: column;
+  transition: padding 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
   gap: 0;
   max-width: 900px;
   margin: 0 auto;
   width: 100%;
+}
+
+.from-client .chat-messages {
   animation: chat-widen 1.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -492,7 +542,11 @@ body {
   flex-shrink: 0;
   max-width: 900px;
   margin: 0 auto;
+  transition: padding 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
   width: 100%;
+}
+
+.from-client .chat-input-area {
   animation: chat-widen 1.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -588,6 +642,35 @@ body {
   background: var(--cream);
   flex-shrink: 0;
   animation: slide-in 0.3s ease forwards;
+}
+
+/* ============================================================
+   WATSON SIDEBAR COMPACT MODE
+   ============================================================ */
+
+.watson-sidebar-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-compact {
+  padding-left: 20px;
+  padding-right: 20px;
+  max-width: 100%;
+  animation: none !important;
+}
+
+.chat-compact .bubble-agent,
+.chat-compact .bubble-user {
+  max-width: 95%;
+}
+
+.chat-compact .chat-input-line {
+  max-width: none;
 }
 
 #right-sidebar-header {

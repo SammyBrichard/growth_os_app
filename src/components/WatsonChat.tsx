@@ -17,6 +17,7 @@ interface WatsonChatProps {
   onInputChange: (value: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
   formatTime: (date: string | Date) => string
+  compact?: boolean
 }
 
 const SCROLL_THRESHOLD = 150
@@ -35,6 +36,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   onInputChange,
   onKeyDown,
   formatTime,
+  compact,
 }) => {
   const chatRef = useRef<HTMLDivElement>(null)
   const [userScrolledUp, setUserScrolledUp] = useState(false)
@@ -47,12 +49,30 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
     return el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD
   }, [])
 
+  const hasInitialScrolled = useRef(false)
+
   const scrollToBottom = useCallback(() => {
     if (!messagesEndRef.current) return
     isAutoScrolling.current = true
-    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    const behavior = hasInitialScrolled.current ? 'smooth' : 'instant'
+    hasInitialScrolled.current = true
+    messagesEndRef.current.scrollIntoView({ behavior })
     setTimeout(() => { isAutoScrolling.current = false }, 500)
   }, [messagesEndRef])
+
+  // Pin scroll position during container resize (e.g. compact transition)
+  useEffect(() => {
+    const el = chatRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => {
+      if (!userScrolledUp) {
+        // Stay pinned to bottom during resize
+        el.scrollTop = el.scrollHeight
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [userScrolledUp])
 
   // Track user scroll position
   useEffect(() => {
@@ -85,7 +105,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
 
   return (
     <>
-      <div className="chat-messages" ref={chatRef}>
+      <div className={`chat-messages${compact ? ' chat-compact' : ''}`} ref={chatRef}>
         {messages.map((msg, i) => {
           // Hide status messages that match a currently active skill (shown at bottom instead)
           if (msg.is_status && activeSkills.some(s => s.message === msg.message_body)) return null
@@ -137,7 +157,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
         </button>
       )}
 
-      <div className="chat-input-area">
+      <div className={`chat-input-area${compact ? ' chat-compact' : ''}`}>
         <div className="chat-input-line">
           <input
             type="text"
