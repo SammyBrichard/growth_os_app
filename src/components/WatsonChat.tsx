@@ -52,7 +52,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
           <div className="msg-animate">
             <div className="options-row">
               {options.map(opt => (
-                <button key={opt.id} className="option-pill" onClick={() => onOptionSelect(opt)}>
+                <button key={opt.id} className="chat-option" onClick={() => onOptionSelect(opt)}>
                   {opt.message}
                 </button>
               ))}

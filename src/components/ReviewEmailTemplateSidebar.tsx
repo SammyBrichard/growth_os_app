@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 
 interface SequenceEmail {
   seq_number: number
@@ -14,6 +14,38 @@ interface ReviewEmailTemplateSidebarProps {
   tone: string | null
   numEmails: number
   onApprove: (updatedSequence: SequenceEmail[]) => void
+}
+
+function EmailBodyEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const internalHtml = useRef(value)
+
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) {
+      ref.current.innerHTML = value
+      internalHtml.current = value
+    }
+  }, [value])
+
+  return (
+    <div
+      ref={ref}
+      className="review-template-body"
+      contentEditable
+      suppressContentEditableWarning
+      dangerouslySetInnerHTML={{ __html: value }}
+      onInput={() => {
+        if (ref.current) {
+          internalHtml.current = ref.current.innerHTML
+        }
+      }}
+      onBlur={() => {
+        if (ref.current) {
+          onChange(ref.current.innerHTML)
+        }
+      }}
+    />
+  )
 }
 
 const ReviewEmailTemplateSidebar: React.FC<ReviewEmailTemplateSidebarProps> = ({
@@ -33,21 +65,21 @@ const ReviewEmailTemplateSidebar: React.FC<ReviewEmailTemplateSidebarProps> = ({
   }
 
   return (
-    <div>
+    <div className="review-template-container">
       <div className="review-template-heading">{campaignName}</div>
 
-      {tone && (
-        <div className="review-template-info">Tone: {tone}</div>
-      )}
-      <div className="review-template-info" style={{ marginBottom: '16px' }}>
-        {numEmails} email{numEmails !== 1 ? 's' : ''} in sequence
+      <div className="review-template-meta">
+        {tone && <span>Tone: {tone}</span>}
+        <span>{numEmails} email{numEmails !== 1 ? 's' : ''} in sequence</span>
       </div>
 
       {sequence.map((email, index) => (
-        <div key={email.seq_number} style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: index < sequence.length - 1 ? '1px solid var(--border)' : 'none' }}>
-          <div className="review-template-info" style={{ fontWeight: 600, marginBottom: '8px' }}>
+        <div key={email.seq_number} className="review-template-email">
+          <div className="review-template-email-title">
             {index === 0 ? 'Initial Email' : `Follow-up ${index}`}
-            {email.delay_in_days > 0 && ` (${email.delay_in_days} days after previous)`}
+            {email.delay_in_days > 0 && (
+              <span className="review-template-delay">{email.delay_in_days} days after previous</span>
+            )}
           </div>
 
           <div className="review-template-field">
@@ -61,11 +93,9 @@ const ReviewEmailTemplateSidebar: React.FC<ReviewEmailTemplateSidebarProps> = ({
 
           <div className="review-template-field">
             <label className="review-template-label">Email Body</label>
-            <textarea
-              className="review-template-textarea"
+            <EmailBodyEditor
               value={email.body}
-              onChange={e => updateEmail(index, 'body', e.target.value)}
-              rows={index === 0 ? 10 : 6}
+              onChange={html => updateEmail(index, 'body', html)}
             />
           </div>
         </div>

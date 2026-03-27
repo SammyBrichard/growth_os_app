@@ -228,22 +228,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div
                     key={itp.id}
                     className={`itp-select-card${isSelected ? ' selected' : ''}`}
+                    onClick={() => setSelectedItpId(isSelected ? null : itp.id)}
                   >
-                    <div className="itp-select-header" onClick={() => setSelectedItpId(isSelected ? null : itp.id)}>
+                    <div className="itp-select-header">
                       <span className="itp-select-name">{itp.name || 'Unnamed ITP'}</span>
-                      {isSelected
-                        ? <span className="itp-selected-label">Selected</span>
-                        : <span className="itp-chevron">{'\u25BE'}</span>
-                      }
+                      {isSelected && <span className="itp-selected-label">Selected</span>}
                     </div>
-                    {isSelected && (
-                      <div className="itp-select-body">
-                        {itp.itp_summary && <><p className="itp-field-heading">{'\uD83C\uDFAF'} ITP Summary</p><p className="itp-field-text">{itp.itp_summary}</p></>}
-                        {itp.itp_demographic && <><p className="itp-field-heading">{'\uD83D\uDC64'} Demographics</p><p className="itp-field-text">{itp.itp_demographic}</p></>}
-                        {itp.itp_pain_points && <><p className="itp-field-heading">{'\uD83D\uDE23'} Pain Points</p><p className="itp-field-text">{itp.itp_pain_points}</p></>}
-                        {itp.itp_buying_trigger && <><p className="itp-field-heading">{'\u26A1'} Buying Trigger</p><p className="itp-field-text">{itp.itp_buying_trigger}</p></>}
-                      </div>
-                    )}
+                    <div className="itp-select-body">
+                      {itp.itp_summary && <><p className="itp-field-heading">{'\uD83C\uDFAF'} Summary</p><p className="itp-field-text">{itp.itp_summary}</p></>}
+                      {itp.itp_demographic && <><p className="itp-field-heading">{'\uD83D\uDC64'} Demographics</p><p className="itp-field-text">{itp.itp_demographic}</p></>}
+                      {itp.itp_pain_points && <><p className="itp-field-heading">{'\uD83D\uDE23'} Pain Points</p><p className="itp-field-text">{itp.itp_pain_points}</p></>}
+                      {itp.itp_buying_trigger && <><p className="itp-field-heading">{'\u26A1'} Buying Trigger</p><p className="itp-field-text">{itp.itp_buying_trigger}</p></>}
+                    </div>
                   </div>
                 )
               })
@@ -280,22 +276,18 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                   <div
                     key={itp.id}
                     className={`itp-select-card${isSelected ? ' selected' : ''}`}
+                    onClick={() => setSelectedItpId(isSelected ? null : itp.id)}
                   >
-                    <div className="itp-select-header" onClick={() => setSelectedItpId(isSelected ? null : itp.id)}>
+                    <div className="itp-select-header">
                       <span className="itp-select-name">{itp.name || 'Unnamed ITP'}</span>
-                      {isSelected
-                        ? <span className="itp-selected-label">Selected</span>
-                        : <span className="itp-chevron">{'\u25BE'}</span>
-                      }
+                      {isSelected && <span className="itp-selected-label">Selected</span>}
                     </div>
-                    {isSelected && (
-                      <div className="itp-select-body">
-                        {itp.itp_summary && <><p className="itp-field-heading">{'\uD83C\uDFAF'} ITP Summary</p><p className="itp-field-text">{itp.itp_summary}</p></>}
-                        {itp.itp_demographic && <><p className="itp-field-heading">{'\uD83D\uDC64'} Demographics</p><p className="itp-field-text">{itp.itp_demographic}</p></>}
-                        {itp.itp_pain_points && <><p className="itp-field-heading">{'\uD83D\uDE23'} Pain Points</p><p className="itp-field-text">{itp.itp_pain_points}</p></>}
-                        {itp.itp_buying_trigger && <><p className="itp-field-heading">{'\u26A1'} Buying Trigger</p><p className="itp-field-text">{itp.itp_buying_trigger}</p></>}
-                      </div>
-                    )}
+                    <div className="itp-select-body">
+                      {itp.itp_summary && <><p className="itp-field-heading">{'\uD83C\uDFAF'} Summary</p><p className="itp-field-text">{itp.itp_summary}</p></>}
+                      {itp.itp_demographic && <><p className="itp-field-heading">{'\uD83D\uDC64'} Demographics</p><p className="itp-field-text">{itp.itp_demographic}</p></>}
+                      {itp.itp_pain_points && <><p className="itp-field-heading">{'\uD83D\uDE23'} Pain Points</p><p className="itp-field-text">{itp.itp_pain_points}</p></>}
+                      {itp.itp_buying_trigger && <><p className="itp-field-heading">{'\u26A1'} Buying Trigger</p><p className="itp-field-text">{itp.itp_buying_trigger}</p></>}
+                    </div>
                   </div>
                 )
               })
