@@ -63,7 +63,7 @@ export default function App() {
     accountId: ud.accountId,
     selectedEmployee,
   })
-  const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId, setMessages: msg.setMessages })
+  const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
 
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {
@@ -91,16 +91,8 @@ export default function App() {
     })()
   }, [user])
 
-  // Auto-scroll on new messages or typing
+  // Load ITPs when sidebar opens
   useEffect(() => {
-    msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [msg.messages, msg.isTyping])
-
-  // Auto-scroll when sidebar opens
-  useEffect(() => {
-    if (mob.activeSidebar) {
-      setTimeout(() => msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 150)
-    }
     if ((mob.activeSidebar === 'select_itp' || mob.activeSidebar === 'select_campaign_itp') && ud.accountId) {
       mob.loadItpList()
     }
@@ -129,7 +121,6 @@ export default function App() {
   // Watson tab: check queued mobilisations
   useEffect(() => {
     if (selectedEmployee.name === 'Watson') {
-      setTimeout(() => msg.messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
       if (ud.userDetailsId && !mob.mobilisation_active && !mob.queueChecked) {
         mob.setQueueChecked(true)
         mob.checkQueuedMobilisations()

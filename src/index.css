@@ -466,6 +466,27 @@ body {
    INPUT AREA (dashboard mode)
    ============================================================ */
 
+.chat-new-messages-btn {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--cream);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Mono', monospace;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: opacity 0.15s;
+}
+
+.chat-new-messages-btn:hover { opacity: 0.85; }
+
 .chat-input-area {
   padding: 16px 32px 24px;
   flex-shrink: 0;

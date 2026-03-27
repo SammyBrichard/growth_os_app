@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef, useEffect, useState, useCallback } from 'react'
 import { Message, StepOption } from '../types/index'
 import MessageBubble from './MessageBubble'
 import type { SkillStatus } from '../hooks/useSkillStatus'
@@ -19,6 +19,8 @@ interface WatsonChatProps {
   formatTime: (date: string | Date) => string
 }
 
+const SCROLL_THRESHOLD = 150
+
 const WatsonChat: React.FC<WatsonChatProps> = ({
   messages,
   options,
@@ -34,11 +36,59 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   onKeyDown,
   formatTime,
 }) => {
+  const chatRef = useRef<HTMLDivElement>(null)
+  const [userScrolledUp, setUserScrolledUp] = useState(false)
+  const [hasNewMessages, setHasNewMessages] = useState(false)
+  const isAutoScrolling = useRef(false)
+
+  const isNearBottom = useCallback(() => {
+    const el = chatRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_THRESHOLD
+  }, [])
+
+  const scrollToBottom = useCallback(() => {
+    if (!messagesEndRef.current) return
+    isAutoScrolling.current = true
+    messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    setTimeout(() => { isAutoScrolling.current = false }, 500)
+  }, [messagesEndRef])
+
+  // Track user scroll position
+  useEffect(() => {
+    const el = chatRef.current
+    if (!el) return
+    const handleScroll = () => {
+      if (isAutoScrolling.current) return
+      const nearBottom = isNearBottom()
+      setUserScrolledUp(!nearBottom)
+      if (nearBottom) setHasNewMessages(false)
+    }
+    el.addEventListener('scroll', handleScroll, { passive: true })
+    return () => el.removeEventListener('scroll', handleScroll)
+  }, [isNearBottom])
+
+  // Auto-scroll when new content arrives (unless user scrolled up)
+  useEffect(() => {
+    if (userScrolledUp) {
+      setHasNewMessages(true)
+    } else {
+      scrollToBottom()
+    }
+  }, [messages, options, isTyping, activeSkills, userScrolledUp, scrollToBottom])
+
+  function handleJumpToBottom() {
+    setUserScrolledUp(false)
+    setHasNewMessages(false)
+    scrollToBottom()
+  }
+
   return (
     <>
-      <div className="chat-messages">
+      <div className="chat-messages" ref={chatRef}>
         {messages.map((msg, i) => {
-          // Show agent label above first message in a consecutive run of agent messages
+          // Hide status messages that match a currently active skill (shown at bottom instead)
+          if (msg.is_status && activeSkills.some(s => s.message === msg.message_body)) return null
           const showLabel = msg.is_agent && !msg.is_status && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status)
           return (
             <div key={msg.id ?? i} className="msg-animate">
@@ -80,6 +130,12 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {hasNewMessages && (
+        <button className="chat-new-messages-btn" onClick={handleJumpToBottom}>
+          New messages below
+        </button>
+      )}
 
       <div className="chat-input-area">
         <div className="chat-input-line">
