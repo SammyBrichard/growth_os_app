@@ -87,6 +87,29 @@ export default function App() {
         }
       } else {
         mob.setInputBarEnabled(true)
+
+        // Welcome back: contextual greeting + state restoration
+        if (msgs.length > 0) {
+          try {
+            const wbRes = await fetch(`${API_URL}/api/messages/welcome-back`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_details_id: details.id }),
+            })
+            const wb = await wbRes.json()
+            if (!wb.skip && wb.restore) {
+              if (wb.restore.sidebar) {
+                mob.setActiveSidebar(wb.restore.sidebar)
+                mob.setSidebarData(() => wb.restore.sidebar_info ?? {})
+              }
+              if (wb.restore.mobilisation) {
+                mob.resumeMobilisation(wb.restore.mobilisation, wb.restore.step_id, details.id)
+              }
+            }
+          } catch (err) {
+            console.error('[welcome-back] error:', err)
+          }
+        }
       }
     })()
   }, [user])
