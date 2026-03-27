@@ -9,6 +9,7 @@ interface CampaignManagerProps {
   campaignItp: CampaignItp | null
   selectedContact: CampaignContact | null
   onSelectContact: (contact: CampaignContact | null) => void
+  draperSummary: string | null
 }
 
 function formatDate(dateStr: string) {
@@ -36,6 +37,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   campaignItp,
   selectedContact,
   onSelectContact,
+  draperSummary,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
   const [parsedSequence, setParsedSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
@@ -85,20 +87,70 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   if (!selectedCampaign) {
     return (
       <div id="main-body" className="campaign-list">
-        {campaigns.length === 0 ? (
-          <div className="campaign-empty">No campaigns yet.</div>
-        ) : (
-          campaigns.map(campaign => (
-            <div key={campaign.id} className="campaign-card" onClick={() => onSelectCampaign(campaign)}>
-              <div className="campaign-card-info">
-                <span className="campaign-card-name">{campaign.name}</span>
-                <span className="campaign-card-meta">
-                  {campaign.contact_count ?? 0} contact{(campaign.contact_count ?? 0) !== 1 ? 's' : ''} &middot; {formatDate(campaign.created_at)}
-                </span>
-              </div>
-              <span className={`campaign-status ${campaign.status}`}>{campaign.status}</span>
+        <div className="draper-summary">
+          <div className="agent-label">DRAPER</div>
+          {draperSummary ? (
+            <div className="draper-summary-bubble msg-animate">{draperSummary}</div>
+          ) : (
+            <div className="typing-dots">
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+              <span className="typing-dot" />
             </div>
-          ))
+          )}
+        </div>
+        {draperSummary && <hr className="draper-divider" />}
+        {campaigns.length === 0 ? (
+          <div className="campaign-empty-state">
+            <div className="campaign-empty-icon">▽</div>
+            <div className="campaign-empty-title">No campaigns yet</div>
+            <div className="campaign-empty-text">When you're ready to start outreach, ask Watson to create a campaign. He'll walk you through setting up the email sequence, tone, and targets.</div>
+          </div>
+        ) : (
+          campaigns.map(campaign => {
+            const s = campaign.stats ?? { sent: 0, opened: 0, replied: 0, bounced: 0 }
+            const total = campaign.contact_count ?? 0
+            const totalSent = s.sent + s.opened + s.replied
+            return (
+              <div key={campaign.id} className="campaign-card" onClick={() => onSelectCampaign(campaign)}>
+                <div className="campaign-card-top">
+                  <div>
+                    <div className="campaign-card-name">{campaign.name}</div>
+                    <div className="campaign-card-subject">{campaign.subject_line ?? 'No subject line'}</div>
+                  </div>
+                  <span className={`campaign-status ${campaign.status}`}>{campaign.status}</span>
+                </div>
+
+                <div className="campaign-card-meta-row">
+                  <div className="campaign-card-meta-item">
+                    <span className="campaign-card-meta-value">{total}</span>
+                    <span className="campaign-card-meta-label">Contacts</span>
+                  </div>
+                  <div className="campaign-card-meta-item">
+                    <span className="campaign-card-meta-value">{campaign.num_emails}</span>
+                    <span className="campaign-card-meta-label">Emails</span>
+                  </div>
+                  <div className="campaign-card-meta-item">
+                    <span className="campaign-card-meta-value" style={{ color: 'var(--accent)' }}>{totalSent}</span>
+                    <span className="campaign-card-meta-label">Sent</span>
+                  </div>
+                  <div className="campaign-card-meta-item">
+                    <span className="campaign-card-meta-value" style={{ color: '#4a8c5c' }}>{s.opened}</span>
+                    <span className="campaign-card-meta-label">Opened</span>
+                  </div>
+                  <div className="campaign-card-meta-item">
+                    <span className="campaign-card-meta-value" style={{ color: '#2b7ec4' }}>{s.replied}</span>
+                    <span className="campaign-card-meta-label">Replied</span>
+                  </div>
+                </div>
+
+                <div className="campaign-card-footer">
+                  {campaign.tone && <span className="campaign-card-tag">{campaign.tone}</span>}
+                  <span className="campaign-card-date">{formatDate(campaign.created_at)}</span>
+                </div>
+              </div>
+            )
+          })
         )}
       </div>
     )

@@ -70,6 +70,7 @@ export default function App() {
   const camp = useCampaigns({
     accountId: ud.accountId,
     selectedEmployee,
+    firstname: ud.userFirstNameRef?.current,
   })
   const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
 
@@ -295,6 +296,7 @@ export default function App() {
               campaignItp={camp.campaignItp}
               selectedContact={selectedCampaignContact}
               onSelectContact={setSelectedCampaignContact}
+              draperSummary={camp.draperSummary}
             />
           )}
         </div>

@@ -13,6 +13,7 @@ export interface Campaign {
   itp_id: string | null
   created_at: string
   contact_count?: number
+  stats?: { sent: number; opened: number; replied: number; bounced: number }
 }
 
 export interface CampaignContact {
@@ -45,13 +46,18 @@ export interface CampaignItp {
 interface UseCampaignsParams {
   accountId: string | null
   selectedEmployee: { name: string }
+  firstname?: string
 }
 
-export default function useCampaigns({ accountId, selectedEmployee }: UseCampaignsParams) {
+const API_URL = import.meta.env.VITE_API_URL
+
+export default function useCampaigns({ accountId, selectedEmployee, firstname }: UseCampaignsParams) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [campaignContacts, setCampaignContacts] = useState<CampaignContact[]>([])
   const [campaignItp, setCampaignItp] = useState<CampaignItp | null>(null)
+  const [draperSummary, setDraperSummary] = useState<string | null>(null)
+  const [draperSummaryLoading, setDraperSummaryLoading] = useState(false)
 
   const fetchCampaigns = useCallback(async () => {
     if (!accountId) return
@@ -62,29 +68,52 @@ export default function useCampaigns({ accountId, selectedEmployee }: UseCampaig
       .order('created_at', { ascending: false })
     const campaignList = (data ?? []) as Campaign[]
 
-    // Fetch contact counts for each campaign
+    // Fetch contact counts and status stats for each campaign
     const ids = campaignList.map(c => c.id)
     if (ids.length > 0) {
       const { data: ccData } = await supabase
         .from('campaign_contacts')
-        .select('campaign_id')
+        .select('campaign_id, status')
         .in('campaign_id', ids)
+
       const counts: Record<string, number> = {}
-      for (const row of (ccData ?? []) as { campaign_id: string }[]) {
+      const statsBycamp: Record<string, { sent: number; opened: number; replied: number; bounced: number }> = {}
+
+      for (const row of (ccData ?? []) as { campaign_id: string; status: string }[]) {
         counts[row.campaign_id] = (counts[row.campaign_id] ?? 0) + 1
+        if (!statsBycamp[row.campaign_id]) statsBycamp[row.campaign_id] = { sent: 0, opened: 0, replied: 0, bounced: 0 }
+        if (row.status === 'sent') statsBycamp[row.campaign_id].sent++
+        else if (row.status === 'opened') statsBycamp[row.campaign_id].opened++
+        else if (row.status === 'replied') statsBycamp[row.campaign_id].replied++
+        else if (row.status === 'bounced' || row.status === 'failed') statsBycamp[row.campaign_id].bounced++
       }
+
       for (const c of campaignList) {
         c.contact_count = counts[c.id] ?? 0
+        c.stats = statsBycamp[c.id] ?? { sent: 0, opened: 0, replied: 0, bounced: 0 }
       }
     }
 
     setCampaigns(campaignList)
   }, [accountId])
 
-  // Load campaigns when Draper is selected
+  // Load campaigns + summary when Draper is selected
   useEffect(() => {
     if (selectedEmployee.name === 'Draper' && accountId) {
       fetchCampaigns()
+      // Fetch Draper summary (only if we don't have one cached)
+      if (!draperSummary && !draperSummaryLoading) {
+        setDraperSummaryLoading(true)
+        fetch(`${API_URL}/api/messages/draper-summary`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ account_id: accountId, firstname }),
+        })
+          .then(r => r.json())
+          .then(data => setDraperSummary(data.message ?? null))
+          .catch(() => {})
+          .finally(() => setDraperSummaryLoading(false))
+      }
     }
   }, [selectedEmployee, accountId, fetchCampaigns])
 
@@ -131,6 +160,7 @@ export default function useCampaigns({ accountId, selectedEmployee }: UseCampaig
     setSelectedCampaign,
     campaignContacts,
     campaignItp,
+    draperSummary,
     refreshCampaigns: fetchCampaigns,
   }
 }
