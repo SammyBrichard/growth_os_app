@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
 
-interface Campaign {
+export interface Campaign {
   id: string
   name: string
   status: string
@@ -9,12 +9,13 @@ interface Campaign {
   tone: string | null
   subject_line: string | null
   email_template: string | null
+  email_sequence: { seq_number: number; delay_in_days: number; subject: string; body: string }[] | null
   itp_id: string | null
   created_at: string
   contact_count?: number
 }
 
-interface CampaignContact {
+export interface CampaignContact {
   id: string
   contact_id: string
   status: string
@@ -27,7 +28,18 @@ interface CampaignContact {
     last_name: string
     email: string
     role: string | null
+    target_id?: string
+    targets?: {
+      title: string | null
+      domain: string | null
+    }
   }
+}
+
+export interface CampaignItp {
+  id: string
+  name: string | null
+  itp_summary: string | null
 }
 
 interface UseCampaignsParams {
@@ -35,12 +47,11 @@ interface UseCampaignsParams {
   selectedEmployee: { name: string }
 }
 
-export type { Campaign, CampaignContact }
-
 export default function useCampaigns({ accountId, selectedEmployee }: UseCampaignsParams) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [campaignContacts, setCampaignContacts] = useState<CampaignContact[]>([])
+  const [campaignItp, setCampaignItp] = useState<CampaignItp | null>(null)
 
   const fetchCampaigns = useCallback(async () => {
     if (!accountId) return
@@ -77,23 +88,41 @@ export default function useCampaigns({ accountId, selectedEmployee }: UseCampaig
     }
   }, [selectedEmployee, accountId, fetchCampaigns])
 
-  // Fetch contacts when a campaign is selected
+  // Fetch contacts + ITP when a campaign is selected
   useEffect(() => {
     if (!selectedCampaign) {
       setCampaignContacts([])
+      setCampaignItp(null)
       return
     }
+
+    // Fetch contacts with target info
     supabase
       .from('campaign_contacts')
-      .select('*, contacts(first_name, last_name, email, role)')
+      .select('*, contacts(first_name, last_name, email, role, target_id, targets(title, domain))')
       .eq('campaign_id', selectedCampaign.id)
       .then(({ data }) => {
         const contacts = (data ?? []).map((row: any) => ({
           ...row,
-          contact: row.contacts ?? undefined,
+          contact: row.contacts ? {
+            ...row.contacts,
+            targets: row.contacts.targets ?? undefined,
+          } : undefined,
         })) as CampaignContact[]
         setCampaignContacts(contacts)
       })
+
+    // Fetch ITP
+    if (selectedCampaign.itp_id) {
+      supabase
+        .from('itp')
+        .select('id, name, itp_summary')
+        .eq('id', selectedCampaign.itp_id)
+        .single()
+        .then(({ data }) => {
+          setCampaignItp(data as CampaignItp | null)
+        })
+    }
   }, [selectedCampaign])
 
   return {
@@ -101,6 +130,7 @@ export default function useCampaigns({ accountId, selectedEmployee }: UseCampaig
     selectedCampaign,
     setSelectedCampaign,
     campaignContacts,
+    campaignItp,
     refreshCampaigns: fetchCampaigns,
   }
 }

@@ -42,13 +42,9 @@ export default function App() {
   const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
   const [fromClient] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('from') === 'client') {
-      // Clean up the URL param without reload
-      window.history.replaceState({}, '', window.location.pathname)
-      return true
-    }
-    return false
+    // Detect magic link redirect: Supabase puts tokens in the hash fragment
+    const hash = window.location.hash
+    return hash.includes('access_token') || hash.includes('type=magiclink')
   })
 
   const { user } = useAuth()
@@ -293,6 +289,7 @@ export default function App() {
               selectedCampaign={camp.selectedCampaign}
               onSelectCampaign={camp.setSelectedCampaign}
               campaignContacts={camp.campaignContacts}
+              campaignItp={camp.campaignItp}
             />
           )}
         </div>

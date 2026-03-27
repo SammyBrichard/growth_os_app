@@ -1052,6 +1052,216 @@ body {
 .campaign-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .campaign-start-btn:hover:not(:disabled) { opacity: 0.9; }
 
+/* -- Campaign stats row -- */
+.campaign-stats-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.campaign-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.campaign-stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--fg);
+  font-family: 'DM Mono', monospace;
+}
+
+.campaign-stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-top: 2px;
+}
+
+/* -- Campaign meta row -- */
+.campaign-meta-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+
+.campaign-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.campaign-meta-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.campaign-meta-value {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+/* -- Email sequence viewer -- */
+.campaign-sequence {
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.campaign-sequence-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--cream);
+}
+
+.campaign-sequence-tab {
+  padding: 10px 18px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.campaign-sequence-tab:hover { color: var(--fg); }
+.campaign-sequence-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.campaign-sequence-delay {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+
+.campaign-sequence-content {
+  padding: 18px 20px;
+  background: #fff;
+}
+
+.campaign-sequence-subject {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.campaign-sequence-body {
+  font-size: 14px;
+  font-family: 'Source Serif 4', serif;
+  line-height: 1.7;
+  color: var(--fg);
+}
+
+.campaign-sequence-body p { margin: 0 0 8px; }
+.campaign-sequence-body p:last-child { margin-bottom: 0; }
+.campaign-sequence-body a { color: var(--accent); text-decoration: underline; }
+
+/* -- Pipeline Kanban -- */
+.campaign-pipeline { margin-top: 8px; }
+
+.campaign-kanban {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.kanban-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+}
+
+.kanban-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-bottom: 2px solid var(--border);
+}
+
+.kanban-column-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'DM Mono', monospace;
+}
+
+.kanban-column-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+.kanban-column-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.kanban-card {
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 4px;
+  transition: border-color 0.15s;
+}
+
+.kanban-card:hover { border-color: var(--accent); border-left-color: inherit; }
+
+.kanban-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.kanban-card-company {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.kanban-card-role {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.kanban-card-time {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-top: 4px;
+}
+
+.kanban-empty {
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  padding: 12px 10px;
+  text-align: center;
+}
+
 /* ============================================================
    APPROVE TARGETS SIDEBAR
    ============================================================ */
