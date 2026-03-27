@@ -29,6 +29,7 @@ interface RightSidebarProps {
   accountId: string | null
   onTemplateApprove: (updatedSequence: any[]) => void
   onSenderSelect: (senderId: string) => void
+  onClose: () => void
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({
@@ -56,6 +57,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   accountId,
   onTemplateApprove,
   onSenderSelect,
+  onClose,
 }) => {
   return (
     <aside id="right-sidebar">
@@ -410,6 +412,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               itpId={sidebarData.itp_id}
               userDetailsId={userDetailsId}
               onComplete={onApprovalComplete ?? (() => {})}
+              onClose={onClose}
             />
           </div>
         </>

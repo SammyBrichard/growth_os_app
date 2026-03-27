@@ -337,6 +337,7 @@ export default function App() {
           accountId={ud.accountId}
           onTemplateApprove={handleTemplateApprove}
           onSenderSelect={handleSenderSelect}
+          onClose={() => mob.setActiveSidebar(null)}
         />
       )}
     </Layout>

@@ -6,9 +6,10 @@ interface ApproveTargetsSidebarProps {
   itpId: string
   userDetailsId: string | null
   onComplete: (approved: number, rejected: number, hasReasons: boolean) => void
+  onClose?: () => void
 }
 
-const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, userDetailsId, onComplete }) => {
+const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, userDetailsId, onComplete, onClose }) => {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [approvedCount, setApprovedCount] = useState(0)
@@ -64,7 +65,12 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
   }
 
   if (leads.length === 0 && totalReviewed === 0) {
-    return <div className="approve-targets-done">No targets to review.</div>
+    return (
+      <div className="approve-targets-done">
+        <p>No targets to review right now.</p>
+        {onClose && <button className="option-pill" onClick={onClose} style={{ marginTop: '12px' }}>Close</button>}
+      </div>
+    )
   }
 
   return (
