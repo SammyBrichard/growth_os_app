@@ -63,7 +63,7 @@ export default function App() {
     accountId: ud.accountId,
     selectedEmployee,
   })
-  const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
+  const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId, setMessages: msg.setMessages })
 
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {

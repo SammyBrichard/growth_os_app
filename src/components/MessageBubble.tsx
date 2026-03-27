@@ -9,6 +9,12 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, formatTime }) => {
+  if (message.is_status) {
+    return (
+      <p className="skill-status-text">{message.message_body}</p>
+    )
+  }
+
   return (
     <div className={`msg-col ${message.is_agent ? 'msg-col-left' : 'msg-col-right'}`}>
       <div className={message.is_agent ? 'bubble-agent' : 'bubble-user'}>

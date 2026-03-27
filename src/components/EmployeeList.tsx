@@ -23,7 +23,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, selectedEmployee
     <div id="employee-list">
       {employees.map(emp => {
         const empKey = AGENT_SKILL_MAP[emp.name]
-        const isWorking = activeSkills.some(s => s.employee === empKey)
+        const activeSkill = activeSkills.find(s => s.employee === empKey)
         const isActive = selectedEmployee.name === emp.name
         return (
           <div
@@ -34,7 +34,10 @@ const EmployeeList: React.FC<EmployeeListProps> = ({ employees, selectedEmployee
             <span className="agent-emoji">{AGENT_EMOJIS[emp.name] ?? '●'}</span>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span className={`agent-name${isActive ? ' active' : ''}`}>{emp.name}</span>
-              {isWorking && <span className="agent-working">working...</span>}
+              <span className="agent-role">{emp.role}</span>
+              {activeSkill && (
+                <span className="agent-working">{activeSkill.sidebar_message ?? 'Working...'}</span>
+              )}
             </div>
           </div>
         )

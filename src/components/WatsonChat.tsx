@@ -1,7 +1,6 @@
 import React from 'react'
 import { Message, StepOption } from '../types/index'
 import MessageBubble from './MessageBubble'
-import SkillStatusBubble from './SkillStatusBubble'
 import type { SkillStatus } from '../hooks/useSkillStatus'
 
 interface WatsonChatProps {
@@ -40,7 +39,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
       <div className="chat-messages">
         {messages.map((msg, i) => {
           // Show agent label above first message in a consecutive run of agent messages
-          const showLabel = msg.is_agent && (i === 0 || !messages[i - 1]?.is_agent)
+          const showLabel = msg.is_agent && !msg.is_status && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status)
           return (
             <div key={msg.id ?? i} className="msg-animate">
               {showLabel && <div className="agent-label">WATSON</div>}
@@ -61,6 +60,14 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
           </div>
         )}
 
+        {activeSkills.map((skill) => (
+          <div key={`${skill.employee}/${skill.skill}`} className="msg-animate">
+            <p className="skill-status-text">
+              {skill.message ?? 'Working on it...'}
+            </p>
+          </div>
+        ))}
+
         {isTyping && (
           <div className="msg-animate">
             <div className="typing-dots">
@@ -70,8 +77,6 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
             </div>
           </div>
         )}
-
-        <SkillStatusBubble activeSkills={activeSkills} />
 
         <div ref={messagesEndRef} />
       </div>
