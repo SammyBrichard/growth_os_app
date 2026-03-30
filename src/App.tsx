@@ -223,10 +223,13 @@ export default function App() {
     mob.setActiveSidebar(null)
     await mob.startMobilisation('review_campaign')
     // Set campaign_id AFTER startMobilisation (which clears responses)
+    mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, campaign_id: campaignId }
     mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, campaign_id: campaignId }))
   }
 
   async function handleSenderSelect(senderId: string) {
+    // Set ref directly first to avoid race condition with handleSidebarAdvance
+    mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, sender_id: senderId }
     mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
     mob.handleSidebarAdvance('Sender selected')
   }

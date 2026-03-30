@@ -540,6 +540,7 @@ export default function useMobilisation({
 
     // Mobilisation responses setter
     setMobilisationResponses,
+    mobilisationResponsesRef,
 
     // Sidebar state
     activeSidebar,
