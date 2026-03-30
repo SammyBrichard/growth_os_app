@@ -73,11 +73,67 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
     )
   }
 
+  const [bulkRejectMode, setBulkRejectMode] = useState(false)
+  const [bulkRejectReason, setBulkRejectReason] = useState('')
+
+  async function handleBulkApprove() {
+    const ids = leads.map(l => l.id)
+    await supabase.from('leads').update({ approved: true }).in('id', ids)
+    const count = ids.length
+    setLeads([])
+    setApprovedCount(prev => prev + count)
+  }
+
+  async function handleBulkReject() {
+    const ids = leads.map(l => l.id)
+    const reason = bulkRejectReason.trim() || null
+    await supabase.from('leads').update({ rejected: true, rejection_reason: reason }).in('id', ids)
+    const count = ids.length
+    setLeads([])
+    setRejectedCount(prev => prev + count)
+    if (reason) setHasReasons(true)
+    setBulkRejectMode(false)
+    setBulkRejectReason('')
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="approve-targets-progress">
         {totalReviewed} of {totalLeads} reviewed
       </div>
+
+      {leads.length > 1 && !bulkRejectMode && (
+        <div className="bulk-actions">
+          <button className="bulk-approve-btn" onClick={handleBulkApprove}>Approve all ({leads.length})</button>
+          <button className="bulk-reject-btn" onClick={() => setBulkRejectMode(true)}>Reject all ({leads.length})</button>
+        </div>
+      )}
+
+      {bulkRejectMode && (
+        <div className="bulk-reject-panel">
+          <div className="bulk-reject-label">Select a reason for all {leads.length} targets:</div>
+          <div className="approve-target-quick-reasons">
+            {['Wrong industry', 'Too small', 'Too large', 'Competitor', 'Not in our region', 'Already a customer'].map(reason => (
+              <button
+                key={reason}
+                className={`approve-target-quick-reason${bulkRejectReason === reason ? ' active' : ''}`}
+                onClick={() => setBulkRejectReason(bulkRejectReason === reason ? '' : reason)}
+              >{reason}</button>
+            ))}
+          </div>
+          <textarea
+            className="approve-target-reason"
+            placeholder="Or type a custom reason (optional)"
+            value={bulkRejectReason}
+            onChange={e => setBulkRejectReason(e.target.value)}
+          />
+          <div className="approve-target-reason-actions">
+            <button className="approve-target-reason-confirm" onClick={handleBulkReject}>Reject all</button>
+            <button className="approve-target-reason-cancel" onClick={() => { setBulkRejectMode(false); setBulkRejectReason('') }}>Cancel</button>
+          </div>
+        </div>
+      )}
+
       <div className="approve-targets-list">
         {leads.map(lead => (
           <div key={lead.id} className="approve-target-card">
