@@ -111,15 +111,8 @@ export default function App() {
       } else {
         mob.setInputBarEnabled(true)
 
-        // Welcome back: session divider + contextual greeting + state restoration
+        // Welcome back: contextual greeting + state restoration (divider saved server-side)
         if (msgs.length > 0) {
-          // Insert a session divider so the user can see where the new session starts
-          msg.setMessages(prev => [...prev, {
-            message_body: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-            is_agent: true,
-            is_divider: true,
-            timestamp: new Date(),
-          } as any])
           try {
             const wbRes = await fetch(`${API_URL}/api/messages/welcome-back`, {
               method: 'POST',
