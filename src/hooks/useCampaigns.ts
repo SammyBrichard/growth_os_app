@@ -11,9 +11,16 @@ export interface Campaign {
   email_template: string | null
   email_sequence: { seq_number: number; delay_in_days: number; subject: string; body: string }[] | null
   itp_id: string | null
+  sender_id: string | null
   created_at: string
   contact_count?: number
   stats?: { sent: number; opened: number; replied: number; bounced: number }
+}
+
+export interface CampaignSender {
+  id: string
+  email: string
+  display_name: string | null
 }
 
 export interface CampaignContact {
@@ -62,6 +69,8 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
   const [draperSummary, setDraperSummary] = useState<string | null>(null)
   const [draperSummaryLoading, setDraperSummaryLoading] = useState(false)
   const [contactsLoading, setContactsLoading] = useState(false)
+  const [campaignSenders, setCampaignSenders] = useState<Record<string, CampaignSender>>({})
+  const [allSenders, setAllSenders] = useState<CampaignSender[]>([])
 
   const fetchCampaigns = useCallback(async () => {
     if (!accountId) return
@@ -99,7 +108,29 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     }
 
     setCampaigns(campaignList)
+
+    // Fetch senders for campaigns that have one
+    const senderIds = [...new Set(campaignList.map(c => c.sender_id).filter(Boolean))] as string[]
+    if (senderIds.length > 0) {
+      const { data: senderData } = await supabase
+        .from('senders')
+        .select('id, email, display_name')
+        .in('id', senderIds)
+      const senderMap: Record<string, CampaignSender> = {}
+      for (const s of (senderData ?? []) as CampaignSender[]) {
+        senderMap[s.id] = s
+      }
+      setCampaignSenders(senderMap)
+    }
   }, [accountId])
+
+  // Fetch all senders for the account (for the change dropdown)
+  useEffect(() => {
+    if (selectedEmployee.name === 'Draper' && accountId) {
+      supabase.from('senders').select('id, email, display_name').eq('account_id', accountId)
+        .then(({ data }) => setAllSenders((data ?? []) as CampaignSender[]))
+    }
+  }, [selectedEmployee, accountId])
 
   // Load campaigns + summary when Draper is selected
   useEffect(() => {
@@ -187,6 +218,27 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     return () => { supabase.removeChannel(channel) }
   }, [userDetailsId, selectedCampaign?.id])
 
+  const changeCampaignSender = useCallback(async (campaignId: string, senderId: string) => {
+    // Update local state immediately
+    setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, sender_id: senderId } : c))
+    if (selectedCampaign?.id === campaignId) {
+      setSelectedCampaign(prev => prev ? { ...prev, sender_id: senderId } : prev)
+    }
+
+    // Add sender to the map if not already there
+    const sender = allSenders.find(s => s.id === senderId)
+    if (sender) {
+      setCampaignSenders(prev => ({ ...prev, [senderId]: sender }))
+    }
+
+    // Call backend to update DB + Smartlead
+    await fetch(`${API_URL}/api/campaigns/update-sender`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: campaignId, sender_id: senderId }),
+    }).catch(err => console.error('[changeCampaignSender] error:', err))
+  }, [selectedCampaign, allSenders])
+
   return {
     campaigns,
     selectedCampaign,
@@ -195,6 +247,9 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     campaignItp,
     draperSummary,
     contactsLoading,
+    campaignSenders,
+    allSenders,
+    changeCampaignSender,
     refreshCampaigns: fetchCampaigns,
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import type { Campaign, CampaignContact, CampaignItp } from '../hooks/useCampaigns'
+import type { Campaign, CampaignContact, CampaignItp, CampaignSender } from '../hooks/useCampaigns'
 
 interface CampaignManagerProps {
   campaigns: Campaign[]
@@ -11,6 +11,9 @@ interface CampaignManagerProps {
   onSelectContact: (contact: CampaignContact | null) => void
   draperSummary: string | null
   contactsLoading?: boolean
+  campaignSenders: Record<string, CampaignSender>
+  allSenders: CampaignSender[]
+  onChangeSender: (campaignId: string, senderId: string) => Promise<void>
 }
 
 function formatDate(dateStr: string) {
@@ -40,9 +43,15 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   onSelectContact,
   draperSummary,
   contactsLoading,
+  campaignSenders,
+  allSenders,
+  onChangeSender,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
   const [parsedSequence, setParsedSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
+  const [changingSender, setChangingSender] = useState(false)
+  const [pendingSenderId, setPendingSenderId] = useState<string>('')
+  const [savingSender, setSavingSender] = useState(false)
 
   // Parse email sequence once when campaign changes
   useEffect(() => {
@@ -148,6 +157,9 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
 
                 <div className="campaign-card-footer">
                   {campaign.tone && <span className="campaign-card-tag">{campaign.tone}</span>}
+                  {campaign.sender_id && campaignSenders[campaign.sender_id] && (
+                    <span className="campaign-card-tag campaign-card-sender">{campaignSenders[campaign.sender_id].email}</span>
+                  )}
                   <span className="campaign-card-date">{formatDate(campaign.created_at)}</span>
                 </div>
               </div>
@@ -210,6 +222,39 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
         <div className="campaign-meta-item">
           <span className="campaign-meta-label">Emails in Sequence</span>
           <span className="campaign-meta-value">{selectedCampaign.num_emails}</span>
+        </div>
+        <div className="campaign-meta-item">
+          <span className="campaign-meta-label">Sender</span>
+          {changingSender ? (
+            <div className="campaign-sender-change">
+              <select className="campaign-sender-select" value={pendingSenderId} onChange={e => setPendingSenderId(e.target.value)}>
+                <option value="">Select sender...</option>
+                {allSenders.map(s => (
+                  <option key={s.id} value={s.id}>{s.display_name ? `${s.display_name} (${s.email})` : s.email}</option>
+                ))}
+              </select>
+              <div className="campaign-sender-actions">
+                <button className="campaign-sender-save" disabled={!pendingSenderId || savingSender} onClick={async () => {
+                  setSavingSender(true)
+                  await onChangeSender(selectedCampaign.id, pendingSenderId)
+                  setSavingSender(false)
+                  setChangingSender(false)
+                }}>{savingSender ? 'Saving...' : 'Save'}</button>
+                <button className="campaign-sender-cancel" disabled={savingSender} onClick={() => setChangingSender(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <span className="campaign-meta-value">
+              {selectedCampaign.sender_id && campaignSenders[selectedCampaign.sender_id]
+                ? `${campaignSenders[selectedCampaign.sender_id].display_name ? campaignSenders[selectedCampaign.sender_id].display_name + ' — ' : ''}${campaignSenders[selectedCampaign.sender_id].email}`
+                : 'No sender assigned'
+              }
+              <button className="campaign-sender-change-btn" onClick={() => {
+                setPendingSenderId(selectedCampaign.sender_id ?? '')
+                setChangingSender(true)
+              }}>Change</button>
+            </span>
+          )}
         </div>
       </div>
 

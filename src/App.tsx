@@ -25,7 +25,6 @@ import BelfortTargets from './components/BelfortTargets'
 import CampaignManager from './components/CampaignManager'
 import TargetDetailSidebar from './components/TargetDetailSidebar'
 import RightSidebar from './components/RightSidebar'
-import SettingsPanel from './components/SettingsPanel'
 import ContactDetailSidebar from './components/ContactDetailSidebar'
 import WarrenAnalyst from './components/WarrenAnalyst'
 import PepperAdmin from './components/PepperAdmin'
@@ -318,6 +317,9 @@ export default function App() {
               onSelectContact={setSelectedCampaignContact}
               draperSummary={camp.draperSummary}
               contactsLoading={camp.contactsLoading}
+              campaignSenders={camp.campaignSenders}
+              allSenders={camp.allSenders}
+              onChangeSender={camp.changeCampaignSender}
             />
           )}
           {selectedEmployee.name === 'Warren' && (

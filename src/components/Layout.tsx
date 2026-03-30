@@ -1,20 +1,20 @@
 import React from 'react'
 
 interface LayoutProps {
-  activeNav: string
-  setActiveNav: (nav: string) => void
   employeeList: React.ReactNode
   children: React.ReactNode
-  leadsCount?: number
+  onLogout: () => void
 }
 
-const Layout: React.FC<LayoutProps> = ({ employeeList, children }) => {
+const Layout: React.FC<LayoutProps> = ({ employeeList, children, onLogout }) => {
   return (
     <div id="layout">
       <aside className="sidebar">
         <div className="sidebar-logo">growth<span className="accent">OS</span></div>
         <div className="sidebar-section-label">Team</div>
         {employeeList}
+        <div style={{ flex: 1, minHeight: 20 }} />
+        <button className="sidebar-logout-btn" onClick={onLogout}>Log out</button>
       </aside>
       {children}
     </div>
