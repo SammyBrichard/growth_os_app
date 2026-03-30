@@ -58,19 +58,22 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
     setTimeout(() => { isAutoScrolling.current = false }, 500)
   }, [messagesEndRef])
 
+  // Track scrolled-up state in a ref so ResizeObserver always has current value
+  const userScrolledUpRef = useRef(false)
+  useEffect(() => { userScrolledUpRef.current = userScrolledUp }, [userScrolledUp])
+
   // Pin scroll position during container resize (e.g. compact transition)
   useEffect(() => {
     const el = chatRef.current
     if (!el) return
     const observer = new ResizeObserver(() => {
-      if (!userScrolledUp) {
-        // Stay pinned to bottom during resize
+      if (!userScrolledUpRef.current) {
         el.scrollTop = el.scrollHeight
       }
     })
     observer.observe(el)
     return () => observer.disconnect()
-  }, [userScrolledUp])
+  }, [])
 
   // Track user scroll position
   useEffect(() => {
