@@ -350,7 +350,7 @@ export default function App() {
             messagesEndRef={msg.messagesEndRef}
             onOptionSelect={mob.handleOptionSelect}
             onSend={mob.handleSend}
-            onInputChange={(v) => mob.setInputValue(v)}
+            onInputChange={mob.setInputValue}
             onKeyDown={mob.handleKeyDown}
             formatTime={msg.formatTime}
             compact={selectedEmployee.name !== 'Watson'}

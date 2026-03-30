@@ -180,4 +180,4 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   )
 }
 
-export default WatsonChat
+export default React.memo(WatsonChat)
