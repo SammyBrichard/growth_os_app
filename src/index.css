@@ -146,6 +146,20 @@ body {
   font-family: 'DM Mono', monospace;
 }
 
+.sidebar-logout-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-family: 'DM Mono', monospace;
+  cursor: pointer;
+  padding: 12px 8px;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.sidebar-logout-btn:hover { color: var(--accent); }
+
 /* ============================================================
    AGENT LIST ITEMS
    ============================================================ */

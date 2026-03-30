@@ -44,7 +44,6 @@ const employees: Employee[] = [
 ]
 
 export default function App() {
-  const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
   const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
@@ -265,8 +264,7 @@ export default function App() {
 
   return (
     <Layout
-      activeNav={activeNav}
-      setActiveNav={setActiveNav}
+      onLogout={handleLogout}
       employeeList={
         <EmployeeList
           employees={employees}
@@ -276,11 +274,7 @@ export default function App() {
         />
       }
     >
-      {activeNav === 'settings' && (
-        <SettingsPanel userDetailsId={ud.userDetailsId} onLogout={handleLogout} />
-      )}
-
-      {activeNav === 'chat' && (<>
+      {(<>
         {/* Employee panel — visible when not on Watson */}
         <div id="employee-panel" className={selectedEmployee.name === 'Watson' ? 'panel-hidden' : 'panel-visible'}>
           <div className="dashboard-topbar">
@@ -288,9 +282,6 @@ export default function App() {
               <span className="topbar-agent-icon">◆</span>
               <span className="topbar-agent-name">{selectedEmployee.name}</span>
               <span className="topbar-active-dot">● Active</span>
-            </div>
-            <div className="topbar-nav">
-              <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
             </div>
           </div>
           {selectedEmployee.name === 'Belfort' && (
@@ -363,9 +354,6 @@ export default function App() {
                 <span className="topbar-agent-name">Watson</span>
                 <span className="topbar-active-dot">● Active</span>
               </div>
-              <div className="topbar-nav">
-                <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
-              </div>
             </div>
           )}
           <WatsonChat
@@ -388,7 +376,7 @@ export default function App() {
         </div>
       </>)}
 
-      {activeNav === 'chat' && bel.selectedLead && (
+      {bel.selectedLead && (
         <TargetDetailSidebar
           lead={bel.selectedLead}
           onClose={() => bel.setSelectedLead(null)}
@@ -397,14 +385,14 @@ export default function App() {
         />
       )}
 
-      {activeNav === 'chat' && selectedCampaignContact && (
+      {selectedCampaignContact && (
         <ContactDetailSidebar
           contact={selectedCampaignContact}
           onClose={() => setSelectedCampaignContact(null)}
         />
       )}
 
-      {activeNav === 'chat' && mob.activeSidebar && (
+      {mob.activeSidebar && (
         <RightSidebar
           activeSidebar={mob.activeSidebar}
           sidebarData={mob.sidebarData}
