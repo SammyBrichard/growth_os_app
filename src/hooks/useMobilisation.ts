@@ -74,8 +74,6 @@ export default function useMobilisation({
   // Queue check state
   const [queueChecked, setQueueChecked] = useState(false)
 
-  // Error state for user feedback
-  const [error, setError] = useState<string | null>(null)
 
   // ── Persistence helpers ──────────────────────────────────────────────
 
@@ -163,7 +161,11 @@ export default function useMobilisation({
       }
     } catch (err) {
       console.error('mobilisation start error:', err)
-      setError('Something went wrong starting the flow. Please try again.')
+      setMessages(prev => [...prev, {
+        message_body: "Sorry — I hit a snag getting that started. Want to try again, or shall we do something else?",
+        is_agent: true,
+        timestamp: new Date(),
+      }])
       setInputBarEnabled(true)
     }
   }, [userDetailsId, user, showStepMessages, completeMobilisation])
@@ -280,7 +282,11 @@ export default function useMobilisation({
         }
       } catch (err) {
         console.error('mobilisation step error:', err)
-        setError('Something went wrong. Please try again.')
+        setMessages(prev => [...prev, {
+          message_body: "Sorry — something went wrong there. Want to try that again, or is there something else I can help with?",
+          is_agent: true,
+          timestamp: new Date(),
+        }])
         setInputBarEnabled(true)
       }
     }
@@ -364,7 +370,11 @@ export default function useMobilisation({
       }
     } catch (err) {
       console.error('option select error:', err)
-      setError('Something went wrong. Please try again.')
+      setMessages(prev => [...prev, {
+        message_body: "Sorry — something went wrong processing that. Want to try again?",
+        is_agent: true,
+        timestamp: new Date(),
+      }])
       setInputBarEnabled(true)
     } finally {
       optionProcessingRef.current = false
@@ -563,8 +573,6 @@ export default function useMobilisation({
     // Mobilisation responses setter
     setMobilisationResponses,
     mobilisationResponsesRef,
-    error,
-    setError,
 
     // Sidebar state
     activeSidebar,

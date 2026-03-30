@@ -369,8 +369,6 @@ export default function App() {
             onSend={mob.handleSend}
             onKeyDown={mob.handleKeyDown}
             formatTime={msg.formatTime}
-            error={mob.error}
-            onDismissError={() => mob.setError(null)}
             compact={selectedEmployee.name !== 'Watson'}
           />
         </div>
