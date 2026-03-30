@@ -2158,3 +2158,182 @@ body {
   gap: 12px;
   box-sizing: border-box;
 }
+
+/* ============================================================
+   WARREN ANALYST
+   ============================================================ */
+
+.warren-section-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  font-family: 'DM Mono', monospace; color: var(--muted); margin: 8px 0 4px;
+}
+
+.warren-card-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;
+}
+.warren-card-header .warren-section-title { margin: 0; }
+.warren-edit-btn {
+  font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted);
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  padding: 3px 10px; cursor: pointer; transition: all 0.15s;
+}
+.warren-edit-btn:hover { color: var(--fg); border-color: var(--fg); }
+
+.warren-input, .warren-textarea {
+  font-size: 13px; font-family: 'Source Serif 4', Georgia, serif; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--border); border-radius: 4px;
+  padding: 6px 10px; width: 100%; resize: vertical; line-height: 1.5;
+  transition: border-color 0.15s;
+}
+.warren-input:focus, .warren-textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.warren-itp-name-input { font-size: 16px; font-weight: 600; }
+
+.warren-edit-actions {
+  display: flex; gap: 8px; margin-top: 4px;
+}
+.warren-save-btn {
+  font-size: 11px; font-family: 'DM Mono', monospace; padding: 5px 16px;
+  background: var(--fg); color: var(--bg); border: none; border-radius: 4px;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.warren-save-btn:hover { opacity: 0.85; }
+.warren-save-btn:disabled { opacity: 0.5; cursor: default; }
+.warren-cancel-btn {
+  font-size: 11px; font-family: 'DM Mono', monospace; padding: 5px 16px;
+  background: none; color: var(--muted); border: 1px solid var(--border); border-radius: 4px;
+  cursor: pointer; transition: all 0.15s;
+}
+.warren-cancel-btn:hover { color: var(--fg); border-color: var(--fg); }
+.warren-cancel-btn:disabled { opacity: 0.5; cursor: default; }
+
+.warren-account-card {
+  background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 20px;
+}
+.warren-account-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;
+}
+.warren-account-field { display: flex; flex-direction: column; gap: 2px; }
+.warren-account-field-wide { grid-column: 1 / -1; }
+.warren-label {
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace; color: var(--muted);
+}
+.warren-value { font-size: 13px; color: var(--fg); line-height: 1.5; }
+.warren-link { font-size: 13px; color: var(--accent); text-decoration: none; }
+.warren-link:hover { text-decoration: underline; }
+
+.warren-itp-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px;
+}
+.warren-itp-card {
+  background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: box-shadow 0.15s;
+}
+.warren-itp-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.warren-itp-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.warren-itp-name { font-size: 16px; font-weight: 600; color: var(--fg); flex: 1; }
+.warren-itp-header-right { display: flex; align-items: baseline; gap: 10px; flex-shrink: 0; }
+.warren-itp-date { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); }
+.warren-itp-card.editing { border-color: var(--accent); grid-column: 1 / -1; }
+.warren-itp-summary { font-size: 13px; color: var(--fg); line-height: 1.55; margin: 0; }
+
+.warren-itp-fields { display: flex; flex-direction: column; gap: 10px; }
+.warren-itp-field { display: flex; flex-direction: column; gap: 2px; }
+.warren-field-text { font-size: 12px; color: var(--fg); line-height: 1.5; }
+
+.warren-stats-bar {
+  display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.warren-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.warren-stat-value { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.warren-stat-label { font-size: 9px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+.warren-empty { font-size: 13px; color: var(--muted); padding: 12px 0; }
+
+.warren-customers-table { width: 100%; border-collapse: collapse; }
+.warren-customers-table th {
+  text-align: left; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border);
+}
+.warren-customers-table td {
+  font-size: 13px; color: var(--fg); padding: 8px 12px; border-bottom: 1px solid var(--border);
+}
+
+/* ============================================================
+   PEPPER ADMIN
+   ============================================================ */
+
+.pepper-overview {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.pepper-card {
+  background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 20px;
+}
+.pepper-card-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 12px;
+}
+.pepper-card-fields { display: flex; flex-direction: column; gap: 10px; }
+.pepper-field { display: flex; flex-direction: column; gap: 2px; }
+.pepper-label {
+  font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace; color: var(--muted);
+}
+.pepper-value { font-size: 13px; color: var(--fg); line-height: 1.5; }
+.pepper-link { font-size: 13px; color: var(--accent); text-decoration: none; }
+.pepper-link:hover { text-decoration: underline; }
+
+.pepper-section-title {
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+  font-family: 'DM Mono', monospace; color: var(--muted); margin: 8px 0 4px;
+}
+
+.pepper-status-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle;
+}
+.pepper-status-dot.complete { background: #4a8c5c; }
+.pepper-status-dot.pending { background: #d4a017; }
+
+.pepper-status-bar { display: flex; gap: 24px; padding: 12px 0; }
+.pepper-status-item { display: flex; flex-direction: column; gap: 4px; }
+.pepper-status-pill {
+  display: inline-block; font-size: 11px; font-family: 'DM Mono', monospace;
+  padding: 3px 10px; border-radius: 12px;
+}
+.pepper-status-pill.active { background: var(--fg); color: var(--bg); }
+.pepper-status-pill.idle { background: var(--border); color: var(--muted); }
+
+.pepper-empty { font-size: 13px; color: var(--muted); padding: 12px 0; }
+
+.pepper-senders-table { width: 100%; border-collapse: collapse; }
+.pepper-senders-table th {
+  text-align: left; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em;
+  font-family: 'DM Mono', monospace; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border);
+}
+.pepper-senders-table td {
+  font-size: 13px; color: var(--fg); padding: 8px 12px; border-bottom: 1px solid var(--border);
+}
+
+.pepper-activity-log {
+  display: flex; flex-direction: column; gap: 0; max-height: 400px; overflow-y: auto;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--cream);
+}
+.pepper-activity-item {
+  display: flex; align-items: baseline; gap: 10px; padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.pepper-activity-item:last-child { border-bottom: none; }
+.pepper-activity-item.status { opacity: 0.5; }
+.pepper-activity-time {
+  font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted); white-space: nowrap; min-width: 90px;
+}
+.pepper-activity-sender {
+  font-size: 9px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+}
+.pepper-activity-sender.agent { background: var(--fg); color: var(--bg); }
+.pepper-activity-sender.user { background: var(--border); color: var(--muted); }
+.pepper-activity-body { font-size: 12px; color: var(--fg); line-height: 1.4; }

@@ -15,6 +15,8 @@ import useMobilisation from './hooks/useMobilisation'
 import useBelfort from './hooks/useBelfort'
 import useCampaigns from './hooks/useCampaigns'
 import useSkillStatus from './hooks/useSkillStatus'
+import useWarren from './hooks/useWarren'
+import usePepper from './hooks/usePepper'
 
 import Layout from './components/Layout'
 import EmployeeList from './components/EmployeeList'
@@ -25,6 +27,8 @@ import TargetDetailSidebar from './components/TargetDetailSidebar'
 import RightSidebar from './components/RightSidebar'
 import SettingsPanel from './components/SettingsPanel'
 import ContactDetailSidebar from './components/ContactDetailSidebar'
+import WarrenAnalyst from './components/WarrenAnalyst'
+import PepperAdmin from './components/PepperAdmin'
 import type { CampaignContact } from './hooks/useCampaigns'
 
 import './App.css'
@@ -74,6 +78,8 @@ export default function App() {
     firstname: ud.userFirstNameRef?.current,
   })
   const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
+  const war = useWarren({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee })
+  const pep = usePepper({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee })
 
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {
@@ -273,13 +279,6 @@ export default function App() {
               <span className="topbar-active-dot">● Active</span>
             </div>
             <div className="topbar-nav">
-              <button
-                className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
-                onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
-              >
-                Campaigns
-              </button>
-              <button className="topbar-nav-link">Analytics</button>
               <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
             </div>
           </div>
@@ -307,6 +306,24 @@ export default function App() {
               draperSummary={camp.draperSummary}
             />
           )}
+          {selectedEmployee.name === 'Warren' && (
+            <WarrenAnalyst
+              itps={war.itps}
+              itpStats={war.itpStats}
+              account={war.account}
+              customers={war.customers}
+              onUpdateAccount={war.updateAccount}
+              onUpdateItp={war.updateItp}
+            />
+          )}
+          {selectedEmployee.name === 'Pepper' && (
+            <PepperAdmin
+              account={pep.account}
+              userDetails={pep.userDetails}
+              activityLog={pep.activityLog}
+              senders={pep.senders}
+            />
+          )}
         </div>
 
         {/* Watson chat — always rendered, transitions between full and sidebar */}
@@ -328,13 +345,6 @@ export default function App() {
                 <span className="topbar-active-dot">● Active</span>
               </div>
               <div className="topbar-nav">
-                <button
-                  className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
-                  onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
-                >
-                  Campaigns
-                </button>
-                <button className="topbar-nav-link">Analytics</button>
                 <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
               </div>
             </div>
