@@ -228,7 +228,11 @@ export default function App() {
   }
 
   async function handleSenderSelect(senderId: string) {
-    // Set ref directly first to avoid race condition with handleSidebarAdvance
+    // Save sender_id directly to the campaign in DB so sync_to_smartlead picks it up
+    const campaignId = mob.mobilisationResponsesRef.current.campaign_id
+    if (campaignId) {
+      await supabase.from('campaigns').update({ sender_id: senderId }).eq('id', campaignId)
+    }
     mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, sender_id: senderId }
     mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
     mob.handleSidebarAdvance('Sender selected')
