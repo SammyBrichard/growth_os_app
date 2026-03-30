@@ -2,17 +2,36 @@ import { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
 import type { Employee, ITP, Account, Customer, ItpStats } from '../types/index'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface UseWarrenParams {
   accountId: string | null
   userDetailsId: string | null
   selectedEmployee: Employee
+  firstname?: string
 }
 
-export default function useWarren({ accountId, selectedEmployee }: UseWarrenParams) {
+export default function useWarren({ accountId, selectedEmployee, firstname }: UseWarrenParams) {
   const [itps, setItps] = useState<ITP[]>([])
   const [itpStats, setItpStats] = useState<Record<string, ItpStats>>({})
   const [account, setAccount] = useState<Account | null>(null)
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [warrenSummary, setWarrenSummary] = useState<string | null>(null)
+  const [warrenSummaryLoading, setWarrenSummaryLoading] = useState(false)
+
+  useEffect(() => {
+    if (selectedEmployee.name !== 'Warren' || !accountId || warrenSummary || warrenSummaryLoading) return
+    setWarrenSummaryLoading(true)
+    fetch(`${API_URL}/api/messages/warren-summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id: accountId, firstname }),
+    })
+      .then(r => r.json())
+      .then(data => setWarrenSummary(data.message ?? null))
+      .catch(() => {})
+      .finally(() => setWarrenSummaryLoading(false))
+  }, [selectedEmployee, accountId])
 
   useEffect(() => {
     if (selectedEmployee.name !== 'Warren' || !accountId) return
@@ -84,5 +103,5 @@ export default function useWarren({ accountId, selectedEmployee }: UseWarrenPara
     return error
   }, [])
 
-  return { itps, itpStats, account, customers, updateAccount, updateItp }
+  return { itps, itpStats, account, customers, warrenSummary, updateAccount, updateItp }
 }

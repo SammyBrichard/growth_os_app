@@ -10,6 +10,7 @@ interface PepperAdminProps {
   onUpdateUserFirstname: (firstname: string) => Promise<any>
   onUpdateSender: (senderId: string, updates: Partial<Sender>) => Promise<any>
   onAddSender: () => void
+  pepperSummary?: string | null
 }
 
 function formatTimestamp(dateStr: string) {
@@ -17,7 +18,7 @@ function formatTimestamp(dateStr: string) {
   return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender }) => {
+const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender, pepperSummary }) => {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -73,6 +74,19 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
 
   return (
     <div id="main-body" style={{ padding: '30px' }}>
+      <div className="draper-summary">
+        <div className="agent-label">PEPPER</div>
+        {pepperSummary ? (
+          <div className="draper-summary-bubble msg-animate">{pepperSummary}</div>
+        ) : (
+          <div className="typing-dots">
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+          </div>
+        )}
+      </div>
+      {pepperSummary && <hr className="draper-divider" />}
       {/* Overview Cards */}
       <div className="pepper-overview">
         <div className="pepper-card">

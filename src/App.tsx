@@ -74,6 +74,7 @@ export default function App() {
     accountId: ud.accountId,
     userDetailsId: ud.userDetailsId,
     selectedEmployee,
+    firstname: ud.userFirstNameRef?.current,
   })
   const camp = useCampaigns({
     accountId: ud.accountId,
@@ -82,8 +83,8 @@ export default function App() {
     firstname: ud.userFirstNameRef?.current,
   })
   const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
-  const war = useWarren({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee })
-  const pep = usePepper({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee })
+  const war = useWarren({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee, firstname: ud.userFirstNameRef?.current })
+  const pep = usePepper({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee, firstname: ud.userFirstNameRef?.current })
 
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {
@@ -295,6 +296,7 @@ export default function App() {
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
               loading={bel.loading}
+              belfortSummary={bel.belfortSummary}
             />
           )}
           {selectedEmployee.name === 'Draper' && (
@@ -321,6 +323,7 @@ export default function App() {
               customers={war.customers}
               onUpdateAccount={war.updateAccount}
               onUpdateItp={war.updateItp}
+              warrenSummary={war.warrenSummary}
             />
           )}
           {selectedEmployee.name === 'Pepper' && (
@@ -332,6 +335,7 @@ export default function App() {
               onUpdateUserFirstname={pep.updateUserFirstname}
               onUpdateSender={pep.updateSender}
               onAddSender={() => mob.setActiveSidebar('select_sender')}
+              pepperSummary={pep.pepperSummary}
             />
           )}
         </div>

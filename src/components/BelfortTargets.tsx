@@ -8,6 +8,7 @@ interface BelfortTargetsProps {
   belfortSubTab: string
   selectedLead: Lead | null
   loading?: boolean
+  belfortSummary?: string | null
   onSelectItp: (id: string) => void
   onSelectSubTab: (tab: string) => void
   onSelectLead: (lead: Lead | null) => void
@@ -20,6 +21,7 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   belfortSubTab,
   selectedLead,
   loading,
+  belfortSummary,
   onSelectItp,
   onSelectSubTab,
   onSelectLead,
@@ -30,6 +32,19 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
 
   return (
     <div id="main-body" style={{ padding: '30px' }}>
+      <div className="draper-summary">
+        <div className="agent-label">BELFORT</div>
+        {belfortSummary ? (
+          <div className="draper-summary-bubble msg-animate">{belfortSummary}</div>
+        ) : (
+          <div className="typing-dots">
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+          </div>
+        )}
+      </div>
+      {belfortSummary && <hr className="draper-divider" />}
       <div className="belfort-tabs">
         {belfortItps.map(itp => (
           <button

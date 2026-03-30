@@ -2,10 +2,13 @@ import { useState, useEffect, useCallback } from 'react'
 import supabase from '../services/supabase'
 import type { Employee, Account, Sender, ActivityMessage } from '../types/index'
 
+const API_URL = import.meta.env.VITE_API_URL
+
 interface UsePepperParams {
   accountId: string | null
   userDetailsId: string | null
   selectedEmployee: Employee
+  firstname?: string
 }
 
 export interface PepperUserDetails {
@@ -16,11 +19,13 @@ export interface PepperUserDetails {
   queued_mobilisations: any[]
 }
 
-export default function usePepper({ accountId, userDetailsId, selectedEmployee }: UsePepperParams) {
+export default function usePepper({ accountId, userDetailsId, selectedEmployee, firstname }: UsePepperParams) {
   const [account, setAccount] = useState<Account | null>(null)
   const [userDetails, setUserDetails] = useState<PepperUserDetails | null>(null)
   const [activityLog, setActivityLog] = useState<ActivityMessage[]>([])
   const [senders, setSenders] = useState<Sender[]>([])
+  const [pepperSummary, setPepperSummary] = useState<string | null>(null)
+  const [pepperSummaryLoading, setPepperSummaryLoading] = useState(false)
 
   const fetchSenders = useCallback(async () => {
     if (!accountId) return
@@ -35,6 +40,19 @@ export default function usePepper({ accountId, userDetailsId, selectedEmployee }
       .then(({ data }) => setAccount(data as Account | null))
 
     fetchSenders()
+
+    if (!pepperSummary && !pepperSummaryLoading) {
+      setPepperSummaryLoading(true)
+      fetch(`${API_URL}/api/messages/pepper-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: accountId, firstname, user_details_id: userDetailsId }),
+      })
+        .then(r => r.json())
+        .then(data => setPepperSummary(data.message ?? null))
+        .catch(() => {})
+        .finally(() => setPepperSummaryLoading(false))
+    }
   }, [selectedEmployee, accountId, fetchSenders])
 
   useEffect(() => {
@@ -70,5 +88,5 @@ export default function usePepper({ accountId, userDetailsId, selectedEmployee }
     return error
   }, [])
 
-  return { account, userDetails, activityLog, senders, updateUserFirstname, updateSender, refreshSenders: fetchSenders }
+  return { account, userDetails, activityLog, senders, pepperSummary, updateUserFirstname, updateSender, refreshSenders: fetchSenders }
 }

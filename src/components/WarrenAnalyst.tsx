@@ -8,13 +8,14 @@ interface WarrenAnalystProps {
   customers: Customer[]
   onUpdateAccount: (updates: Partial<Account>) => Promise<any>
   onUpdateItp: (itpId: string, updates: Partial<ITP>) => Promise<any>
+  warrenSummary?: string | null
 }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-const WarrenAnalyst: React.FC<WarrenAnalystProps> = ({ itps, itpStats, account, customers, onUpdateAccount, onUpdateItp }) => {
+const WarrenAnalyst: React.FC<WarrenAnalystProps> = ({ itps, itpStats, account, customers, onUpdateAccount, onUpdateItp, warrenSummary }) => {
   const [editingAccount, setEditingAccount] = useState(false)
   const [accountDraft, setAccountDraft] = useState<Partial<Account>>({})
   const [editingItpId, setEditingItpId] = useState<string | null>(null)
@@ -61,6 +62,19 @@ const WarrenAnalyst: React.FC<WarrenAnalystProps> = ({ itps, itpStats, account, 
 
   return (
     <div id="main-body" style={{ padding: '30px' }}>
+      <div className="draper-summary">
+        <div className="agent-label">WARREN</div>
+        {warrenSummary ? (
+          <div className="draper-summary-bubble msg-animate">{warrenSummary}</div>
+        ) : (
+          <div className="typing-dots">
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+            <span className="typing-dot" />
+          </div>
+        )}
+      </div>
+      {warrenSummary && <hr className="draper-divider" />}
       {/* Account Profile */}
       {account && (
         <div className="warren-account-card">
