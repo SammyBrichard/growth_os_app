@@ -98,9 +98,18 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
 
             {rejectingId === lead.id ? (
               <>
+                <div className="approve-target-quick-reasons">
+                  {['Wrong industry', 'Too small', 'Too large', 'Competitor', 'Not in our region', 'Already a customer'].map(reason => (
+                    <button
+                      key={reason}
+                      className={`approve-target-quick-reason${rejectionReason === reason ? ' active' : ''}`}
+                      onClick={() => setRejectionReason(rejectionReason === reason ? '' : reason)}
+                    >{reason}</button>
+                  ))}
+                </div>
                 <textarea
                   className="approve-target-reason"
-                  placeholder="Why is this target not a good fit? (optional)"
+                  placeholder="Or type a custom reason (optional)"
                   value={rejectionReason}
                   onChange={e => setRejectionReason(e.target.value)}
                   autoFocus

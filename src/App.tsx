@@ -15,6 +15,8 @@ import useMobilisation from './hooks/useMobilisation'
 import useBelfort from './hooks/useBelfort'
 import useCampaigns from './hooks/useCampaigns'
 import useSkillStatus from './hooks/useSkillStatus'
+import useWarren from './hooks/useWarren'
+import usePepper from './hooks/usePepper'
 
 import Layout from './components/Layout'
 import EmployeeList from './components/EmployeeList'
@@ -23,8 +25,9 @@ import BelfortTargets from './components/BelfortTargets'
 import CampaignManager from './components/CampaignManager'
 import TargetDetailSidebar from './components/TargetDetailSidebar'
 import RightSidebar from './components/RightSidebar'
-import SettingsPanel from './components/SettingsPanel'
 import ContactDetailSidebar from './components/ContactDetailSidebar'
+import WarrenAnalyst from './components/WarrenAnalyst'
+import PepperAdmin from './components/PepperAdmin'
 import type { CampaignContact } from './hooks/useCampaigns'
 
 import './App.css'
@@ -41,9 +44,14 @@ const employees: Employee[] = [
 ]
 
 export default function App() {
-  const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
   const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
+  const cleanupRef = useRef<(() => void) | null>(null)
+
+  // Fix #10: Cleanup subscription on unmount
+  useEffect(() => {
+    return () => { cleanupRef.current?.() }
+  }, [])
   const [fromClient] = useState(() => {
     // Detect magic link redirect: Supabase puts tokens in the hash fragment
     const hash = window.location.hash
@@ -66,13 +74,17 @@ export default function App() {
     accountId: ud.accountId,
     userDetailsId: ud.userDetailsId,
     selectedEmployee,
+    firstname: ud.userFirstNameRef?.current,
   })
   const camp = useCampaigns({
     accountId: ud.accountId,
+    userDetailsId: ud.userDetailsId,
     selectedEmployee,
     firstname: ud.userFirstNameRef?.current,
   })
   const { activeSkills } = useSkillStatus({ userDetailsId: ud.userDetailsId })
+  const war = useWarren({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee, firstname: ud.userFirstNameRef?.current })
+  const pep = usePepper({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee, firstname: ud.userFirstNameRef?.current })
 
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {
@@ -83,11 +95,13 @@ export default function App() {
       if (!details) return
       const msgs = await ud.loadMessages(details.id)
       msg.setMessages(msgs)
-      ud.subscribeToMessages(details.id, {
+      const cleanup = ud.subscribeToMessages(details.id, {
         setIsTyping: msg.setIsTyping,
         setMessages: msg.setMessages,
         startMobilisation: mob.startMobilisation,
       })
+      // Store cleanup for when component unmounts
+      cleanupRef.current = cleanup
       if (!details.signup_complete) {
         if (details.active_mobilisation && details.active_step_id) {
           mob.resumeMobilisation(details.active_mobilisation, details.active_step_id, details.id)
@@ -97,8 +111,15 @@ export default function App() {
       } else {
         mob.setInputBarEnabled(true)
 
-        // Welcome back: contextual greeting + state restoration
+        // Welcome back: session divider + contextual greeting + state restoration
         if (msgs.length > 0) {
+          // Insert a session divider so the user can see where the new session starts
+          msg.setMessages(prev => [...prev, {
+            message_body: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+            is_agent: true,
+            is_divider: true,
+            timestamp: new Date(),
+          } as any])
           try {
             const wbRes = await fetch(`${API_URL}/api/messages/welcome-back`, {
               method: 'POST',
@@ -168,6 +189,13 @@ export default function App() {
   async function handleApprovalComplete(approved: number, rejected: number, hasReasons: boolean) {
     mob.setActiveSidebar(null)
 
+    // Insert a brief user-side summary so the chat isn't a wall of Watson messages
+    const summaryParts = []
+    if (approved > 0) summaryParts.push(`${approved} approved`)
+    if (rejected > 0) summaryParts.push(`${rejected} rejected`)
+    const summaryText = summaryParts.length > 0 ? `Targets reviewed: ${summaryParts.join(', ')}` : 'Targets reviewed'
+    msg.setMessages(prev => [...prev, { message_body: summaryText, is_agent: false, timestamp: new Date() }])
+
     // Check total approved across all rounds
     const { data: allLeads } = await supabase
       .from('leads')
@@ -222,12 +250,23 @@ export default function App() {
     mob.setActiveSidebar(null)
     await mob.startMobilisation('review_campaign')
     // Set campaign_id AFTER startMobilisation (which clears responses)
+    mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, campaign_id: campaignId }
     mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, campaign_id: campaignId }))
   }
 
   async function handleSenderSelect(senderId: string) {
-    mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
-    mob.handleSidebarAdvance('Sender selected')
+    const campaignId = mob.mobilisationResponsesRef.current.campaign_id
+    if (campaignId) {
+      // Campaign flow: save sender_id to campaign and advance mobilisation
+      await supabase.from('campaigns').update({ sender_id: senderId }).eq('id', campaignId)
+      mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, sender_id: senderId }
+      mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
+      mob.handleSidebarAdvance('Sender selected')
+    } else {
+      // Pepper page: just close sidebar and refresh senders list
+      mob.setActiveSidebar(null)
+      pep.refreshSenders()
+    }
   }
 
   async function handleLogout() {
@@ -240,8 +279,7 @@ export default function App() {
 
   return (
     <Layout
-      activeNav={activeNav}
-      setActiveNav={setActiveNav}
+      onLogout={handleLogout}
       employeeList={
         <EmployeeList
           employees={employees}
@@ -251,11 +289,7 @@ export default function App() {
         />
       }
     >
-      {activeNav === 'settings' && (
-        <SettingsPanel userDetailsId={ud.userDetailsId} onLogout={handleLogout} />
-      )}
-
-      {activeNav === 'chat' && (<>
+      {(<>
         {/* Employee panel — visible when not on Watson */}
         <div id="employee-panel" className={selectedEmployee.name === 'Watson' ? 'panel-hidden' : 'panel-visible'}>
           <div className="dashboard-topbar">
@@ -263,16 +297,6 @@ export default function App() {
               <span className="topbar-agent-icon">◆</span>
               <span className="topbar-agent-name">{selectedEmployee.name}</span>
               <span className="topbar-active-dot">● Active</span>
-            </div>
-            <div className="topbar-nav">
-              <button
-                className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
-                onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
-              >
-                Campaigns
-              </button>
-              <button className="topbar-nav-link">Analytics</button>
-              <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
             </div>
           </div>
           {selectedEmployee.name === 'Belfort' && (
@@ -285,6 +309,8 @@ export default function App() {
               onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedLeadId(null) }}
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
+              loading={bel.loading}
+              belfortSummary={bel.belfortSummary}
             />
           )}
           {selectedEmployee.name === 'Draper' && (
@@ -297,6 +323,33 @@ export default function App() {
               selectedContact={selectedCampaignContact}
               onSelectContact={setSelectedCampaignContact}
               draperSummary={camp.draperSummary}
+              contactsLoading={camp.contactsLoading}
+              campaignSenders={camp.campaignSenders}
+              allSenders={camp.allSenders}
+              onChangeSender={camp.changeCampaignSender}
+            />
+          )}
+          {selectedEmployee.name === 'Warren' && (
+            <WarrenAnalyst
+              itps={war.itps}
+              itpStats={war.itpStats}
+              account={war.account}
+              customers={war.customers}
+              onUpdateAccount={war.updateAccount}
+              onUpdateItp={war.updateItp}
+              warrenSummary={war.warrenSummary}
+            />
+          )}
+          {selectedEmployee.name === 'Pepper' && (
+            <PepperAdmin
+              account={pep.account}
+              userDetails={pep.userDetails}
+              activityLog={pep.activityLog}
+              senders={pep.senders}
+              onUpdateUserFirstname={pep.updateUserFirstname}
+              onUpdateSender={pep.updateSender}
+              onAddSender={() => mob.setActiveSidebar('select_sender')}
+              pepperSummary={pep.pepperSummary}
             />
           )}
         </div>
@@ -319,30 +372,19 @@ export default function App() {
                 <span className="topbar-agent-name">Watson</span>
                 <span className="topbar-active-dot">● Active</span>
               </div>
-              <div className="topbar-nav">
-                <button
-                  className={`topbar-nav-link${selectedEmployee.name === 'Draper' ? ' active' : ''}`}
-                  onClick={() => setSelectedEmployee(employees.find(e => e.name === 'Draper')!)}
-                >
-                  Campaigns
-                </button>
-                <button className="topbar-nav-link">Analytics</button>
-                <button className="topbar-nav-link" onClick={() => setActiveNav('settings')}>Settings</button>
-              </div>
             </div>
           )}
           <WatsonChat
             messages={msg.messages}
             options={mob.options}
             isTyping={msg.isTyping}
-            inputValue={mob.inputValue}
             input_bar_enabled={mob.input_bar_enabled}
             activeSidebar={mob.activeSidebar}
             activeSkills={activeSkills}
             messagesEndRef={msg.messagesEndRef}
+            inputRef={mob.inputRef}
             onOptionSelect={mob.handleOptionSelect}
             onSend={mob.handleSend}
-            onInputChange={(v) => mob.setInputValue(v)}
             onKeyDown={mob.handleKeyDown}
             formatTime={msg.formatTime}
             compact={selectedEmployee.name !== 'Watson'}
@@ -350,7 +392,7 @@ export default function App() {
         </div>
       </>)}
 
-      {activeNav === 'chat' && bel.selectedLead && (
+      {bel.selectedLead && (
         <TargetDetailSidebar
           lead={bel.selectedLead}
           onClose={() => bel.setSelectedLead(null)}
@@ -359,14 +401,14 @@ export default function App() {
         />
       )}
 
-      {activeNav === 'chat' && selectedCampaignContact && (
+      {selectedCampaignContact && (
         <ContactDetailSidebar
           contact={selectedCampaignContact}
           onClose={() => setSelectedCampaignContact(null)}
         />
       )}
 
-      {activeNav === 'chat' && mob.activeSidebar && (
+      {mob.activeSidebar && (
         <RightSidebar
           activeSidebar={mob.activeSidebar}
           sidebarData={mob.sidebarData}

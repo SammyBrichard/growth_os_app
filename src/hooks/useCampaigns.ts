@@ -11,9 +11,16 @@ export interface Campaign {
   email_template: string | null
   email_sequence: { seq_number: number; delay_in_days: number; subject: string; body: string }[] | null
   itp_id: string | null
+  sender_id: string | null
   created_at: string
   contact_count?: number
   stats?: { sent: number; opened: number; replied: number; bounced: number }
+}
+
+export interface CampaignSender {
+  id: string
+  email: string
+  display_name: string | null
 }
 
 export interface CampaignContact {
@@ -24,6 +31,8 @@ export interface CampaignContact {
   opened_at: string | null
   replied_at: string | null
   email_body: string | null
+  reply_body: string | null
+  classification: 'positive' | 'negative' | 'neutral' | 'out_of_office' | null
   contact?: {
     first_name: string
     last_name: string
@@ -45,19 +54,23 @@ export interface CampaignItp {
 
 interface UseCampaignsParams {
   accountId: string | null
+  userDetailsId: string | null
   selectedEmployee: { name: string }
   firstname?: string
 }
 
 const API_URL = import.meta.env.VITE_API_URL
 
-export default function useCampaigns({ accountId, selectedEmployee, firstname }: UseCampaignsParams) {
+export default function useCampaigns({ accountId, userDetailsId, selectedEmployee, firstname }: UseCampaignsParams) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [campaignContacts, setCampaignContacts] = useState<CampaignContact[]>([])
   const [campaignItp, setCampaignItp] = useState<CampaignItp | null>(null)
   const [draperSummary, setDraperSummary] = useState<string | null>(null)
   const [draperSummaryLoading, setDraperSummaryLoading] = useState(false)
+  const [contactsLoading, setContactsLoading] = useState(false)
+  const [campaignSenders, setCampaignSenders] = useState<Record<string, CampaignSender>>({})
+  const [allSenders, setAllSenders] = useState<CampaignSender[]>([])
 
   const fetchCampaigns = useCallback(async () => {
     if (!accountId) return
@@ -95,7 +108,29 @@ export default function useCampaigns({ accountId, selectedEmployee, firstname }:
     }
 
     setCampaigns(campaignList)
+
+    // Fetch senders for campaigns that have one
+    const senderIds = [...new Set(campaignList.map(c => c.sender_id).filter(Boolean))] as string[]
+    if (senderIds.length > 0) {
+      const { data: senderData } = await supabase
+        .from('senders')
+        .select('id, email, display_name')
+        .in('id', senderIds)
+      const senderMap: Record<string, CampaignSender> = {}
+      for (const s of (senderData ?? []) as CampaignSender[]) {
+        senderMap[s.id] = s
+      }
+      setCampaignSenders(senderMap)
+    }
   }, [accountId])
+
+  // Fetch all senders for the account (for the change dropdown)
+  useEffect(() => {
+    if (selectedEmployee.name === 'Draper' && accountId) {
+      supabase.from('senders').select('id, email, display_name').eq('account_id', accountId)
+        .then(({ data }) => setAllSenders((data ?? []) as CampaignSender[]))
+    }
+  }, [selectedEmployee, accountId])
 
   // Load campaigns + summary when Draper is selected
   useEffect(() => {
@@ -126,6 +161,7 @@ export default function useCampaigns({ accountId, selectedEmployee, firstname }:
     }
 
     // Fetch contacts with target info
+    setContactsLoading(true)
     supabase
       .from('campaign_contacts')
       .select('*, contacts(first_name, last_name, email, role, target_id, targets(title, domain))')
@@ -139,6 +175,7 @@ export default function useCampaigns({ accountId, selectedEmployee, firstname }:
           } : undefined,
         })) as CampaignContact[]
         setCampaignContacts(contacts)
+        setContactsLoading(false)
       })
 
     // Fetch ITP
@@ -154,6 +191,54 @@ export default function useCampaigns({ accountId, selectedEmployee, firstname }:
     }
   }, [selectedCampaign])
 
+  // Real-time subscription for campaign contact updates
+  useEffect(() => {
+    if (!userDetailsId) return
+
+    const channel = supabase
+      .channel(`campaign_updates:${userDetailsId}`)
+      .on('broadcast', { event: 'contact_status_change' }, ({ payload }) => {
+        setCampaignContacts(prev => prev.map(cc => {
+          if (cc.contact_id === payload.contact_id && selectedCampaign?.id === payload.campaign_id) {
+            return {
+              ...cc,
+              status: payload.status,
+              reply_body: payload.reply_body ?? cc.reply_body,
+              classification: payload.classification ?? cc.classification,
+              sent_at: payload.status === 'sent' ? new Date().toISOString() : cc.sent_at,
+              opened_at: payload.status === 'opened' ? new Date().toISOString() : cc.opened_at,
+              replied_at: payload.status === 'replied' ? new Date().toISOString() : cc.replied_at,
+            }
+          }
+          return cc
+        }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [userDetailsId, selectedCampaign?.id])
+
+  const changeCampaignSender = useCallback(async (campaignId: string, senderId: string) => {
+    // Update local state immediately
+    setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, sender_id: senderId } : c))
+    if (selectedCampaign?.id === campaignId) {
+      setSelectedCampaign(prev => prev ? { ...prev, sender_id: senderId } : prev)
+    }
+
+    // Add sender to the map if not already there
+    const sender = allSenders.find(s => s.id === senderId)
+    if (sender) {
+      setCampaignSenders(prev => ({ ...prev, [senderId]: sender }))
+    }
+
+    // Call backend to update DB + Smartlead
+    await fetch(`${API_URL}/api/campaigns/update-sender`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: campaignId, sender_id: senderId }),
+    }).catch(err => console.error('[changeCampaignSender] error:', err))
+  }, [selectedCampaign, allSenders])
+
   return {
     campaigns,
     selectedCampaign,
@@ -161,6 +246,10 @@ export default function useCampaigns({ accountId, selectedEmployee, firstname }:
     campaignContacts,
     campaignItp,
     draperSummary,
+    contactsLoading,
+    campaignSenders,
+    allSenders,
+    changeCampaignSender,
     refreshCampaigns: fetchCampaigns,
   }
 }

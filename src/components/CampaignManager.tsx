@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import type { Campaign, CampaignContact, CampaignItp } from '../hooks/useCampaigns'
+import type { Campaign, CampaignContact, CampaignItp, CampaignSender } from '../hooks/useCampaigns'
 
 interface CampaignManagerProps {
   campaigns: Campaign[]
@@ -10,6 +10,10 @@ interface CampaignManagerProps {
   selectedContact: CampaignContact | null
   onSelectContact: (contact: CampaignContact | null) => void
   draperSummary: string | null
+  contactsLoading?: boolean
+  campaignSenders: Record<string, CampaignSender>
+  allSenders: CampaignSender[]
+  onChangeSender: (campaignId: string, senderId: string) => Promise<void>
 }
 
 function formatDate(dateStr: string) {
@@ -38,9 +42,16 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   selectedContact,
   onSelectContact,
   draperSummary,
+  contactsLoading,
+  campaignSenders,
+  allSenders,
+  onChangeSender,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
   const [parsedSequence, setParsedSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
+  const [changingSender, setChangingSender] = useState(false)
+  const [pendingSenderId, setPendingSenderId] = useState<string>('')
+  const [savingSender, setSavingSender] = useState(false)
 
   // Parse email sequence once when campaign changes
   useEffect(() => {
@@ -146,6 +157,9 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
 
                 <div className="campaign-card-footer">
                   {campaign.tone && <span className="campaign-card-tag">{campaign.tone}</span>}
+                  {campaign.sender_id && campaignSenders[campaign.sender_id] && (
+                    <span className="campaign-card-tag campaign-card-sender">{campaignSenders[campaign.sender_id].email}</span>
+                  )}
                   <span className="campaign-card-date">{formatDate(campaign.created_at)}</span>
                 </div>
               </div>
@@ -209,6 +223,39 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
           <span className="campaign-meta-label">Emails in Sequence</span>
           <span className="campaign-meta-value">{selectedCampaign.num_emails}</span>
         </div>
+        <div className="campaign-meta-item">
+          <span className="campaign-meta-label">Sender</span>
+          {changingSender ? (
+            <div className="campaign-sender-change">
+              <select className="campaign-sender-select" value={pendingSenderId} onChange={e => setPendingSenderId(e.target.value)}>
+                <option value="">Select sender...</option>
+                {allSenders.map(s => (
+                  <option key={s.id} value={s.id}>{s.display_name ? `${s.display_name} (${s.email})` : s.email}</option>
+                ))}
+              </select>
+              <div className="campaign-sender-actions">
+                <button className="campaign-sender-save" disabled={!pendingSenderId || savingSender} onClick={async () => {
+                  setSavingSender(true)
+                  await onChangeSender(selectedCampaign.id, pendingSenderId)
+                  setSavingSender(false)
+                  setChangingSender(false)
+                }}>{savingSender ? 'Saving...' : 'Save'}</button>
+                <button className="campaign-sender-cancel" disabled={savingSender} onClick={() => setChangingSender(false)}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <span className="campaign-meta-value">
+              {selectedCampaign.sender_id && campaignSenders[selectedCampaign.sender_id]
+                ? `${campaignSenders[selectedCampaign.sender_id].display_name ? campaignSenders[selectedCampaign.sender_id].display_name + ' — ' : ''}${campaignSenders[selectedCampaign.sender_id].email}`
+                : 'No sender assigned'
+              }
+              <button className="campaign-sender-change-btn" onClick={() => {
+                setPendingSenderId(selectedCampaign.sender_id ?? '')
+                setChangingSender(true)
+              }}>Change</button>
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Email sequence viewer */}
@@ -236,6 +283,9 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
       {/* Pipeline Kanban */}
       <div className="campaign-pipeline">
         <div className="campaign-meta-label" style={{ marginBottom: 12 }}>Pipeline</div>
+        {contactsLoading ? (
+          <div style={{ color: 'var(--muted)', fontSize: 13, fontStyle: 'italic', padding: '12px 0' }}>Loading contacts...</div>
+        ) : (
         <div className="campaign-kanban">
           {PIPELINE_COLUMNS.map(col => (
             <div key={col.key} className="kanban-column">
@@ -245,7 +295,12 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
               </div>
               <div className="kanban-column-body">
                 {(grouped[col.key] ?? []).map(cc => (
-                  <div key={cc.id} className={`kanban-card${selectedContact?.id === cc.id ? ' kanban-card-selected' : ''}`} style={{ borderLeftColor: col.colour, cursor: 'pointer' }} onClick={() => onSelectContact(selectedContact?.id === cc.id ? null : cc)}>
+                  <div
+                    key={cc.id}
+                    className={`kanban-card${selectedContact?.id === cc.id ? ' kanban-card-selected' : ''}${cc.classification === 'positive' ? ' kanban-card-positive' : cc.classification === 'negative' ? ' kanban-card-negative' : ''}`}
+                    style={{ borderLeftColor: cc.classification === 'positive' ? '#4a8c5c' : cc.classification === 'negative' ? '#c44e2b' : col.colour, cursor: 'pointer' }}
+                    onClick={() => onSelectContact(selectedContact?.id === cc.id ? null : cc)}
+                  >
                     <div className="kanban-card-name">
                       {cc.contact?.first_name || cc.contact?.last_name
                         ? `${cc.contact.first_name ?? ''} ${cc.contact.last_name ?? ''}`.trim()
@@ -257,7 +312,10 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
                     {cc.contact?.role && (
                       <div className="kanban-card-role">{cc.contact.role}</div>
                     )}
-                    {cc.sent_at && col.key !== 'pending' && (
+                    {cc.reply_body && (
+                      <div className="kanban-card-reply">{cc.reply_body.slice(0, 60)}{cc.reply_body.length > 60 ? '...' : ''}</div>
+                    )}
+                    {cc.sent_at && col.key !== 'pending' && !cc.reply_body && (
                       <div className="kanban-card-time">{formatTimestamp(col.key === 'replied' && cc.replied_at ? cc.replied_at : col.key === 'opened' && cc.opened_at ? cc.opened_at : cc.sent_at)}</div>
                     )}
                   </div>
@@ -269,6 +327,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   )

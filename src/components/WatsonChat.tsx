@@ -7,14 +7,13 @@ interface WatsonChatProps {
   messages: Message[]
   options: StepOption[] | null
   isTyping: boolean
-  inputValue: string
   input_bar_enabled: boolean
   activeSidebar: string | null
   activeSkills: SkillStatus[]
   messagesEndRef: React.RefObject<HTMLDivElement | null>
+  inputRef: React.RefObject<HTMLInputElement | null>
   onOptionSelect: (opt: StepOption) => void
   onSend: () => void
-  onInputChange: (value: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
   formatTime: (date: string | Date) => string
   compact?: boolean
@@ -26,14 +25,13 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   messages,
   options,
   isTyping,
-  inputValue,
   input_bar_enabled,
   activeSidebar,
   activeSkills,
   messagesEndRef,
+  inputRef,
   onOptionSelect,
   onSend,
-  onInputChange,
   onKeyDown,
   formatTime,
   compact,
@@ -60,19 +58,22 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
     setTimeout(() => { isAutoScrolling.current = false }, 500)
   }, [messagesEndRef])
 
+  // Track scrolled-up state in a ref so ResizeObserver always has current value
+  const userScrolledUpRef = useRef(false)
+  useEffect(() => { userScrolledUpRef.current = userScrolledUp }, [userScrolledUp])
+
   // Pin scroll position during container resize (e.g. compact transition)
   useEffect(() => {
     const el = chatRef.current
     if (!el) return
     const observer = new ResizeObserver(() => {
-      if (!userScrolledUp) {
-        // Stay pinned to bottom during resize
+      if (!userScrolledUpRef.current) {
         el.scrollTop = el.scrollHeight
       }
     })
     observer.observe(el)
     return () => observer.disconnect()
-  }, [userScrolledUp])
+  }, [])
 
   // Track user scroll position
   useEffect(() => {
@@ -109,7 +110,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
         {messages.map((msg, i) => {
           // Hide status messages that match a currently active skill (shown at bottom instead)
           if (msg.is_status && activeSkills.some(s => s.message === msg.message_body)) return null
-          const showLabel = msg.is_agent && !msg.is_status && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status)
+          const showLabel = msg.is_agent && !msg.is_status && !msg.is_divider && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status || messages[i - 1]?.is_divider)
           return (
             <div key={msg.id ?? i} className="msg-animate">
               {showLabel && <div className="agent-label">WATSON</div>}
@@ -132,7 +133,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
 
         {activeSkills.map((skill) => (
           <div key={`${skill.employee}/${skill.skill}`} className="msg-animate">
-            <p className="skill-status-text">
+            <p className="skill-status-text skill-status-active">
               {skill.message ?? 'Working on it...'}
             </p>
           </div>
@@ -160,11 +161,10 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
       <div className={`chat-input-area${compact ? ' chat-compact' : ''}`}>
         <div className="chat-input-line">
           <input
+            ref={inputRef}
             type="text"
             placeholder="Your message"
             className="chat-input"
-            value={inputValue}
-            onChange={e => onInputChange(e.target.value)}
             onKeyDown={onKeyDown}
           />
           <button

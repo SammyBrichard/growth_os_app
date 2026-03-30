@@ -8,19 +8,39 @@ interface UseBelfortParams {
   accountId: string | null
   userDetailsId: string | null
   selectedEmployee: Employee
+  firstname?: string
 }
 
 /**
  * Manages the Belfort (Lead Generation Expert) tab:
  * ITP selection, lead list, lead approval/rejection, and queue-checking.
  */
-export default function useBelfort({ accountId, userDetailsId, selectedEmployee }: UseBelfortParams) {
+export default function useBelfort({ accountId, userDetailsId, selectedEmployee, firstname }: UseBelfortParams) {
   const [belfortItps, setBelfortItps] = useState<Pick<ITP, 'id' | 'name'>[]>([])
   const [belfortSelectedItpId, setBelfortSelectedItpId] = useState<string | null>(null)
   const [belfortLeads, setBelfortLeads] = useState<Lead[]>([])
   const [belfortSubTab, setBelfortSubTab] = useState<'needs_approval' | 'approved'>('needs_approval')
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [belfortSummary, setBelfortSummary] = useState<string | null>(null)
+  const [belfortSummaryLoading, setBelfortSummaryLoading] = useState(false)
+
+  // Load ITPs + summary when Belfort is selected
+  useEffect(() => {
+    if (selectedEmployee.name === 'Belfort' && accountId && !belfortSummary && !belfortSummaryLoading) {
+      setBelfortSummaryLoading(true)
+      fetch(`${API_URL}/api/messages/belfort-summary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: accountId, firstname }),
+      })
+        .then(r => r.json())
+        .then(data => setBelfortSummary(data.message ?? null))
+        .catch(() => {})
+        .finally(() => setBelfortSummaryLoading(false))
+    }
+  }, [selectedEmployee, accountId])
 
   // Load ITPs when Belfort is selected
   useEffect(() => {
@@ -37,12 +57,13 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
   // Load leads when selected ITP changes
   useEffect(() => {
     if (!belfortSelectedItpId) { setBelfortLeads([]); return }
+    setLoading(true)
     supabase.from('leads')
       .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
       .eq('itp_id', belfortSelectedItpId)
       .gte('score', 70)
       .order('score', { ascending: false })
-      .then(({ data }) => setBelfortLeads((data ?? []) as Lead[]))
+      .then(({ data }) => { setBelfortLeads((data ?? []) as Lead[]); setLoading(false) })
   }, [belfortSelectedItpId])
 
   /**
@@ -133,6 +154,8 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     setSelectedLead,
     expandedLeadId,
     setExpandedLeadId,
+    loading,
+    belfortSummary,
     checkAndQueueTargetMobilisation,
     rejectLead,
     approveLead,

@@ -61,8 +61,20 @@ const ContactDetailSidebar: React.FC<ContactDetailSidebarProps> = ({ contact, on
 
         <div className="sidebar-field">
           <label className="sidebar-field-label">Pipeline Status</label>
-          <span className={`contact-status ${contact.status}`} style={{ alignSelf: 'flex-start' }}>{contact.status}</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span className={`contact-status ${contact.status}`}>{contact.status}</span>
+            {contact.classification && (
+              <span className={`reply-classification ${contact.classification}`}>{contact.classification.replace('_', ' ')}</span>
+            )}
+          </div>
         </div>
+
+        {contact.reply_body && (
+          <div className="sidebar-field">
+            <label className="sidebar-field-label">Reply</label>
+            <div className="reply-body-box">{contact.reply_body}</div>
+          </div>
+        )}
 
         <div className="sidebar-field">
           <label className="sidebar-field-label">Timeline</label>

@@ -14,6 +14,7 @@ export interface Message {
   sidebar?: string
   sidebar_info?: Record<string, any>
   is_status?: boolean
+  is_divider?: boolean
   navigate_to?: string
 }
 
@@ -90,4 +91,50 @@ export interface ITP {
 export interface CustomerInput {
   organisation_name: string
   organisation_website: string
+}
+
+export interface Account {
+  id: string
+  organisation_name: string | null
+  organisation_website: string | null
+  description: string | null
+  problem_solved: string | null
+}
+
+export interface Customer {
+  id: string
+  account_id: string
+  organisation_website: string | null
+}
+
+export interface Sender {
+  id: string
+  account_id: string
+  email: string
+  display_name: string | null
+  smtp_host: string | null
+  smtp_port: number | null
+  smtp_username: string | null
+  smtp_password: string | null
+  imap_host: string | null
+  imap_port: number | null
+  provider: string | null
+  verified: boolean
+}
+
+export interface ItpStats {
+  itpId: string
+  leadCount: number
+  avgScore: number
+  approvedCount: number
+  rejectedCount: number
+  campaignCount: number
+}
+
+export interface ActivityMessage {
+  id: string
+  message_body: string
+  is_agent: boolean
+  is_status?: boolean
+  created_at: string
 }

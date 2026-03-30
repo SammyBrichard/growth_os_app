@@ -47,7 +47,13 @@ export default function useMobilisation({
     })
   }, [])
   const [input_bar_enabled, setInputBarEnabled] = useState(false)
-  const [inputValue, setInputValue] = useState('')
+  const [inputValue, _setInputValue] = useState('')
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const setInputValue = useCallback((val: string) => {
+    _setInputValue(val)
+    if (inputRef.current) inputRef.current.value = val
+  }, [])
   const [options, setOptions] = useState<StepOption[] | null>(null)
 
   // Sidebar state
@@ -67,6 +73,7 @@ export default function useMobilisation({
 
   // Queue check state
   const [queueChecked, setQueueChecked] = useState(false)
+
 
   // ── Persistence helpers ──────────────────────────────────────────────
 
@@ -154,6 +161,11 @@ export default function useMobilisation({
       }
     } catch (err) {
       console.error('mobilisation start error:', err)
+      setMessages(prev => [...prev, {
+        message_body: "Sorry — I hit a snag getting that started. Want to try again, or shall we do something else?",
+        is_agent: true,
+        timestamp: new Date(),
+      }])
       setInputBarEnabled(true)
     }
   }, [userDetailsId, user, showStepMessages, completeMobilisation])
@@ -208,9 +220,31 @@ export default function useMobilisation({
 
   // ── Handle send (free-type input) ────────────────────────────────────
 
+  // Fix #4: Prevent send spam
+  const sendingRef = useRef(false)
+
   const handleSend = useCallback(async () => {
-    const text = inputValue.trim()
-    if (!text || !input_bar_enabled || activeSidebar) return
+    const text = (inputRef.current?.value ?? '').trim()
+    if (!text || !input_bar_enabled || activeSidebar || sendingRef.current) return
+    sendingRef.current = true
+
+    try {
+    // Check if user wants to cancel the current mobilisation
+    const cancelPhrases = ['cancel', 'stop', 'never mind', 'nevermind', 'quit', 'exit', 'go back', 'forget it']
+    if (mobilisation_active && cancelPhrases.some(p => text.toLowerCase().includes(p))) {
+      const tempId = `temp_${Date.now()}_${Math.random()}`
+      setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
+      setInputValue('')
+      saveMessage(text, false, false)
+      await clearMobilisationState()
+      setMessages(prev => [...prev, {
+        message_body: "No problem — I've cancelled that. What would you like to do instead?",
+        is_agent: true,
+        timestamp: new Date(),
+      }])
+      setInputBarEnabled(true)
+      return
+    }
 
     const tempId = `temp_${Date.now()}_${Math.random()}`
     setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
@@ -265,11 +299,17 @@ export default function useMobilisation({
         }
       } catch (err) {
         console.error('mobilisation step error:', err)
+        setMessages(prev => [...prev, {
+          message_body: "Sorry — something went wrong there. Want to try that again, or is there something else I can help with?",
+          is_agent: true,
+          timestamp: new Date(),
+        }])
         setInputBarEnabled(true)
       }
     }
+    } finally { sendingRef.current = false }
   }, [
-    inputValue, input_bar_enabled, activeSidebar, mobilisation_active, current_step,
+    input_bar_enabled, activeSidebar, mobilisation_active, current_step,
     current_mobilisation, mobilisation_responses, userDetailsId,
     setMessages, saveMessage, showStepMessages, saveMobilisationState,
     clearMobilisationState, completeMobilisation,
@@ -277,10 +317,11 @@ export default function useMobilisation({
 
   // ── Handle option select ─────────────────────────────────────────────
 
+  const optionProcessingRef = useRef(false)
+
   const handleOptionSelect = useCallback(async (option: StepOption) => {
-    if (activeSidebar) return
-    console.log('Option selected:', option.message)
-    console.log('current_step:', current_step)
+    if (activeSidebar || optionProcessingRef.current) return
+    optionProcessingRef.current = true
     setOptions(null)
 
     if (mobilisation_active && current_mobilisation) {
@@ -346,7 +387,14 @@ export default function useMobilisation({
       }
     } catch (err) {
       console.error('option select error:', err)
+      setMessages(prev => [...prev, {
+        message_body: "Sorry — something went wrong processing that. Want to try again?",
+        is_agent: true,
+        timestamp: new Date(),
+      }])
       setInputBarEnabled(true)
+    } finally {
+      optionProcessingRef.current = false
     }
   }, [
     activeSidebar, current_step, current_mobilisation, mobilisation_active,
@@ -535,11 +583,13 @@ export default function useMobilisation({
     setInputBarEnabled,
     inputValue,
     setInputValue,
+    inputRef,
     options,
     setOptions,
 
     // Mobilisation responses setter
     setMobilisationResponses,
+    mobilisationResponsesRef,
 
     // Sidebar state
     activeSidebar,
