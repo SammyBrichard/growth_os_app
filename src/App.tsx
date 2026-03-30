@@ -111,8 +111,15 @@ export default function App() {
       } else {
         mob.setInputBarEnabled(true)
 
-        // Welcome back: contextual greeting + state restoration
+        // Welcome back: session divider + contextual greeting + state restoration
         if (msgs.length > 0) {
+          // Insert a session divider so the user can see where the new session starts
+          msg.setMessages(prev => [...prev, {
+            message_body: new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+            is_agent: true,
+            is_divider: true,
+            timestamp: new Date(),
+          } as any])
           try {
             const wbRes = await fetch(`${API_URL}/api/messages/welcome-back`, {
               method: 'POST',
@@ -181,6 +188,13 @@ export default function App() {
 
   async function handleApprovalComplete(approved: number, rejected: number, hasReasons: boolean) {
     mob.setActiveSidebar(null)
+
+    // Insert a brief user-side summary so the chat isn't a wall of Watson messages
+    const summaryParts = []
+    if (approved > 0) summaryParts.push(`${approved} approved`)
+    if (rejected > 0) summaryParts.push(`${rejected} rejected`)
+    const summaryText = summaryParts.length > 0 ? `Targets reviewed: ${summaryParts.join(', ')}` : 'Targets reviewed'
+    msg.setMessages(prev => [...prev, { message_body: summaryText, is_agent: false, timestamp: new Date() }])
 
     // Check total approved across all rounds
     const { data: allLeads } = await supabase

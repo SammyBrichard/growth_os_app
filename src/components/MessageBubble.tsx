@@ -9,6 +9,14 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ message, formatTime }) => {
+  if (message.is_divider) {
+    return (
+      <div className="chat-session-divider">
+        <span className="chat-session-divider-text">{message.message_body}</span>
+      </div>
+    )
+  }
+
   if (message.is_status) {
     return (
       <p className="skill-status-text">{message.message_body}</p>

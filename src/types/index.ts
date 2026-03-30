@@ -14,6 +14,7 @@ export interface Message {
   sidebar?: string
   sidebar_info?: Record<string, any>
   is_status?: boolean
+  is_divider?: boolean
   navigate_to?: string
 }
 

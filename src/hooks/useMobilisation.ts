@@ -229,6 +229,23 @@ export default function useMobilisation({
     sendingRef.current = true
 
     try {
+    // Check if user wants to cancel the current mobilisation
+    const cancelPhrases = ['cancel', 'stop', 'never mind', 'nevermind', 'quit', 'exit', 'go back', 'forget it']
+    if (mobilisation_active && cancelPhrases.some(p => text.toLowerCase().includes(p))) {
+      const tempId = `temp_${Date.now()}_${Math.random()}`
+      setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
+      setInputValue('')
+      saveMessage(text, false, false)
+      await clearMobilisationState()
+      setMessages(prev => [...prev, {
+        message_body: "No problem — I've cancelled that. What would you like to do instead?",
+        is_agent: true,
+        timestamp: new Date(),
+      }])
+      setInputBarEnabled(true)
+      return
+    }
+
     const tempId = `temp_${Date.now()}_${Math.random()}`
     setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
     setInputValue('')

@@ -480,6 +480,28 @@ body {
   font-family: 'DM Mono', monospace;
 }
 
+.chat-session-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.chat-session-divider::before,
+.chat-session-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.chat-session-divider-text {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+}
+
 /* ============================================================
    OPTIONS (right-aligned pills)
    ============================================================ */
@@ -1726,6 +1748,28 @@ body {
   color: var(--muted);
   border: 1px solid var(--border);
 }
+
+.approve-target-quick-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.approve-target-quick-reason {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: #fff;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.approve-target-quick-reason:hover { border-color: var(--accent); color: var(--accent); }
+.approve-target-quick-reason.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); }
 
 .approve-target-reason {
   width: 100%;
