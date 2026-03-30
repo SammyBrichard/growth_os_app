@@ -89,6 +89,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
   const [senders, setSenders] = useState<Sender[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null)
+  const [selecting, setSelecting] = useState(false)
 
   // Form fields
   const [newEmail, setNewEmail] = useState('')
@@ -152,7 +153,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
       .select('id')
       .single()
     setCreating(false)
-    if (data) onSelect(data.id)
+    if (data) { setSelecting(true); onSelect(data.id) }
   }
 
   if (loading) {
@@ -170,7 +171,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
             <div
               key={sender.id}
               className="sender-card"
-              onClick={() => onSelect(sender.id)}
+              onClick={() => { if (selecting) return; setSelecting(true); onSelect(sender.id) }}
             >
               <div className="sender-card-email">{sender.email}</div>
               {sender.display_name && (
