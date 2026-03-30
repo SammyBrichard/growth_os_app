@@ -69,6 +69,8 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
   const [draperSummary, setDraperSummary] = useState<string | null>(null)
   const [draperSummaryLoading, setDraperSummaryLoading] = useState(false)
   const [contactsLoading, setContactsLoading] = useState(false)
+  const [hasMoreContacts, setHasMoreContacts] = useState(false)
+  const CONTACTS_PAGE_SIZE = 50
   const [campaignSenders, setCampaignSenders] = useState<Record<string, CampaignSender>>({})
   const [allSenders, setAllSenders] = useState<CampaignSender[]>([])
 
@@ -160,12 +162,14 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
       return
     }
 
-    // Fetch contacts with target info
+    // Fetch contacts with target info (paginated)
     setContactsLoading(true)
+    setHasMoreContacts(false)
     supabase
       .from('campaign_contacts')
       .select('*, contacts(first_name, last_name, email, role, target_id, targets(title, domain))')
       .eq('campaign_id', selectedCampaign.id)
+      .limit(CONTACTS_PAGE_SIZE)
       .then(({ data }) => {
         const contacts = (data ?? []).map((row: any) => ({
           ...row,
@@ -175,6 +179,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
           } : undefined,
         })) as CampaignContact[]
         setCampaignContacts(contacts)
+        setHasMoreContacts(contacts.length === CONTACTS_PAGE_SIZE)
         setContactsLoading(false)
       })
 
@@ -239,6 +244,55 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     }).catch(err => console.error('[changeCampaignSender] error:', err))
   }, [selectedCampaign, allSenders])
 
+  const loadMoreContacts = useCallback(async () => {
+    if (!selectedCampaign) return
+    const { data } = await supabase
+      .from('campaign_contacts')
+      .select('*, contacts(first_name, last_name, email, role, target_id, targets(title, domain))')
+      .eq('campaign_id', selectedCampaign.id)
+      .range(campaignContacts.length, campaignContacts.length + CONTACTS_PAGE_SIZE - 1)
+    const more = (data ?? []).map((row: any) => ({
+      ...row,
+      contact: row.contacts ? { ...row.contacts, targets: row.contacts.targets ?? undefined } : undefined,
+    })) as CampaignContact[]
+    setCampaignContacts(prev => [...prev, ...more])
+    setHasMoreContacts(more.length === CONTACTS_PAGE_SIZE)
+  }, [selectedCampaign, campaignContacts.length])
+
+  const toggleCampaignStatus = useCallback(async (campaignId: string, newStatus: 'active' | 'paused') => {
+    // Optimistic update
+    setCampaigns(prev => prev.map(c => c.id === campaignId ? { ...c, status: newStatus } : c))
+    if (selectedCampaign?.id === campaignId) {
+      setSelectedCampaign(prev => prev ? { ...prev, status: newStatus } : prev)
+    }
+
+    const res = await fetch(`${API_URL}/api/campaigns/toggle-status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: campaignId, status: newStatus }),
+    })
+    if (!res.ok) {
+      // Revert on failure
+      fetchCampaigns()
+    }
+  }, [selectedCampaign, fetchCampaigns])
+
+  const updateCampaign = useCallback(async (campaignId: string, updates: { name?: string; tone?: string; email_sequence?: any[] }) => {
+    const res = await fetch(`${API_URL}/api/campaigns/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaign_id: campaignId, ...updates }),
+    })
+    if (res.ok) {
+      // Refresh to get updated data
+      fetchCampaigns()
+      if (selectedCampaign?.id === campaignId) {
+        setSelectedCampaign(prev => prev ? { ...prev, ...updates } : prev)
+      }
+    }
+    return res.ok
+  }, [selectedCampaign, fetchCampaigns])
+
   return {
     campaigns,
     selectedCampaign,
@@ -247,9 +301,13 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     campaignItp,
     draperSummary,
     contactsLoading,
+    hasMoreContacts,
+    loadMoreContacts,
     campaignSenders,
     allSenders,
     changeCampaignSender,
+    toggleCampaignStatus,
+    updateCampaign,
     refreshCampaigns: fetchCampaigns,
   }
 }

@@ -303,6 +303,8 @@ export default function App() {
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
               loading={bel.loading}
+              hasMoreLeads={bel.hasMoreLeads}
+              onLoadMoreLeads={bel.loadMoreLeads}
               belfortSummary={bel.belfortSummary}
             />
           )}
@@ -320,6 +322,10 @@ export default function App() {
               campaignSenders={camp.campaignSenders}
               allSenders={camp.allSenders}
               onChangeSender={camp.changeCampaignSender}
+              onToggleStatus={camp.toggleCampaignStatus}
+              onUpdateCampaign={camp.updateCampaign}
+              hasMoreContacts={camp.hasMoreContacts}
+              onLoadMoreContacts={camp.loadMoreContacts}
             />
           )}
           {selectedEmployee.name === 'Warren' && (

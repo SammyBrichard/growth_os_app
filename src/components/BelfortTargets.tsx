@@ -8,6 +8,8 @@ interface BelfortTargetsProps {
   belfortSubTab: string
   selectedLead: Lead | null
   loading?: boolean
+  hasMoreLeads?: boolean
+  onLoadMoreLeads?: () => void
   belfortSummary?: string | null
   onSelectItp: (id: string) => void
   onSelectSubTab: (tab: string) => void
@@ -21,6 +23,8 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   belfortSubTab,
   selectedLead,
   loading,
+  hasMoreLeads,
+  onLoadMoreLeads,
   belfortSummary,
   onSelectItp,
   onSelectSubTab,
@@ -105,6 +109,9 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           )}
         </tbody>
       </table>
+      {hasMoreLeads && (
+        <button className="load-more-btn" onClick={onLoadMoreLeads}>Load more targets</button>
+      )}
     </div>
   )
 }

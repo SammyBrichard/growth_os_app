@@ -14,6 +14,10 @@ interface CampaignManagerProps {
   campaignSenders: Record<string, CampaignSender>
   allSenders: CampaignSender[]
   onChangeSender: (campaignId: string, senderId: string) => Promise<void>
+  onToggleStatus: (campaignId: string, status: 'active' | 'paused') => Promise<void>
+  onUpdateCampaign: (campaignId: string, updates: { name?: string; tone?: string; email_sequence?: any[] }) => Promise<boolean>
+  hasMoreContacts?: boolean
+  onLoadMoreContacts?: () => void
 }
 
 function formatDate(dateStr: string) {
@@ -46,8 +50,17 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   campaignSenders,
   allSenders,
   onChangeSender,
+  onToggleStatus,
+  onUpdateCampaign,
+  hasMoreContacts,
+  onLoadMoreContacts,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editTone, setEditTone] = useState('')
+  const [editSequence, setEditSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
+  const [saving, setSaving] = useState(false)
   const [parsedSequence, setParsedSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
   const [changingSender, setChangingSender] = useState(false)
   const [pendingSenderId, setPendingSenderId] = useState<string>('')
@@ -176,8 +189,48 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
       <div className="campaign-detail-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button className="campaign-back-btn" onClick={() => onSelectCampaign(null)}>&larr; Back</button>
-          <span className="campaign-detail-name">{selectedCampaign.name}</span>
+          {editing ? (
+            <input className="campaign-edit-name" value={editName} onChange={e => setEditName(e.target.value)} />
+          ) : (
+            <span className="campaign-detail-name">{selectedCampaign.name}</span>
+          )}
           <span className={`campaign-status ${selectedCampaign.status}`}>{selectedCampaign.status}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {!editing && (
+            <button className="campaign-edit-btn" onClick={() => {
+              setEditName(selectedCampaign.name)
+              setEditTone(selectedCampaign.tone ?? '')
+              setEditSequence(parsedSequence.map(e => ({ ...e })))
+              setEditing(true)
+            }}>Edit</button>
+          )}
+          {editing && (
+            <>
+              <button className="campaign-save-btn" disabled={saving} onClick={async () => {
+                setSaving(true)
+                const ok = await onUpdateCampaign(selectedCampaign.id, {
+                  name: editName,
+                  tone: editTone,
+                  email_sequence: editSequence,
+                })
+                setSaving(false)
+                if (ok) {
+                  setParsedSequence(editSequence)
+                  setEditing(false)
+                }
+              }}>{saving ? 'Saving...' : 'Save'}</button>
+              <button className="campaign-cancel-btn" onClick={() => setEditing(false)}>Cancel</button>
+            </>
+          )}
+          {!editing && selectedCampaign.status === 'active' && (
+            <button className="campaign-pause-btn" onClick={() => onToggleStatus(selectedCampaign.id, 'paused')}>Pause</button>
+          )}
+          {!editing && (selectedCampaign.status === 'paused' || selectedCampaign.status === 'draft' || selectedCampaign.status === 'synced_not_active') && (
+            <button className="campaign-resume-btn" onClick={() => onToggleStatus(selectedCampaign.id, 'active')}>
+              {selectedCampaign.status === 'paused' ? 'Resume' : 'Activate'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -213,12 +266,18 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             <span className="campaign-meta-value">{campaignItp.name ?? 'Unnamed ITP'}</span>
           </div>
         )}
-        {selectedCampaign.tone && (
-          <div className="campaign-meta-item">
-            <span className="campaign-meta-label">Tone</span>
-            <span className="campaign-meta-value">{selectedCampaign.tone}</span>
-          </div>
-        )}
+        <div className="campaign-meta-item">
+          <span className="campaign-meta-label">Tone</span>
+          {editing ? (
+            <select className="campaign-edit-tone" value={editTone} onChange={e => setEditTone(e.target.value)}>
+              <option value="Professional">Professional</option>
+              <option value="Friendly & casual">Friendly & casual</option>
+              <option value="Direct & punchy">Direct & punchy</option>
+            </select>
+          ) : (
+            <span className="campaign-meta-value">{selectedCampaign.tone ?? '—'}</span>
+          )}
+        </div>
         <div className="campaign-meta-item">
           <span className="campaign-meta-label">Emails in Sequence</span>
           <span className="campaign-meta-value">{selectedCampaign.num_emails}</span>
@@ -274,8 +333,20 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             ))}
           </div>
           <div className="campaign-sequence-content">
-            <div className="campaign-sequence-subject">{parsedSequence[activeEmailTab]?.subject}</div>
-            <div className="campaign-sequence-body" dangerouslySetInnerHTML={{ __html: parsedSequence[activeEmailTab]?.body ?? '' }} />
+            {editing ? (
+              <input
+                className="campaign-edit-subject"
+                value={editSequence[activeEmailTab]?.subject ?? ''}
+                onChange={e => {
+                  const updated = [...editSequence]
+                  updated[activeEmailTab] = { ...updated[activeEmailTab], subject: e.target.value }
+                  setEditSequence(updated)
+                }}
+              />
+            ) : (
+              <div className="campaign-sequence-subject">{parsedSequence[activeEmailTab]?.subject}</div>
+            )}
+            <div className="campaign-sequence-body" dangerouslySetInnerHTML={{ __html: (editing ? editSequence : parsedSequence)[activeEmailTab]?.body ?? '' }} />
           </div>
         </div>
       )}
@@ -327,6 +398,9 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             </div>
           ))}
         </div>
+        )}
+        {hasMoreContacts && (
+          <button className="load-more-btn" onClick={onLoadMoreContacts}>Load more contacts</button>
         )}
       </div>
     </div>

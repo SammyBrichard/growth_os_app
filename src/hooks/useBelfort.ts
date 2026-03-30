@@ -54,17 +54,40 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     }
   }, [selectedEmployee, accountId])
 
-  // Load leads when selected ITP changes
+  const LEADS_PAGE_SIZE = 50
+  const [hasMoreLeads, setHasMoreLeads] = useState(false)
+
+  // Load leads when selected ITP changes (reset pagination)
   useEffect(() => {
-    if (!belfortSelectedItpId) { setBelfortLeads([]); return }
+    if (!belfortSelectedItpId) { setBelfortLeads([]); setHasMoreLeads(false); return }
     setLoading(true)
     supabase.from('leads')
       .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
       .eq('itp_id', belfortSelectedItpId)
       .gte('score', 70)
       .order('score', { ascending: false })
-      .then(({ data }) => { setBelfortLeads((data ?? []) as Lead[]); setLoading(false) })
+      .limit(LEADS_PAGE_SIZE)
+      .then(({ data }) => {
+        const leads = (data ?? []) as Lead[]
+        setBelfortLeads(leads)
+        setHasMoreLeads(leads.length === LEADS_PAGE_SIZE)
+        setLoading(false)
+      })
   }, [belfortSelectedItpId])
+
+  const loadMoreLeads = useCallback(async () => {
+    if (!belfortSelectedItpId) return
+    const { data } = await supabase.from('leads')
+      .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
+      .eq('itp_id', belfortSelectedItpId)
+      .gte('score', 70)
+      .order('score', { ascending: false })
+      .limit(LEADS_PAGE_SIZE)
+      .range(belfortLeads.length, belfortLeads.length + LEADS_PAGE_SIZE - 1)
+    const more = (data ?? []) as Lead[]
+    setBelfortLeads(prev => [...prev, ...more])
+    setHasMoreLeads(more.length === LEADS_PAGE_SIZE)
+  }, [belfortSelectedItpId, belfortLeads.length])
 
   /**
    * After all leads for an ITP have been approved/rejected, queue
@@ -155,6 +178,8 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     expandedLeadId,
     setExpandedLeadId,
     loading,
+    hasMoreLeads,
+    loadMoreLeads,
     belfortSummary,
     checkAndQueueTargetMobilisation,
     rejectLead,
