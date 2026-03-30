@@ -74,6 +74,9 @@ export default function useMobilisation({
   // Queue check state
   const [queueChecked, setQueueChecked] = useState(false)
 
+  // Error state for user feedback
+  const [error, setError] = useState<string | null>(null)
+
   // ── Persistence helpers ──────────────────────────────────────────────
 
   const saveMobilisationState = useCallback(async (mobilisation: string, stepId: string) => {
@@ -160,6 +163,7 @@ export default function useMobilisation({
       }
     } catch (err) {
       console.error('mobilisation start error:', err)
+      setError('Something went wrong starting the flow. Please try again.')
       setInputBarEnabled(true)
     }
   }, [userDetailsId, user, showStepMessages, completeMobilisation])
@@ -214,10 +218,15 @@ export default function useMobilisation({
 
   // ── Handle send (free-type input) ────────────────────────────────────
 
+  // Fix #4: Prevent send spam
+  const sendingRef = useRef(false)
+
   const handleSend = useCallback(async () => {
     const text = (inputRef.current?.value ?? '').trim()
-    if (!text || !input_bar_enabled || activeSidebar) return
+    if (!text || !input_bar_enabled || activeSidebar || sendingRef.current) return
+    sendingRef.current = true
 
+    try {
     const tempId = `temp_${Date.now()}_${Math.random()}`
     setMessages(prev => [...prev, { tempId, message_body: text, is_agent: false, timestamp: new Date() }])
     setInputValue('')
@@ -271,9 +280,11 @@ export default function useMobilisation({
         }
       } catch (err) {
         console.error('mobilisation step error:', err)
+        setError('Something went wrong. Please try again.')
         setInputBarEnabled(true)
       }
     }
+    } finally { sendingRef.current = false }
   }, [
     input_bar_enabled, activeSidebar, mobilisation_active, current_step,
     current_mobilisation, mobilisation_responses, userDetailsId,
@@ -283,10 +294,11 @@ export default function useMobilisation({
 
   // ── Handle option select ─────────────────────────────────────────────
 
+  const optionProcessingRef = useRef(false)
+
   const handleOptionSelect = useCallback(async (option: StepOption) => {
-    if (activeSidebar) return
-    console.log('Option selected:', option.message)
-    console.log('current_step:', current_step)
+    if (activeSidebar || optionProcessingRef.current) return
+    optionProcessingRef.current = true
     setOptions(null)
 
     if (mobilisation_active && current_mobilisation) {
@@ -352,7 +364,10 @@ export default function useMobilisation({
       }
     } catch (err) {
       console.error('option select error:', err)
+      setError('Something went wrong. Please try again.')
       setInputBarEnabled(true)
+    } finally {
+      optionProcessingRef.current = false
     }
   }, [
     activeSidebar, current_step, current_mobilisation, mobilisation_active,
@@ -548,6 +563,8 @@ export default function useMobilisation({
     // Mobilisation responses setter
     setMobilisationResponses,
     mobilisationResponsesRef,
+    error,
+    setError,
 
     // Sidebar state
     activeSidebar,

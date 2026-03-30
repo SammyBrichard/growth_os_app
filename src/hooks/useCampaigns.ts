@@ -61,6 +61,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
   const [campaignItp, setCampaignItp] = useState<CampaignItp | null>(null)
   const [draperSummary, setDraperSummary] = useState<string | null>(null)
   const [draperSummaryLoading, setDraperSummaryLoading] = useState(false)
+  const [contactsLoading, setContactsLoading] = useState(false)
 
   const fetchCampaigns = useCallback(async () => {
     if (!accountId) return
@@ -129,6 +130,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     }
 
     // Fetch contacts with target info
+    setContactsLoading(true)
     supabase
       .from('campaign_contacts')
       .select('*, contacts(first_name, last_name, email, role, target_id, targets(title, domain))')
@@ -142,6 +144,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
           } : undefined,
         })) as CampaignContact[]
         setCampaignContacts(contacts)
+        setContactsLoading(false)
       })
 
     // Fetch ITP
@@ -191,6 +194,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     campaignContacts,
     campaignItp,
     draperSummary,
+    contactsLoading,
     refreshCampaigns: fetchCampaigns,
   }
 }

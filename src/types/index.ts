@@ -111,6 +111,14 @@ export interface Sender {
   account_id: string
   email: string
   display_name: string | null
+  smtp_host: string | null
+  smtp_port: number | null
+  smtp_username: string | null
+  smtp_password: string | null
+  imap_host: string | null
+  imap_port: number | null
+  provider: string | null
+  verified: boolean
 }
 
 export interface ItpStats {

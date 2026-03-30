@@ -48,6 +48,12 @@ export default function App() {
   const [activeNav, setActiveNav] = useState('chat')
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
   const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
+  const cleanupRef = useRef<(() => void) | null>(null)
+
+  // Fix #10: Cleanup subscription on unmount
+  useEffect(() => {
+    return () => { cleanupRef.current?.() }
+  }, [])
   const [fromClient] = useState(() => {
     // Detect magic link redirect: Supabase puts tokens in the hash fragment
     const hash = window.location.hash
@@ -90,11 +96,13 @@ export default function App() {
       if (!details) return
       const msgs = await ud.loadMessages(details.id)
       msg.setMessages(msgs)
-      ud.subscribeToMessages(details.id, {
+      const cleanup = ud.subscribeToMessages(details.id, {
         setIsTyping: msg.setIsTyping,
         setMessages: msg.setMessages,
         startMobilisation: mob.startMobilisation,
       })
+      // Store cleanup for when component unmounts
+      cleanupRef.current = cleanup
       if (!details.signup_complete) {
         if (details.active_mobilisation && details.active_step_id) {
           mob.resumeMobilisation(details.active_mobilisation, details.active_step_id, details.id)
@@ -234,14 +242,18 @@ export default function App() {
   }
 
   async function handleSenderSelect(senderId: string) {
-    // Save sender_id directly to the campaign in DB so sync_to_smartlead picks it up
     const campaignId = mob.mobilisationResponsesRef.current.campaign_id
     if (campaignId) {
+      // Campaign flow: save sender_id to campaign and advance mobilisation
       await supabase.from('campaigns').update({ sender_id: senderId }).eq('id', campaignId)
+      mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, sender_id: senderId }
+      mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
+      mob.handleSidebarAdvance('Sender selected')
+    } else {
+      // Pepper page: just close sidebar and refresh senders list
+      mob.setActiveSidebar(null)
+      pep.refreshSenders()
     }
-    mob.mobilisationResponsesRef.current = { ...mob.mobilisationResponsesRef.current, sender_id: senderId }
-    mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, sender_id: senderId }))
-    mob.handleSidebarAdvance('Sender selected')
   }
 
   async function handleLogout() {
@@ -292,6 +304,7 @@ export default function App() {
               onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedLeadId(null) }}
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
+              loading={bel.loading}
             />
           )}
           {selectedEmployee.name === 'Draper' && (
@@ -304,6 +317,7 @@ export default function App() {
               selectedContact={selectedCampaignContact}
               onSelectContact={setSelectedCampaignContact}
               draperSummary={camp.draperSummary}
+              contactsLoading={camp.contactsLoading}
             />
           )}
           {selectedEmployee.name === 'Warren' && (
@@ -322,6 +336,9 @@ export default function App() {
               userDetails={pep.userDetails}
               activityLog={pep.activityLog}
               senders={pep.senders}
+              onUpdateUserFirstname={pep.updateUserFirstname}
+              onUpdateSender={pep.updateSender}
+              onAddSender={() => mob.setActiveSidebar('select_sender')}
             />
           )}
         </div>
@@ -362,6 +379,8 @@ export default function App() {
             onSend={mob.handleSend}
             onKeyDown={mob.handleKeyDown}
             formatTime={msg.formatTime}
+            error={mob.error}
+            onDismissError={() => mob.setError(null)}
             compact={selectedEmployee.name !== 'Watson'}
           />
         </div>

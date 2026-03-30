@@ -99,10 +99,17 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       startMobilisation: (name: string) => Promise<void>
     },
   ) => {
+    let typingTimeout: ReturnType<typeof setTimeout> | null = null
+
     const channel = supabase
       .channel(`user:${detailsId}`)
       .on('broadcast', { event: 'agent_typing' }, ({ payload }) => {
         callbacks.setIsTyping(payload.typing)
+        // Fix #5: Auto-clear typing indicator after 30s in case server never sends false
+        if (typingTimeout) clearTimeout(typingTimeout)
+        if (payload.typing) {
+          typingTimeout = setTimeout(() => callbacks.setIsTyping(false), 30000)
+        }
       })
       .on('broadcast', { event: 'start_mobilisation' }, ({ payload }) => {
         callbacks.startMobilisation(payload.mobilisation)
@@ -129,7 +136,11 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       })
       .subscribe()
 
-    return channel
+    // Fix #10: Return cleanup function
+    return () => {
+      if (typingTimeout) clearTimeout(typingTimeout)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   return {

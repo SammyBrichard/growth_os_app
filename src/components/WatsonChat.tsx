@@ -17,6 +17,8 @@ interface WatsonChatProps {
   onKeyDown: (e: React.KeyboardEvent) => void
   formatTime: (date: string | Date) => string
   compact?: boolean
+  error?: string | null
+  onDismissError?: () => void
 }
 
 const SCROLL_THRESHOLD = 150
@@ -35,6 +37,8 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   onKeyDown,
   formatTime,
   compact,
+  error,
+  onDismissError,
 }) => {
   const chatRef = useRef<HTMLDivElement>(null)
   const [userScrolledUp, setUserScrolledUp] = useState(false)
@@ -153,6 +157,12 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
         <button className="chat-new-messages-btn" onClick={handleJumpToBottom}>
           New messages below
         </button>
+      )}
+
+      {error && (
+        <div className="chat-error" onClick={onDismissError}>
+          {error} <span style={{ opacity: 0.6, marginLeft: 8 }}>Click to dismiss</span>
+        </div>
       )}
 
       <div className={`chat-input-area${compact ? ' chat-compact' : ''}`}>

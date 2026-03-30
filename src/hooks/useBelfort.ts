@@ -21,6 +21,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
   const [belfortSubTab, setBelfortSubTab] = useState<'needs_approval' | 'approved'>('needs_approval')
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   // Load ITPs when Belfort is selected
   useEffect(() => {
@@ -37,12 +38,13 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
   // Load leads when selected ITP changes
   useEffect(() => {
     if (!belfortSelectedItpId) { setBelfortLeads([]); return }
+    setLoading(true)
     supabase.from('leads')
       .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
       .eq('itp_id', belfortSelectedItpId)
       .gte('score', 70)
       .order('score', { ascending: false })
-      .then(({ data }) => setBelfortLeads((data ?? []) as Lead[]))
+      .then(({ data }) => { setBelfortLeads((data ?? []) as Lead[]); setLoading(false) })
   }, [belfortSelectedItpId])
 
   /**
@@ -133,6 +135,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee 
     setSelectedLead,
     expandedLeadId,
     setExpandedLeadId,
+    loading,
     checkAndQueueTargetMobilisation,
     rejectLead,
     approveLead,

@@ -10,6 +10,7 @@ interface CampaignManagerProps {
   selectedContact: CampaignContact | null
   onSelectContact: (contact: CampaignContact | null) => void
   draperSummary: string | null
+  contactsLoading?: boolean
 }
 
 function formatDate(dateStr: string) {
@@ -38,6 +39,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   selectedContact,
   onSelectContact,
   draperSummary,
+  contactsLoading,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
   const [parsedSequence, setParsedSequence] = useState<{ seq_number: number; delay_in_days: number; subject: string; body: string }[]>([])
@@ -236,6 +238,9 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
       {/* Pipeline Kanban */}
       <div className="campaign-pipeline">
         <div className="campaign-meta-label" style={{ marginBottom: 12 }}>Pipeline</div>
+        {contactsLoading ? (
+          <div style={{ color: 'var(--muted)', fontSize: 13, fontStyle: 'italic', padding: '12px 0' }}>Loading contacts...</div>
+        ) : (
         <div className="campaign-kanban">
           {PIPELINE_COLUMNS.map(col => (
             <div key={col.key} className="kanban-column">
@@ -277,6 +282,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   )
