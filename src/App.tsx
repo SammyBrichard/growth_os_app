@@ -343,14 +343,13 @@ export default function App() {
             messages={msg.messages}
             options={mob.options}
             isTyping={msg.isTyping}
-            inputValue={mob.inputValue}
             input_bar_enabled={mob.input_bar_enabled}
             activeSidebar={mob.activeSidebar}
             activeSkills={activeSkills}
             messagesEndRef={msg.messagesEndRef}
+            inputRef={mob.inputRef}
             onOptionSelect={mob.handleOptionSelect}
             onSend={mob.handleSend}
-            onInputChange={mob.setInputValue}
             onKeyDown={mob.handleKeyDown}
             formatTime={msg.formatTime}
             compact={selectedEmployee.name !== 'Watson'}

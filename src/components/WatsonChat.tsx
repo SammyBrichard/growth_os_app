@@ -7,14 +7,13 @@ interface WatsonChatProps {
   messages: Message[]
   options: StepOption[] | null
   isTyping: boolean
-  inputValue: string
   input_bar_enabled: boolean
   activeSidebar: string | null
   activeSkills: SkillStatus[]
   messagesEndRef: React.RefObject<HTMLDivElement | null>
+  inputRef: React.RefObject<HTMLInputElement | null>
   onOptionSelect: (opt: StepOption) => void
   onSend: () => void
-  onInputChange: (value: string) => void
   onKeyDown: (e: React.KeyboardEvent) => void
   formatTime: (date: string | Date) => string
   compact?: boolean
@@ -26,14 +25,13 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   messages,
   options,
   isTyping,
-  inputValue,
   input_bar_enabled,
   activeSidebar,
   activeSkills,
   messagesEndRef,
+  inputRef,
   onOptionSelect,
   onSend,
-  onInputChange,
   onKeyDown,
   formatTime,
   compact,
@@ -160,11 +158,10 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
       <div className={`chat-input-area${compact ? ' chat-compact' : ''}`}>
         <div className="chat-input-line">
           <input
+            ref={inputRef}
             type="text"
             placeholder="Your message"
             className="chat-input"
-            value={inputValue}
-            onChange={e => onInputChange(e.target.value)}
             onKeyDown={onKeyDown}
           />
           <button
@@ -180,4 +177,4 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
   )
 }
 
-export default React.memo(WatsonChat)
+export default WatsonChat

@@ -47,7 +47,13 @@ export default function useMobilisation({
     })
   }, [])
   const [input_bar_enabled, setInputBarEnabled] = useState(false)
-  const [inputValue, setInputValue] = useState('')
+  const [inputValue, _setInputValue] = useState('')
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const setInputValue = useCallback((val: string) => {
+    _setInputValue(val)
+    if (inputRef.current) inputRef.current.value = val
+  }, [])
   const [options, setOptions] = useState<StepOption[] | null>(null)
 
   // Sidebar state
@@ -209,7 +215,7 @@ export default function useMobilisation({
   // ── Handle send (free-type input) ────────────────────────────────────
 
   const handleSend = useCallback(async () => {
-    const text = inputValue.trim()
+    const text = (inputRef.current?.value ?? '').trim()
     if (!text || !input_bar_enabled || activeSidebar) return
 
     const tempId = `temp_${Date.now()}_${Math.random()}`
@@ -269,7 +275,7 @@ export default function useMobilisation({
       }
     }
   }, [
-    inputValue, input_bar_enabled, activeSidebar, mobilisation_active, current_step,
+    input_bar_enabled, activeSidebar, mobilisation_active, current_step,
     current_mobilisation, mobilisation_responses, userDetailsId,
     setMessages, saveMessage, showStepMessages, saveMobilisationState,
     clearMobilisationState, completeMobilisation,
@@ -535,6 +541,7 @@ export default function useMobilisation({
     setInputBarEnabled,
     inputValue,
     setInputValue,
+    inputRef,
     options,
     setOptions,
 
