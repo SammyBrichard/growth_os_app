@@ -17,6 +17,8 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
   const [hasReasons, setHasReasons] = useState(false)
   const [rejectingId, setRejectingId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [bulkRejectMode, setBulkRejectMode] = useState(false)
+  const [bulkRejectReason, setBulkRejectReason] = useState('')
   const totalReviewed = approvedCount + rejectedCount
   const totalLeads = leads.length + totalReviewed
 
@@ -72,9 +74,6 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
       </div>
     )
   }
-
-  const [bulkRejectMode, setBulkRejectMode] = useState(false)
-  const [bulkRejectReason, setBulkRejectReason] = useState('')
 
   async function handleBulkApprove() {
     const ids = leads.map(l => l.id)
