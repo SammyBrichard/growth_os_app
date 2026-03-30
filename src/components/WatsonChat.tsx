@@ -130,7 +130,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
 
         {activeSkills.map((skill) => (
           <div key={`${skill.employee}/${skill.skill}`} className="msg-animate">
-            <p className="skill-status-text">
+            <p className="skill-status-text skill-status-active">
               {skill.message ?? 'Working on it...'}
             </p>
           </div>

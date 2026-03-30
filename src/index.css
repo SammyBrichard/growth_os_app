@@ -658,6 +658,27 @@ body {
   padding: 6px 0px 6px 14px;
 }
 
+.skill-status-active {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--muted) 40%,
+    color-mix(in srgb, var(--muted) 40%, transparent) 50%,
+    var(--muted) 60%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
 
 /* ============================================================
    RIGHT SIDEBAR
