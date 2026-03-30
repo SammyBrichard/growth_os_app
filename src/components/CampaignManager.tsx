@@ -66,8 +66,9 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   const [pendingSenderId, setPendingSenderId] = useState<string>('')
   const [savingSender, setSavingSender] = useState(false)
 
-  // Parse email sequence once when campaign changes
+  // Parse email sequence once when campaign changes — reset tab index
   useEffect(() => {
+    setActiveEmailTab(0)
     if (!selectedCampaign) { setParsedSequence([]); return }
     const raw = selectedCampaign.email_sequence
     if (Array.isArray(raw) && raw.length > 0) { setParsedSequence(raw); return }
