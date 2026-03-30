@@ -110,7 +110,7 @@ const WatsonChat: React.FC<WatsonChatProps> = ({
         {messages.map((msg, i) => {
           // Hide status messages that match a currently active skill (shown at bottom instead)
           if (msg.is_status && activeSkills.some(s => s.message === msg.message_body)) return null
-          const showLabel = msg.is_agent && !msg.is_status && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status)
+          const showLabel = msg.is_agent && !msg.is_status && !msg.is_divider && (i === 0 || !messages[i - 1]?.is_agent || messages[i - 1]?.is_status || messages[i - 1]?.is_divider)
           return (
             <div key={msg.id ?? i} className="msg-animate">
               {showLabel && <div className="agent-label">WATSON</div>}
