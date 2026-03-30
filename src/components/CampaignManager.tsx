@@ -245,7 +245,12 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
               </div>
               <div className="kanban-column-body">
                 {(grouped[col.key] ?? []).map(cc => (
-                  <div key={cc.id} className={`kanban-card${selectedContact?.id === cc.id ? ' kanban-card-selected' : ''}`} style={{ borderLeftColor: col.colour, cursor: 'pointer' }} onClick={() => onSelectContact(selectedContact?.id === cc.id ? null : cc)}>
+                  <div
+                    key={cc.id}
+                    className={`kanban-card${selectedContact?.id === cc.id ? ' kanban-card-selected' : ''}${cc.classification === 'positive' ? ' kanban-card-positive' : cc.classification === 'negative' ? ' kanban-card-negative' : ''}`}
+                    style={{ borderLeftColor: cc.classification === 'positive' ? '#4a8c5c' : cc.classification === 'negative' ? '#c44e2b' : col.colour, cursor: 'pointer' }}
+                    onClick={() => onSelectContact(selectedContact?.id === cc.id ? null : cc)}
+                  >
                     <div className="kanban-card-name">
                       {cc.contact?.first_name || cc.contact?.last_name
                         ? `${cc.contact.first_name ?? ''} ${cc.contact.last_name ?? ''}`.trim()
@@ -257,7 +262,10 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
                     {cc.contact?.role && (
                       <div className="kanban-card-role">{cc.contact.role}</div>
                     )}
-                    {cc.sent_at && col.key !== 'pending' && (
+                    {cc.reply_body && (
+                      <div className="kanban-card-reply">{cc.reply_body.slice(0, 60)}{cc.reply_body.length > 60 ? '...' : ''}</div>
+                    )}
+                    {cc.sent_at && col.key !== 'pending' && !cc.reply_body && (
                       <div className="kanban-card-time">{formatTimestamp(col.key === 'replied' && cc.replied_at ? cc.replied_at : col.key === 'opened' && cc.opened_at ? cc.opened_at : cc.sent_at)}</div>
                     )}
                   </div>

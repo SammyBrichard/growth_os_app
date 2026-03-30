@@ -24,6 +24,8 @@ export interface CampaignContact {
   opened_at: string | null
   replied_at: string | null
   email_body: string | null
+  reply_body: string | null
+  classification: 'positive' | 'negative' | 'neutral' | 'out_of_office' | null
   contact?: {
     first_name: string
     last_name: string
@@ -45,13 +47,14 @@ export interface CampaignItp {
 
 interface UseCampaignsParams {
   accountId: string | null
+  userDetailsId: string | null
   selectedEmployee: { name: string }
   firstname?: string
 }
 
 const API_URL = import.meta.env.VITE_API_URL
 
-export default function useCampaigns({ accountId, selectedEmployee, firstname }: UseCampaignsParams) {
+export default function useCampaigns({ accountId, userDetailsId, selectedEmployee, firstname }: UseCampaignsParams) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [campaignContacts, setCampaignContacts] = useState<CampaignContact[]>([])
@@ -153,6 +156,33 @@ export default function useCampaigns({ accountId, selectedEmployee, firstname }:
         })
     }
   }, [selectedCampaign])
+
+  // Real-time subscription for campaign contact updates
+  useEffect(() => {
+    if (!userDetailsId) return
+
+    const channel = supabase
+      .channel(`campaign_updates:${userDetailsId}`)
+      .on('broadcast', { event: 'contact_status_change' }, ({ payload }) => {
+        setCampaignContacts(prev => prev.map(cc => {
+          if (cc.contact_id === payload.contact_id && selectedCampaign?.id === payload.campaign_id) {
+            return {
+              ...cc,
+              status: payload.status,
+              reply_body: payload.reply_body ?? cc.reply_body,
+              classification: payload.classification ?? cc.classification,
+              sent_at: payload.status === 'sent' ? new Date().toISOString() : cc.sent_at,
+              opened_at: payload.status === 'opened' ? new Date().toISOString() : cc.opened_at,
+              replied_at: payload.status === 'replied' ? new Date().toISOString() : cc.replied_at,
+            }
+          }
+          return cc
+        }))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [userDetailsId, selectedCampaign?.id])
 
   return {
     campaigns,

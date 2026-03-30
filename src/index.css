@@ -1395,6 +1395,49 @@ body {
   background: var(--cream);
 }
 
+.kanban-card-positive {
+  background: color-mix(in srgb, #4a8c5c 4%, #fff);
+}
+
+.kanban-card-negative {
+  background: color-mix(in srgb, #c44e2b 4%, #fff);
+}
+
+.kanban-card-reply {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* Reply classification badges */
+.reply-classification {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: 'DM Mono', monospace;
+  text-transform: capitalize;
+}
+
+.reply-classification.positive { background: color-mix(in srgb, #4a8c5c 10%, transparent); color: #4a8c5c; }
+.reply-classification.negative { background: color-mix(in srgb, #c44e2b 10%, transparent); color: #c44e2b; }
+.reply-classification.neutral { background: var(--cream); color: var(--muted); }
+.reply-classification.out_of_office { background: var(--cream); color: var(--muted); }
+
+/* Reply body in sidebar */
+.reply-body-box {
+  padding: 12px 14px;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fg);
+  white-space: pre-wrap;
+}
+
 /* -- Contact detail panel -- */
 .contact-detail-panel {
   margin-top: 24px;

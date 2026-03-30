@@ -69,6 +69,7 @@ export default function App() {
   })
   const camp = useCampaigns({
     accountId: ud.accountId,
+    userDetailsId: ud.userDetailsId,
     selectedEmployee,
     firstname: ud.userFirstNameRef?.current,
   })
