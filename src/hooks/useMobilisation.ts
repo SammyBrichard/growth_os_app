@@ -502,6 +502,10 @@ export default function useMobilisation({
 
     // Generate SIC codes for approval before continuing
     if (itpId) {
+      // Show Watson message explaining the next step
+      const sicMsg = "I've identified some industry codes based on your target profile. These codes determine which types of companies Belfort will search for — take a look and deselect any that don't match the kind of businesses you want to target."
+      setMessages(prev => [...prev, { message_body: sicMsg, is_agent: true, timestamp: new Date() }])
+      saveMessage(sicMsg, true, false)
       setActiveSidebar('loading_sic_codes')
       try {
         const res = await fetch(`${API_URL}/api/messages/generate-sic-codes`, {
