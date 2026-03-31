@@ -2608,31 +2608,32 @@ body {
 .sic-bulk-btn:hover { color: var(--fg); border-color: var(--fg); }
 
 .sic-approval-list {
-  flex: 1; overflow-y: auto; padding: 0 18px; display: flex; flex-direction: column; gap: 6px;
+  flex: 1; overflow-y: auto; padding: 0 18px; display: flex; flex-direction: column; gap: 8px;
 }
 .sic-approval-card {
-  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
-  border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px;
   transition: all 0.15s; background: var(--cream);
 }
-.sic-approval-card.approved { border-color: #4a8c5c; background: rgba(74, 140, 92, 0.05); }
-.sic-approval-card.rejected { opacity: 0.5; }
-.sic-approval-card:hover { border-color: var(--fg); }
+.sic-approval-card.approved { border-color: #4a8c5c; }
+.sic-approval-card.rejected { border-color: var(--accent); opacity: 0.6; }
 
-.sic-approval-checkbox {
-  width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  font-size: 12px; font-weight: 700; color: #4a8c5c; margin-top: 1px;
-}
-.sic-approval-card.approved .sic-approval-checkbox {
-  background: rgba(74, 140, 92, 0.1); border-color: #4a8c5c;
-}
-
-.sic-approval-content { display: flex; flex-direction: column; gap: 2px; }
+.sic-approval-content { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .sic-approval-code {
-  font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted);
+  font-size: 10px; font-family: 'DM Mono', monospace; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.05em;
 }
 .sic-approval-description { font-size: 13px; color: var(--fg); line-height: 1.4; }
+
+.sic-approval-btns { display: flex; gap: 4px; flex-shrink: 0; }
+.sic-btn {
+  font-size: 10px; font-family: 'DM Mono', monospace; padding: 4px 10px;
+  border-radius: 4px; cursor: pointer; transition: all 0.15s;
+  border: 1px solid var(--border); background: none; color: var(--muted);
+}
+.sic-btn:hover { border-color: var(--fg); color: var(--fg); }
+.sic-btn.approve.active { background: #4a8c5c; color: var(--bg); border-color: #4a8c5c; }
+.sic-btn.reject.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
 .sic-approval-footer {
   padding: 12px 18px; border-top: 1px solid var(--border);
