@@ -502,10 +502,8 @@ export default function useMobilisation({
 
     // Generate SIC codes for approval before continuing
     if (itpId) {
-      // Show Watson message explaining the next step
       const sicMsg = "I've identified some industry codes based on your target profile. These codes determine which types of companies Belfort will search for — take a look and deselect any that don't match the kind of businesses you want to target."
       setMessages(prev => [...prev, { message_body: sicMsg, is_agent: true, timestamp: new Date() }])
-      saveMessage(sicMsg, true, false)
       setActiveSidebar('loading_sic_codes')
       try {
         const res = await fetch(`${API_URL}/api/messages/generate-sic-codes`, {
@@ -515,7 +513,16 @@ export default function useMobilisation({
         })
         const { sic_codes } = await res.json()
         if (sic_codes?.length > 0) {
-          setSidebarData(() => ({ itp_id: itpId, sic_codes }))
+          // Save message with sidebar info so it reopens on refresh
+          const sidebarInfo = { itp_id: itpId, sic_codes }
+          await supabase.from('messages').insert({
+            user_details_id: userDetailsId,
+            message_body: sicMsg,
+            is_agent: true,
+            sidebar: 'approve_sic_codes',
+            sidebar_info: sidebarInfo,
+          })
+          setSidebarData(() => sidebarInfo)
           setActiveSidebar('approve_sic_codes')
           return // Don't start upload_customers yet — wait for SIC approval
         }
@@ -526,7 +533,7 @@ export default function useMobilisation({
 
     setActiveSidebar(null)
     startMobilisation('upload_customers')
-  }, [sidebarData, setMessages, saveMessage, startMobilisation])
+  }, [sidebarData, setMessages, saveMessage, startMobilisation, userDetailsId])
 
   // ── Manual customer add ──────────────────────────────────────────────
 
