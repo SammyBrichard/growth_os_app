@@ -30,7 +30,12 @@ export default function useSkillStatus({ userDetailsId }: UseSkillStatusParams) 
         const status = payload as SkillStatus
         if (status.status === 'running') {
           setActiveSkills(prev => {
-            if (prev.some(s => s.employee === status.employee && s.skill === status.skill)) return prev
+            const existing = prev.findIndex(s => s.employee === status.employee && s.skill === status.skill)
+            if (existing !== -1) {
+              const updated = [...prev]
+              updated[existing] = status
+              return updated
+            }
             return [...prev, status]
           })
         } else if (status.status === 'complete') {
