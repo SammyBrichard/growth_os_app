@@ -20,6 +20,7 @@ interface RightSidebarProps {
   setManualCustomerInput: (fn: (prev: CustomerInput) => CustomerInput) => void
   onAddManualCustomer: () => void
   csvRows: CustomerInput[]
+  csvError: string | null
   csvDragOver: boolean
   setCsvDragOver: (v: boolean) => void
   onCsvDrop: (e: any) => void
@@ -50,6 +51,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   setManualCustomerInput,
   onAddManualCustomer,
   csvRows,
+  csvError,
   csvDragOver,
   setCsvDragOver,
   onCsvDrop,
@@ -151,6 +153,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                 }
               </div>
               <input id="csv-file-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={onCsvDrop} />
+              {csvError && <p className="csv-error">{csvError}</p>}
             </div>
             {csvRows.length > 0 && (
               <div className="sidebar-field">

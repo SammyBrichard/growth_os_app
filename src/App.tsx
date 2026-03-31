@@ -450,6 +450,7 @@ export default function App() {
           setManualCustomerInput={mob.setManualCustomerInput}
           onAddManualCustomer={mob.handleAddManualCustomer}
           csvRows={mob.csvRows}
+          csvError={mob.csvError}
           csvDragOver={mob.csvDragOver}
           setCsvDragOver={mob.setCsvDragOver}
           onCsvDrop={mob.handleCsvDrop}
