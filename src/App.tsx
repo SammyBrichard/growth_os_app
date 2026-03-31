@@ -254,6 +254,17 @@ export default function App() {
       await supabase.from('itp').update({ sic_codes: codes }).eq('id', itpId)
     }
     mob.setActiveSidebar(null)
+
+    // Check if customers already exist — if so, this is a refinement flow
+    // and we should continue to signed_up_first_message instead of upload_customers
+    if (ud.accountId) {
+      const { count } = await supabase
+        .from('customers').select('id', { count: 'exact', head: true }).eq('account_id', ud.accountId)
+      if (count && count > 0) {
+        mob.startMobilisation('signed_up_first_message')
+        return
+      }
+    }
     mob.startMobilisation('upload_customers')
   }
 
