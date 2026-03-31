@@ -66,6 +66,7 @@ export default function useMobilisation({
   const [manualCustomerInput, setManualCustomerInput] = useState<CustomerInput>({ organisation_name: '', organisation_website: '' })
   const [csvRows, setCsvRows] = useState<CustomerInput[]>([])
   const [csvDragOver, setCsvDragOver] = useState(false)
+  const [csvError, setCsvError] = useState<string | null>(null)
 
   // ITP selection sidebar state
   const [itpList, setItpList] = useState<any[]>([])
@@ -586,17 +587,40 @@ export default function useMobilisation({
         return fields
       }
 
-      const rows = lines.slice(1).map(line => {
+      // Detect columns from header row
+      const NAME_ALIASES = ['name', 'company', 'company name', 'business', 'business name', 'organisation', 'organization', 'client', 'customer', 'account', 'customer name', 'client name']
+      const WEBSITE_ALIASES = ['website', 'url', 'domain', 'web', 'site', 'link', 'company website', 'website url']
+
+      const headers = parseCsvLine(lines[0]).map((h: string) => h.toLowerCase().trim())
+      const nameCol = headers.findIndex((h: string) => NAME_ALIASES.includes(h))
+      const websiteCol = headers.findIndex((h: string) => WEBSITE_ALIASES.includes(h))
+
+      if (nameCol === -1) {
+        setCsvError('Could not find a company name column. Please ensure your CSV has a column named "name", "company", "business", or similar.')
+        return
+      }
+
+      setCsvError(null)
+
+      const rows = lines.slice(1).map((line: string) => {
         const fields = parseCsvLine(line)
-        return { organisation_name: fields[0] ?? '', organisation_website: fields[1] ?? '' }
-      }).filter(r => r.organisation_name)
+        return {
+          organisation_name: fields[nameCol]?.trim() ?? '',
+          organisation_website: websiteCol !== -1 ? (fields[websiteCol]?.trim() ?? '') : '',
+        }
+      }).filter((r: CustomerInput) => r.organisation_name)
 
       if (accountId && rows.length) {
-        await supabase.from('customers').insert(rows.map(r => ({
-          account_id: accountId,
-          organisation_name: r.organisation_name,
-          organisation_website: r.organisation_website || null,
-        })))
+        // Insert in batches of 500 to handle large CSVs
+        const BATCH_SIZE = 500
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const batch = rows.slice(i, i + BATCH_SIZE)
+          await supabase.from('customers').insert(batch.map((r: CustomerInput) => ({
+            account_id: accountId,
+            organisation_name: r.organisation_name,
+            organisation_website: r.organisation_website || null,
+          })))
+        }
       }
       setCsvRows(rows)
     }
@@ -664,6 +688,7 @@ export default function useMobilisation({
     manualCustomerInput,
     setManualCustomerInput,
     csvRows,
+    csvError,
     csvDragOver,
     setCsvDragOver,
 
