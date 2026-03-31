@@ -563,13 +563,40 @@ export default function useMobilisation({
     if (!file) return
     const reader = new FileReader()
     reader.onload = async (ev: any) => {
-      const lines = (ev.target.result as string).split('\n').filter(Boolean)
+      const text = ev.target.result as string
+      const lines = text.split('\n').filter((l: string) => l.trim())
+
+      // Parse CSV lines respecting quoted fields (handles commas inside quotes)
+      function parseCsvLine(line: string): string[] {
+        const fields: string[] = []
+        let current = ''
+        let inQuotes = false
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i]
+          if (ch === '"') {
+            inQuotes = !inQuotes
+          } else if (ch === ',' && !inQuotes) {
+            fields.push(current.trim())
+            current = ''
+          } else {
+            current += ch
+          }
+        }
+        fields.push(current.trim())
+        return fields
+      }
+
       const rows = lines.slice(1).map(line => {
-        const [organisation_name, organisation_website] = line.split(',').map((v: string) => v.trim().replace(/^"|"$/g, ''))
-        return { organisation_name, organisation_website }
+        const fields = parseCsvLine(line)
+        return { organisation_name: fields[0] ?? '', organisation_website: fields[1] ?? '' }
       }).filter(r => r.organisation_name)
+
       if (accountId && rows.length) {
-        await supabase.from('customers').insert(rows.map(r => ({ account_id: accountId, ...r })))
+        await supabase.from('customers').insert(rows.map(r => ({
+          account_id: accountId,
+          organisation_name: r.organisation_name,
+          organisation_website: r.organisation_website || null,
+        })))
       }
       setCsvRows(rows)
     }
