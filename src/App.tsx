@@ -36,7 +36,7 @@ const API_URL = import.meta.env.VITE_API_URL
 const CLIENT_URL = import.meta.env.VITE_CLIENT_URL
 
 const employees: Employee[] = [
-  { name: 'Watson', role: 'Chief Marketing Officer', img: watsonImg },
+  { name: 'Watson', role: 'Head of Growth', img: watsonImg },
   { name: 'Belfort', role: 'Lead Generation Expert', img: belfortImg },
   { name: 'Warren', role: 'Business Analyst', img: warrenImg },
   { name: 'Pepper', role: 'Office Administrator', img: pepperImg },
