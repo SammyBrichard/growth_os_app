@@ -255,6 +255,12 @@ export default function App() {
     }
     mob.setActiveSidebar(null)
 
+    // User-side summary message
+    const total = mob.sidebarData.sic_codes?.length ?? 0
+    const text = `${approvedCodes.length} of ${total} industry codes approved`
+    msg.setMessages(prev => [...prev, { message_body: text, is_agent: false, timestamp: new Date() }])
+    ud.saveMessage(text, false, false)
+
     // Check if customers already exist — if so, this is a refinement flow
     // and we should continue to signed_up_first_message instead of upload_customers
     if (ud.accountId) {
