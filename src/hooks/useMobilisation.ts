@@ -482,7 +482,8 @@ export default function useMobilisation({
   // ── Save ITP sidebar ─────────────────────────────────────────────────
 
   const handleSaveItp = useCallback(async () => {
-    if (sidebarData.itp_id) {
+    const itpId = sidebarData.itp_id
+    if (itpId) {
       await supabase.from('itp').update({
         name: sidebarData.name ?? null,
         itp_summary: sidebarData.itp_summary ?? null,
@@ -490,7 +491,7 @@ export default function useMobilisation({
         itp_pain_points: sidebarData.pain_points ?? null,
         itp_buying_trigger: sidebarData.buying_trigger ?? null,
         location: sidebarData.location ?? null,
-      }).eq('id', sidebarData.itp_id)
+      }).eq('id', itpId)
     }
     const text = 'Looks good.'
     const tempId = `temp_${Date.now()}_${Math.random()}`
@@ -498,6 +499,27 @@ export default function useMobilisation({
     saveMessage(text, false, false).then(saved => {
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
+
+    // Generate SIC codes for approval before continuing
+    if (itpId) {
+      setActiveSidebar('loading_sic_codes')
+      try {
+        const res = await fetch(`${API_URL}/api/messages/generate-sic-codes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itp_id: itpId }),
+        })
+        const { sic_codes } = await res.json()
+        if (sic_codes?.length > 0) {
+          setSidebarData(() => ({ itp_id: itpId, sic_codes }))
+          setActiveSidebar('approve_sic_codes')
+          return // Don't start upload_customers yet — wait for SIC approval
+        }
+      } catch (err) {
+        console.error('[handleSaveItp] SIC code generation error:', err)
+      }
+    }
+
     setActiveSidebar(null)
     startMobilisation('upload_customers')
   }, [sidebarData, setMessages, saveMessage, startMobilisation])

@@ -1,6 +1,7 @@
 import React from 'react'
 import { ITP, CustomerInput } from '../types/index'
 import ApproveTargetsSidebar from './ApproveTargetsSidebar'
+import ApproveSicCodesSidebar from './ApproveSicCodesSidebar'
 import ReviewEmailTemplateSidebar from './ReviewEmailTemplateSidebar'
 import SelectSenderSidebar from './SelectSenderSidebar'
 
@@ -29,6 +30,7 @@ interface RightSidebarProps {
   accountId: string | null
   onTemplateApprove: (updatedSequence: any[]) => void
   onSenderSelect: (senderId: string) => void
+  onSicCodesApproved: (approvedCodes: { code: string; description: string }[]) => void
   onClose: () => void
   narrow?: boolean
 }
@@ -58,6 +60,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
   accountId,
   onTemplateApprove,
   onSenderSelect,
+  onSicCodesApproved,
   onClose,
   narrow,
 }) => {
@@ -444,6 +447,31 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
               accountId={accountId}
               onSelect={onSenderSelect}
             />
+          </div>
+        </>
+      )}
+
+      {activeSidebar === 'approve_sic_codes' && (
+        <>
+          <div id="right-sidebar-header"></div>
+          <div id="right-sidebar-body" style={{ padding: 0 }}>
+            <ApproveSicCodesSidebar
+              sicCodes={sidebarData.sic_codes ?? []}
+              onComplete={onSicCodesApproved}
+            />
+          </div>
+        </>
+      )}
+
+      {activeSidebar === 'loading_sic_codes' && (
+        <>
+          <div id="right-sidebar-header"></div>
+          <div id="right-sidebar-body" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="typing-dots">
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+              <span className="typing-dot" />
+            </div>
           </div>
         </>
       )}
