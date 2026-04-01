@@ -113,7 +113,6 @@ export default function App() {
       // null — the invite accept is what creates their first user_details record.
       const inviteToken = localStorage.getItem('pending_invite_token')
       if (inviteToken) {
-        localStorage.removeItem('pending_invite_token')
         try {
           const invRes = await fetch(`${API_URL}/api/user/invite/accept`, {
             method: 'POST',
@@ -121,6 +120,7 @@ export default function App() {
             body: JSON.stringify({ token: inviteToken, auth_id: user.id }),
           })
           if (invRes.ok) {
+            localStorage.removeItem('pending_invite_token')
             const invData = await invRes.json()
             setSelectedEmployee(employees[0])
             cleanupRef.current?.()
@@ -131,18 +131,24 @@ export default function App() {
             mob.setInputBarEnabled(false)
 
             const targetId = invData.user_details_id
-            const newCompany = {
-              id: targetId,
-              account_id: invData.account_id,
-              account_name: invData.account_name,
-              website: invData.website,
-              signup_complete: true,
-              firstname: invData.firstname ?? (ud.userFirstNameRef.current || null),
-              active_mobilisation: null,
-              active_step_id: null,
-              role: invData.role,
+            const alreadyLoaded = ud.companies.some(c => c.id === targetId)
+
+            if (!alreadyLoaded) {
+              const newCompany = {
+                id: targetId,
+                account_id: invData.account_id,
+                account_name: invData.account_name,
+                website: invData.website,
+                signup_complete: true,
+                firstname: invData.firstname ?? (ud.userFirstNameRef.current || null),
+                active_mobilisation: null,
+                active_step_id: null,
+                role: invData.role,
+              }
+              ud.addCompany(newCompany)
+            } else {
+              await ud.switchCompany(targetId)
             }
-            ud.addCompany(newCompany)
 
             const invCleanup = ud.subscribeToMessages(targetId, {
               setIsTyping: msg.setIsTyping,
