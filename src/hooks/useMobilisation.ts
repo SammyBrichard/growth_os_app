@@ -11,12 +11,14 @@ function delay(ms: number): Promise<void> {
 
 interface UseMobilisationParams {
   userDetailsId: string | null
+  userDetailsIdRef: React.MutableRefObject<string | null>
   accountId: string | null
   user: User | null | undefined
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
   setIsTyping: (v: boolean) => void
   showStepMessages: (step: { messages: string[] }) => Promise<Message[]>
   saveMessage: (message_body: string, is_agent: boolean, triggerProcessor?: boolean) => Promise<Message | null>
+  onAccountNameChange?: (accountId: string, name: string) => void
 }
 
 /**
@@ -25,13 +27,16 @@ interface UseMobilisationParams {
  */
 export default function useMobilisation({
   userDetailsId,
+  userDetailsIdRef,
   accountId,
   user,
   setMessages,
   setIsTyping,
   showStepMessages,
   saveMessage,
+  onAccountNameChange,
 }: UseMobilisationParams) {
+
   const [mobilisation_active, setMobilisationActive] = useState(false)
   const [current_mobilisation, setCurrentMobilisation] = useState<string | null>(null)
   const [current_step, setCurrentStep] = useState<MobilisationStep | null>(null)
@@ -86,6 +91,16 @@ export default function useMobilisation({
       .eq('id', userDetailsId)
   }, [userDetailsId])
 
+  // Resets only local React state — used on company switch to avoid wiping DB progress
+  const resetLocalMobilisationState = useCallback(() => {
+    setMobilisationActive(false)
+    setCurrentMobilisation(null)
+    setCurrentStep(null)
+    setOptions(null)
+    setQueueChecked(false)
+  }, [])
+
+  // Resets local state AND clears DB — used when a mobilisation actually completes/ends
   const clearMobilisationState = useCallback(async () => {
     setMobilisationActive(false)
     setCurrentMobilisation(null)
@@ -118,40 +133,45 @@ export default function useMobilisation({
   // ── Start mobilisation ───────────────────────────────────────────────
 
   const startMobilisation = useCallback(async (name: string) => {
+    // Use ref so we always act on the current userDetailsId, even when called
+    // immediately after a company switch before React re-renders.
+    const currentUdId = userDetailsIdRef.current
     setMobilisationResponses({})
     setInputBarEnabled(false)
     // Clear this mobilisation from the DB queue if it was queued as a safety net.
     // Prevents double-firing if the broadcast already triggered it and the user
     // later reconnects or navigates back to the Watson tab.
-    if (userDetailsId) {
-      const { data: ud } = await supabase.from('user_details').select('queued_mobilisations').eq('id', userDetailsId).single()
+    if (currentUdId) {
+      const { data: ud } = await supabase.from('user_details').select('queued_mobilisations').eq('id', currentUdId).single()
       const queue: { mobilisation: string }[] = ud?.queued_mobilisations ?? []
       if (queue.some(q => q.mobilisation === name)) {
         await supabase.from('user_details').update({
           queued_mobilisations: queue.filter(q => q.mobilisation !== name),
-        }).eq('id', userDetailsId)
+        }).eq('id', currentUdId)
       }
     }
     try {
       const res = await fetch(`${API_URL}/api/mobilisation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobilisation: name, user_details_id: userDetailsId }),
+        body: JSON.stringify({ mobilisation: name, user_details_id: currentUdId }),
       })
       const result = await res.json()
       if (result.step) {
         setMobilisationActive(true)
         setCurrentMobilisation(name)
         setCurrentStep(result.step)
-        await supabase.from('user_details').update({ active_mobilisation: name, active_step_id: result.step.id }).eq('auth_id', user!.id)
+        if (currentUdId) {
+          await supabase.from('user_details').update({ active_mobilisation: name, active_step_id: result.step.id }).eq('id', currentUdId)
+        }
         const addedMessages = await showStepMessages(result.step)
         if (result.step.type === 'end_flow') {
           setMobilisationActive(false)
           setCurrentMobilisation(null)
           setCurrentStep(null)
           setOptions(null)
-          if (userDetailsId) {
-            await supabase.from('user_details').update({ active_mobilisation: null, active_step_id: null }).eq('id', userDetailsId)
+          if (currentUdId) {
+            await supabase.from('user_details').update({ active_mobilisation: null, active_step_id: null }).eq('id', currentUdId)
           }
           const completion = await completeMobilisation(name, {}, addedMessages)
           if (completion?.next_mobilisation) {
@@ -182,7 +202,7 @@ export default function useMobilisation({
       }])
       setInputBarEnabled(true)
     }
-  }, [userDetailsId, user, showStepMessages, completeMobilisation])
+  }, [showStepMessages, completeMobilisation])
 
   // ── Resume mobilisation ──────────────────────────────────────────────
 
@@ -480,6 +500,7 @@ export default function useMobilisation({
         description: sidebarData.company_description ?? null,
         problem_solved: sidebarData.problem_solved ?? null,
       }).eq('id', accountId)
+      if (sidebarData.company_name) onAccountNameChange?.(accountId, sidebarData.company_name)
     }
 
     const text = 'Looks good. Save my organisation details.'
@@ -491,7 +512,7 @@ export default function useMobilisation({
 
     setActiveSidebar(null)
     startMobilisation('upload_customers')
-  }, [accountId, sidebarData, setMessages, saveMessage, startMobilisation])
+  }, [accountId, sidebarData, setMessages, saveMessage, startMobilisation, onAccountNameChange])
 
   // ── Save ITP sidebar ─────────────────────────────────────────────────
 
@@ -717,6 +738,8 @@ export default function useMobilisation({
     // Functions
     startMobilisation,
     resumeMobilisation,
+    resetLocalMobilisationState,
+    clearMobilisationState,
     checkQueuedMobilisations,
     handleSend,
     handleOptionSelect,

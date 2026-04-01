@@ -10,6 +10,8 @@ interface PepperAdminProps {
   onUpdateUserFirstname: (firstname: string) => Promise<any>
   onUpdateSender: (senderId: string, updates: Partial<Sender>) => Promise<any>
   onAddSender: () => void
+  onDeleteCompany: () => Promise<void>
+  canDeleteCompany: boolean
   pepperSummary?: string | null
 }
 
@@ -18,7 +20,7 @@ function formatTimestamp(dateStr: string) {
   return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender, pepperSummary }) => {
+const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender, onDeleteCompany, canDeleteCompany, pepperSummary }) => {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -26,6 +28,9 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
   const [editingSenderId, setEditingSenderId] = useState<string | null>(null)
   const [senderDraft, setSenderDraft] = useState<Partial<Sender>>({})
   const [savingSender, setSavingSender] = useState(false)
+
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const activeSkillName = userDetails?.active_skill
     ? typeof userDetails.active_skill === 'object'
@@ -233,6 +238,35 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
           })}
         </div>
       )}
+
+      {/* Danger Zone */}
+      <div className="pepper-section-title pepper-danger-title">Danger Zone</div>
+      <div className="pepper-danger-zone">
+        {confirmingDelete ? (
+          <div className="pepper-danger-confirm">
+            <span className="pepper-danger-warning">This will permanently delete this company and all its data. This cannot be undone.</span>
+            <div className="pepper-edit-actions">
+              <button
+                className="pepper-delete-confirm-btn"
+                onClick={async () => { setDeleting(true); await onDeleteCompany(); setDeleting(false); setConfirmingDelete(false) }}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Yes, delete company'}
+              </button>
+              <button className="pepper-cancel-btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="pepper-delete-btn"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={!canDeleteCompany}
+            title={!canDeleteCompany ? 'You cannot delete your only company' : undefined}
+          >
+            Delete this company
+          </button>
+        )}
+      </div>
 
       {/* Activity Log */}
       <div className="pepper-section-title">Recent Activity</div>
