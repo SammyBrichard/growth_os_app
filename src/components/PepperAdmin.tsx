@@ -219,7 +219,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
         ) : (
           <div className="pepper-member-list">
             {members.map(member => (
-              <div key={member.id} className="pepper-member-row">
+              <div key={member.id} className="pepper-sender-card pepper-member-row">
                 <div className="pepper-member-initials" data-role={member.role}>
                   {getInitials(member.firstname, member.email)}
                 </div>
@@ -264,7 +264,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
             <button className="pepper-edit-btn" onClick={startEditName}>Edit</button>
           )}
         </div>
-        <div className="pepper-profile-fields">
+        <div className="pepper-card pepper-profile-fields">
           <div className="pepper-field">
             <span className="pepper-label">Name</span>
             {editingName ? (
@@ -363,7 +363,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
         <div className="pepper-section-hd">
           <span className="pepper-section-title">Workspace</span>
         </div>
-        <div className="pepper-profile-fields">
+        <div className="pepper-card pepper-profile-fields">
           <div className="pepper-field">
             <span className="pepper-label">Organisation</span>
             <span className="pepper-value">{account?.organisation_name ?? '—'}</span>
