@@ -167,6 +167,8 @@ export default function App() {
                 inviterName: invData.inviter_firstname ?? null,
               })
             } else {
+              const msgs = await ud.loadMessages(targetId)
+              msg.setMessages(msgs)
               mob.setInputBarEnabled(true)
             }
             setInviteProcessing(false)
