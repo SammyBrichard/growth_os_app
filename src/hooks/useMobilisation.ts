@@ -119,6 +119,18 @@ export default function useMobilisation({
   const startMobilisation = useCallback(async (name: string) => {
     setMobilisationResponses({})
     setInputBarEnabled(false)
+    // Clear this mobilisation from the DB queue if it was queued as a safety net.
+    // Prevents double-firing if the broadcast already triggered it and the user
+    // later reconnects or navigates back to the Watson tab.
+    if (userDetailsId) {
+      const { data: ud } = await supabase.from('user_details').select('queued_mobilisations').eq('id', userDetailsId).single()
+      const queue: { mobilisation: string }[] = ud?.queued_mobilisations ?? []
+      if (queue.some(q => q.mobilisation === name)) {
+        await supabase.from('user_details').update({
+          queued_mobilisations: queue.filter(q => q.mobilisation !== name),
+        }).eq('id', userDetailsId)
+      }
+    }
     try {
       const res = await fetch(`${API_URL}/api/mobilisation/start`, {
         method: 'POST',
