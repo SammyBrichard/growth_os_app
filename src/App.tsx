@@ -19,6 +19,7 @@ import useWarren from './hooks/useWarren'
 import usePepper from './hooks/usePepper'
 
 import Layout from './components/Layout'
+import CompanySwitcher from './components/CompanySwitcher'
 import EmployeeList from './components/EmployeeList'
 import WatsonChat from './components/WatsonChat'
 import BelfortTargets from './components/BelfortTargets'
@@ -28,6 +29,8 @@ import RightSidebar from './components/RightSidebar'
 import ContactDetailSidebar from './components/ContactDetailSidebar'
 import WarrenAnalyst from './components/WarrenAnalyst'
 import PepperAdmin from './components/PepperAdmin'
+import InviteSignup from './components/InviteSignup'
+import LoginPage from './components/LoginPage'
 import type { CampaignContact } from './hooks/useCampaigns'
 
 import './App.css'
@@ -58,17 +61,29 @@ export default function App() {
     return hash.includes('access_token') || hash.includes('type=magiclink')
   })
 
+  // Detect invite token in URL and persist it — processed after auth is established
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('invite')
+    if (token) {
+      localStorage.setItem('pending_invite_token', token)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   const { user } = useAuth()
   const ud = useUserDetails({ user })
   const msg = useMessages({ userFirstNameRef: ud.userFirstNameRef, saveMessage: ud.saveMessage })
   const mob = useMobilisation({
     userDetailsId: ud.userDetailsId,
+    userDetailsIdRef: ud.userDetailsIdRef,
     accountId: ud.accountId,
     user,
     setMessages: msg.setMessages,
     setIsTyping: msg.setIsTyping,
     showStepMessages: msg.showStepMessages,
     saveMessage: ud.saveMessage,
+    onAccountNameChange: ud.updateCompanyName,
   })
   const bel = useBelfort({
     accountId: ud.accountId,
@@ -102,6 +117,61 @@ export default function App() {
       })
       // Store cleanup for when component unmounts
       cleanupRef.current = cleanup
+
+      // Process pending invite token (saved from URL before or after login)
+      const inviteToken = localStorage.getItem('pending_invite_token')
+      if (inviteToken) {
+        localStorage.removeItem('pending_invite_token')
+        try {
+          const invRes = await fetch(`${API_URL}/api/user/invite/accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: inviteToken, auth_id: user.id }),
+          })
+          if (invRes.ok) {
+            const invData = await invRes.json()
+            setSelectedEmployee(employees[0])
+            if (!invData.already_member) {
+              // New membership — add company and switch to it
+              cleanupRef.current?.()
+              msg.setMessages([])
+              mob.resetLocalMobilisationState()
+              mob.setActiveSidebar(null)
+              mob.setSidebarData(() => ({}))
+              mob.setInputBarEnabled(false)
+
+              const newCompany = {
+                id: invData.user_details_id,
+                account_id: invData.account_id,
+                account_name: invData.account_name,
+                website: invData.website,
+                signup_complete: true,
+                firstname: invData.firstname ?? (ud.userFirstNameRef.current || null),
+                active_mobilisation: null,
+                active_step_id: null,
+                role: invData.role,
+              }
+              ud.addCompany(newCompany)
+
+              const invCleanup = ud.subscribeToMessages(invData.user_details_id, {
+                setIsTyping: msg.setIsTyping,
+                setMessages: msg.setMessages,
+                startMobilisation: mob.startMobilisation,
+              })
+              cleanupRef.current = invCleanup
+              await mob.startMobilisation('invited_member_welcome')
+              return
+            } else {
+              // Already a member — just switch to that company
+              await handleSwitchCompany(invData.user_details_id)
+              return
+            }
+          }
+        } catch (err) {
+          console.error('[invite/accept] error:', err)
+        }
+      }
+
       if (!details.signup_complete) {
         if (details.active_mobilisation && details.active_step_id) {
           mob.resumeMobilisation(details.active_mobilisation, details.active_step_id, details.id)
@@ -279,17 +349,166 @@ export default function App() {
     }
   }
 
+  async function handleSwitchCompany(targetId: string) {
+    if (targetId === ud.userDetailsId) return
+
+    // Navigate to Watson so the user sees the chat for the new company
+    setSelectedEmployee(employees[0])
+
+    // Tear down current subscription
+    cleanupRef.current?.()
+    cleanupRef.current = null
+
+    // Reset local state only — don't wipe DB progress so mid-signup companies can resume
+    msg.setMessages([])
+    msg.setIsTyping(false)
+    mob.resetLocalMobilisationState()
+    mob.setActiveSidebar(null)
+    mob.setSidebarData(() => ({}))
+    mob.setInputBarEnabled(false)
+
+    // Switch active company — fetches fresh data so signup_complete is never stale
+    const details = await ud.switchCompany(targetId)
+    if (!details) return
+
+    // Load messages and subscribe for new company
+    const msgs = await ud.loadMessages(details.id)
+    msg.setMessages(msgs)
+    const cleanup = ud.subscribeToMessages(details.id, {
+      setIsTyping: msg.setIsTyping,
+      setMessages: msg.setMessages,
+      startMobilisation: mob.startMobilisation,
+    })
+    cleanupRef.current = cleanup
+
+    // Resume or start mobilisation for new company
+    if (!details.signup_complete) {
+      if (details.active_mobilisation && details.active_step_id) {
+        mob.resumeMobilisation(details.active_mobilisation, details.active_step_id, details.id)
+      } else {
+        mob.startMobilisation('sign_up_get_website', { startStep: 'welcome_returning' })
+      }
+    } else {
+      mob.setInputBarEnabled(true)
+      if (msgs.length > 0) {
+        try {
+          const wbRes = await fetch(`${API_URL}/api/messages/welcome-back`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_details_id: details.id }),
+          })
+          const wb = await wbRes.json()
+          if (!wb.skip && wb.restore) {
+            if (wb.restore.sidebar) {
+              mob.setActiveSidebar(wb.restore.sidebar)
+              mob.setSidebarData(() => wb.restore.sidebar_info ?? {})
+            }
+            if (wb.restore.mobilisation) {
+              mob.resumeMobilisation(wb.restore.mobilisation, wb.restore.step_id, details.id)
+            }
+          }
+        } catch (err) {
+          console.error('[welcome-back] error:', err)
+        }
+      }
+    }
+  }
+
+  async function handleAddCompany() {
+    if (!user) return
+
+    const res = await fetch(`${API_URL}/api/user/companies/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        auth_id: user.id,
+        firstname: ud.userFirstNameRef.current || null,
+      }),
+    })
+    if (!res.ok) return
+    const { company } = await res.json()
+
+    // Navigate to Watson for the new company's chat
+    setSelectedEmployee(employees[0])
+
+    // Tear down current subscription
+    cleanupRef.current?.()
+    cleanupRef.current = null
+
+    // Reset local state only
+    msg.setMessages([])
+    msg.setIsTyping(false)
+    mob.resetLocalMobilisationState()
+    mob.setActiveSidebar(null)
+    mob.setSidebarData(() => ({}))
+    mob.setInputBarEnabled(false)
+
+    // Add and activate the new company — updates userDetailsIdRef immediately
+    ud.addCompany({
+      id: company.id,
+      account_id: company.account_id,
+      account_name: null,
+      website: null,
+      signup_complete: false,
+      firstname: ud.userFirstNameRef.current || null,
+      active_mobilisation: null,
+      active_step_id: null,
+      role: 'admin',
+    })
+
+    // Subscribe to new company's realtime channel
+    const cleanup = ud.subscribeToMessages(company.id, {
+      setIsTyping: msg.setIsTyping,
+      setMessages: msg.setMessages,
+      startMobilisation: mob.startMobilisation,
+    })
+    cleanupRef.current = cleanup
+
+    // Start the signup flow with the returning welcome message
+    await mob.startMobilisation('sign_up_get_website', { startStep: 'welcome_returning' })
+  }
+
+  async function handleDeleteCompany() {
+    if (!user || !ud.userDetailsId) return
+    const res = await fetch(`${API_URL}/api/user/companies/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_details_id: ud.userDetailsId, auth_id: user.id }),
+    })
+    if (!res.ok) return
+
+    // Remove from companies list and switch to the next available company
+    const remaining = ud.companies.filter(c => c.id !== ud.userDetailsId)
+    if (remaining.length === 0) return
+    ud.setCompanies(remaining)
+    await handleSwitchCompany(remaining[0].id)
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
     window.location.href = CLIENT_URL
   }
 
   if (user === undefined) return null
-  if (user === null) return <p>Not logged in</p>
+  if (user === null) {
+    const pendingToken = localStorage.getItem('pending_invite_token')
+    if (pendingToken) return <InviteSignup token={pendingToken} />
+    return <LoginPage />
+  }
 
   return (
     <Layout
       onLogout={handleLogout}
+      companySwitcher={
+        ud.companies.length > 0 ? (
+          <CompanySwitcher
+            companies={ud.companies}
+            activeId={ud.userDetailsId}
+            onSwitch={handleSwitchCompany}
+            onAddCompany={handleAddCompany}
+          />
+        ) : undefined
+      }
       employeeList={
         <EmployeeList
           employees={employees}
@@ -365,6 +584,10 @@ export default function App() {
               onUpdateUserFirstname={pep.updateUserFirstname}
               onUpdateSender={pep.updateSender}
               onAddSender={() => mob.setActiveSidebar('select_sender')}
+              onDeleteCompany={handleDeleteCompany}
+              canDeleteCompany={ud.companies.length > 1 && ud.role === 'admin'}
+              isAdmin={ud.role === 'admin'}
+              userDetailsId={ud.userDetailsId}
               pepperSummary={pep.pepperSummary}
             />
           )}
