@@ -59,6 +59,16 @@ export default function App() {
     return hash.includes('access_token') || hash.includes('type=magiclink')
   })
 
+  // Detect invite token in URL and persist it — processed after auth is established
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('invite')
+    if (token) {
+      localStorage.setItem('pending_invite_token', token)
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
+
   const { user } = useAuth()
   const ud = useUserDetails({ user })
   const msg = useMessages({ userFirstNameRef: ud.userFirstNameRef, saveMessage: ud.saveMessage })
@@ -105,6 +115,61 @@ export default function App() {
       })
       // Store cleanup for when component unmounts
       cleanupRef.current = cleanup
+
+      // Process pending invite token (saved from URL before or after login)
+      const inviteToken = localStorage.getItem('pending_invite_token')
+      if (inviteToken) {
+        localStorage.removeItem('pending_invite_token')
+        try {
+          const invRes = await fetch(`${API_URL}/api/user/invite/accept`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: inviteToken, auth_id: user.id }),
+          })
+          if (invRes.ok) {
+            const invData = await invRes.json()
+            setSelectedEmployee(employees[0])
+            if (!invData.already_member) {
+              // New membership — add company and switch to it
+              cleanupRef.current?.()
+              msg.setMessages([])
+              mob.resetLocalMobilisationState()
+              mob.setActiveSidebar(null)
+              mob.setSidebarData(() => ({}))
+              mob.setInputBarEnabled(false)
+
+              const newCompany = {
+                id: invData.user_details_id,
+                account_id: invData.account_id,
+                account_name: invData.account_name,
+                website: invData.website,
+                signup_complete: true,
+                firstname: invData.firstname ?? ud.userFirstNameRef.current || null,
+                active_mobilisation: null,
+                active_step_id: null,
+                role: invData.role,
+              }
+              ud.addCompany(newCompany)
+
+              const invCleanup = ud.subscribeToMessages(invData.user_details_id, {
+                setIsTyping: msg.setIsTyping,
+                setMessages: msg.setMessages,
+                startMobilisation: mob.startMobilisation,
+              })
+              cleanupRef.current = invCleanup
+              await mob.startMobilisation('invited_member_welcome')
+              return
+            } else {
+              // Already a member — just switch to that company
+              await handleSwitchCompany(invData.user_details_id)
+              return
+            }
+          }
+        } catch (err) {
+          console.error('[invite/accept] error:', err)
+        }
+      }
+
       if (!details.signup_complete) {
         if (details.active_mobilisation && details.active_step_id) {
           mob.resumeMobilisation(details.active_mobilisation, details.active_step_id, details.id)
@@ -386,6 +451,7 @@ export default function App() {
       firstname: ud.userFirstNameRef.current || null,
       active_mobilisation: null,
       active_step_id: null,
+      role: 'admin',
     })
 
     // Subscribe to new company's realtime channel
@@ -513,7 +579,9 @@ export default function App() {
               onUpdateSender={pep.updateSender}
               onAddSender={() => mob.setActiveSidebar('select_sender')}
               onDeleteCompany={handleDeleteCompany}
-              canDeleteCompany={ud.companies.length > 1}
+              canDeleteCompany={ud.companies.length > 1 && ud.role === 'admin'}
+              isAdmin={ud.role === 'admin'}
+              userDetailsId={ud.userDetailsId}
               pepperSummary={pep.pepperSummary}
             />
           )}

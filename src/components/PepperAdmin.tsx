@@ -1,6 +1,16 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import type { Account, Sender, ActivityMessage } from '../types/index'
 import type { PepperUserDetails } from '../hooks/usePepper'
+
+const API_URL = import.meta.env.VITE_API_URL
+
+interface Member {
+  id: string
+  auth_id: string
+  firstname: string | null
+  role: string
+  email: string | null
+}
 
 interface PepperAdminProps {
   account: Account | null
@@ -12,6 +22,8 @@ interface PepperAdminProps {
   onAddSender: () => void
   onDeleteCompany: () => Promise<void>
   canDeleteCompany: boolean
+  isAdmin: boolean
+  userDetailsId: string | null
   pepperSummary?: string | null
 }
 
@@ -20,7 +32,7 @@ function formatTimestamp(dateStr: string) {
   return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
 }
 
-const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender, onDeleteCompany, canDeleteCompany, pepperSummary }) => {
+const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender, onDeleteCompany, canDeleteCompany, isAdmin, userDetailsId, pepperSummary }) => {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [savingName, setSavingName] = useState(false)
@@ -31,6 +43,90 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
 
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  // Team section state (admin only)
+  const [members, setMembers] = useState<Member[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
+  const [inviteExpiry, setInviteExpiry] = useState<string | null>(null)
+  const [generatingLink, setGeneratingLink] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isAdmin || !account?.id) return
+    setMembersLoading(true)
+    fetch(`${API_URL}/api/user/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ account_id: account.id }),
+    })
+      .then(r => r.json())
+      .then(({ members: m }) => { setMembers(m ?? []); setMembersLoading(false) })
+      .catch(() => setMembersLoading(false))
+  }, [account?.id, isAdmin])
+
+  async function handleGenerateInvite() {
+    if (!userDetailsId) return
+    setGeneratingLink(true)
+    try {
+      const res = await fetch(`${API_URL}/api/user/invite/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_details_id: userDetailsId }),
+      })
+      if (res.ok) {
+        const { link, expires_at } = await res.json()
+        setInviteLink(link)
+        setInviteExpiry(expires_at)
+        setCopied(false)
+      }
+    } finally {
+      setGeneratingLink(false)
+    }
+  }
+
+  async function handleCopyLink() {
+    if (!inviteLink) return
+    await navigator.clipboard.writeText(inviteLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleUpdateRole(targetId: string, newRole: string) {
+    if (!userDetailsId) return
+    setUpdatingRoleId(targetId)
+    try {
+      const res = await fetch(`${API_URL}/api/user/members/update-role`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_details_id: userDetailsId, target_user_details_id: targetId, new_role: newRole }),
+      })
+      if (res.ok) {
+        setMembers(prev => prev.map(m => m.id === targetId ? { ...m, role: newRole } : m))
+      }
+    } finally {
+      setUpdatingRoleId(null)
+    }
+  }
+
+  async function handleRemoveMember(targetId: string) {
+    if (!userDetailsId) return
+    setRemovingId(targetId)
+    try {
+      const res = await fetch(`${API_URL}/api/user/members/remove`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_details_id: userDetailsId, target_user_details_id: targetId }),
+      })
+      if (res.ok) {
+        setMembers(prev => prev.filter(m => m.id !== targetId))
+      }
+    } finally {
+      setRemovingId(null)
+    }
+  }
 
   const activeSkillName = userDetails?.active_skill
     ? typeof userDetails.active_skill === 'object'
@@ -237,6 +333,74 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
             )
           })}
         </div>
+      )}
+
+      {/* Team — admin only */}
+      {isAdmin && (
+        <>
+          <div className="pepper-senders-header">
+            <div className="pepper-section-title">Team</div>
+            <button className="pepper-add-btn" onClick={handleGenerateInvite} disabled={generatingLink}>
+              {generatingLink ? 'Generating...' : '+ Invite member'}
+            </button>
+          </div>
+
+          {inviteLink && (
+            <div className="pepper-invite-box">
+              <span className="pepper-invite-link">{inviteLink}</span>
+              <button className="pepper-copy-btn" onClick={handleCopyLink}>{copied ? 'Copied!' : 'Copy'}</button>
+              {inviteExpiry && (
+                <span className="pepper-invite-expiry">
+                  Expires {new Date(inviteExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                </span>
+              )}
+            </div>
+          )}
+
+          {membersLoading ? (
+            <div className="pepper-empty">Loading team...</div>
+          ) : members.length === 0 ? (
+            <div className="pepper-empty">No team members yet.</div>
+          ) : (
+            <div className="pepper-senders-list">
+              {members.map(member => (
+                <div key={member.id} className="pepper-sender-card">
+                  <div className="pepper-sender-row">
+                    <div className="pepper-sender-info">
+                      <span className="pepper-sender-email">{member.firstname ?? member.email ?? 'Unknown'}</span>
+                      {member.email && member.firstname && (
+                        <span className="pepper-sender-name">{member.email}</span>
+                      )}
+                      <span className={`pepper-role-badge ${member.role === 'admin' ? 'admin' : 'member'}`}>
+                        {member.role}
+                      </span>
+                    </div>
+                    {member.id !== userDetailsId && (
+                      <div className="pepper-edit-actions">
+                        <button
+                          className="pepper-edit-btn"
+                          disabled={!!updatingRoleId}
+                          onClick={() => handleUpdateRole(member.id, member.role === 'admin' ? 'member' : 'admin')}
+                        >
+                          {updatingRoleId === member.id
+                            ? '...'
+                            : member.role === 'admin' ? 'Make member' : 'Make admin'}
+                        </button>
+                        <button
+                          className="pepper-cancel-btn"
+                          disabled={!!removingId}
+                          onClick={() => handleRemoveMember(member.id)}
+                        >
+                          {removingId === member.id ? '...' : 'Remove'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Danger Zone */}

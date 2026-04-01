@@ -14,6 +14,7 @@ export interface CompanyRecord {
   firstname: string | null
   active_mobilisation: string | null
   active_step_id: string | null
+  role: string | null
 }
 
 interface UserDetailsData {
@@ -70,6 +71,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       firstname: r.firstname,
       active_mobilisation: r.active_mobilisation,
       active_step_id: r.active_step_id,
+      role: r.role ?? null,
     }))
     setCompanies(mapped)
 
@@ -101,7 +103,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
   const switchCompany = useCallback(async (targetId: string): Promise<UserDetailsData | null> => {
     const { data, error } = await supabase
       .from('user_details')
-      .select('id, account_id, signup_complete, firstname, active_mobilisation, active_step_id')
+      .select('id, account_id, signup_complete, firstname, active_mobilisation, active_step_id, role')
       .eq('id', targetId)
       .single()
 
@@ -114,6 +116,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       firstname: data.firstname,
       active_mobilisation: data.active_mobilisation,
       active_step_id: data.active_step_id,
+      role: (data as any).role ?? null,
     } : c))
 
     localStorage.setItem('active_company_id', targetId)
@@ -234,6 +237,8 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     }
   }, [])
 
+  const role = companies.find(c => c.id === userDetailsId)?.role ?? null
+
   return {
     userDetailsId,
     accountId,
@@ -242,6 +247,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     userDetailsIdRef,
     initialiseRan,
     companies,
+    role,
     setCompanies,
     initialise,
     switchCompany,
