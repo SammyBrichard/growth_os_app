@@ -189,7 +189,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
           </div>
         )}
       </div>
-      {pepperSummary && <hr className="draper-divider" />}
+      {pepperSummary}
 
       {/* Team */}
       <div className="pepper-section">
