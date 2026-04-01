@@ -603,9 +603,9 @@ export default function useMobilisation({
       const NAME_ALIASES = ['name', 'company', 'company name', 'business', 'business name', 'organisation', 'organization', 'client', 'customer', 'account', 'customer name', 'client name']
       const WEBSITE_ALIASES = ['website', 'url', 'domain', 'web', 'site', 'link', 'company website', 'website url']
 
-      const headers = parseCsvLine(lines[0]).map((h: string) => h.toLowerCase().trim())
-      const nameCol = headers.findIndex((h: string) => NAME_ALIASES.includes(h))
-      const websiteCol = headers.findIndex((h: string) => WEBSITE_ALIASES.includes(h))
+      const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().trim())
+      const nameCol = headers.findIndex(h => NAME_ALIASES.includes(h))
+      const websiteCol = headers.findIndex(h => WEBSITE_ALIASES.includes(h))
 
       if (nameCol === -1) {
         setCsvError('Could not find a company name column. Please ensure your CSV has a column named "name", "company", "business", or similar.')
@@ -614,13 +614,13 @@ export default function useMobilisation({
 
       setCsvError(null)
 
-      const rows = lines.slice(1).map((line: string) => {
+      const rows = lines.slice(1).map(line => {
         const fields = parseCsvLine(line)
         return {
           organisation_name: fields[nameCol]?.trim() ?? '',
           organisation_website: websiteCol !== -1 ? (fields[websiteCol]?.trim() ?? '') : '',
         }
-      }).filter((r: CustomerInput) => r.organisation_name)
+      }).filter(r => r.organisation_name)
 
       if (accountId && rows.length) {
         // Insert in batches of 500 to handle large CSVs

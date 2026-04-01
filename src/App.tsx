@@ -36,7 +36,7 @@ const API_URL = import.meta.env.VITE_API_URL
 const CLIENT_URL = import.meta.env.VITE_CLIENT_URL
 
 const employees: Employee[] = [
-  { name: 'Watson', role: 'Chief Marketing Officer', img: watsonImg },
+  { name: 'Watson', role: 'Head of Growth', img: watsonImg },
   { name: 'Belfort', role: 'Lead Generation Expert', img: belfortImg },
   { name: 'Warren', role: 'Business Analyst', img: warrenImg },
   { name: 'Pepper', role: 'Office Administrator', img: pepperImg },
@@ -254,6 +254,13 @@ export default function App() {
       await supabase.from('itp').update({ sic_codes: codes }).eq('id', itpId)
     }
     mob.setActiveSidebar(null)
+
+    // User-side summary message
+    const total = mob.sidebarData.sic_codes?.length ?? 0
+    const text = `${approvedCodes.length} of ${total} industry codes approved`
+    msg.setMessages(prev => [...prev, { message_body: text, is_agent: false, timestamp: new Date() }])
+    ud.saveMessage(text, false, false)
+
     mob.startMobilisation('signed_up_first_message')
   }
 

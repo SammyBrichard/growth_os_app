@@ -153,7 +153,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({
                 }
               </div>
               <input id="csv-file-input" type="file" accept=".csv" style={{ display: 'none' }} onChange={onCsvDrop} />
-              {csvError && <p style={{ color: 'var(--error, #e53e3e)', fontSize: '0.8rem', marginTop: '0.4rem' }}>{csvError}</p>}
+              {csvError && <p className="csv-error">{csvError}</p>}
             </div>
             {csvRows.length > 0 && (
               <div className="sidebar-field">
