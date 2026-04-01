@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import logoImg from '../assets/hero.png'
-
 const API_URL = import.meta.env.VITE_API_URL
 
 type PageState =
@@ -68,10 +66,7 @@ export default function InviteSignup({ token }: { token: string }) {
   }
 
   const Logo = () => (
-    <div className="auth-logo">
-      <img src={logoImg} alt="GrowthOS" className="auth-logo-img" />
-      <span className="auth-logo-name">GrowthOS</span>
-    </div>
+    <div className="auth-wordmark">growth<span className="accent">OS</span></div>
   )
 
   if (state.type === 'loading') {

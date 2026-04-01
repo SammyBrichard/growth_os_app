@@ -2868,7 +2868,9 @@ body {
 }
 
 .auth-page {
-  min-height: 100vh;
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
   background-color: var(--bg);
   background-image: radial-gradient(circle, #cdc8c0 1px, transparent 1px);
   background-size: 26px 26px;
@@ -2891,25 +2893,21 @@ body {
   animation: auth-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.auth-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.auth-wordmark {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--fg);
   margin-bottom: 32px;
 }
 
-.auth-logo-img {
-  height: 30px;
-  width: auto;
+.auth-wordmark .accent {
+  color: var(--accent);
 }
 
-.auth-logo-name {
-  font-size: 12px;
-  font-family: 'DM Mono', monospace;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
+.auth-wordmark--lg {
+  font-size: 32px;
+  text-align: center;
 }
 
 .auth-divider {

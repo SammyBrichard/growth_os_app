@@ -1,5 +1,3 @@
-import logoImg from '../assets/hero.png'
-
 interface InviteLandingProps {
   companyName: string | null
   inviterName: string | null
@@ -12,10 +10,7 @@ export default function InviteLanding({ companyName, inviterName, onEnter }: Inv
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">
-          <img src={logoImg} alt="GrowthOS" className="auth-logo-img" />
-          <span className="auth-logo-name">GrowthOS</span>
-        </div>
+        <div className="auth-wordmark">growth<span className="accent">OS</span></div>
         <div className="auth-divider" />
         <h2 className="auth-title">
           {inviterName

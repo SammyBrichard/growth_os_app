@@ -1,6 +1,4 @@
 import React, { useState } from 'react'
-import logoImg from '../assets/hero.png'
-
 const API_URL = import.meta.env.VITE_API_URL
 
 type PageState = 'idle' | 'submitting'
@@ -40,10 +38,7 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">
-          <img src={logoImg} alt="GrowthOS" className="auth-logo-img" />
-          <span className="auth-logo-name">GrowthOS</span>
-        </div>
+        <div className="auth-wordmark auth-wordmark--lg">growth<span className="accent">OS</span></div>
         <div className="auth-divider" />
         <h2 className="auth-title">Welcome back.</h2>
         <p className="auth-body">Enter your email to sign in to your workspace.</p>
