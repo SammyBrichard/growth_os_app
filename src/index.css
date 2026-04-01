@@ -2576,7 +2576,97 @@ body {
 
 .pepper-section-title {
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
-  font-family: 'DM Mono', monospace; color: var(--muted); margin: 8px 0 4px;
+  font-family: 'DM Mono', monospace; color: var(--muted); margin: 0;
+}
+
+.pepper-section {
+  padding-top: 24px;
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.pepper-section-hd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.pepper-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pepper-member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.pepper-member-row:hover { background: var(--cream); }
+
+.pepper-member-initials {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--fg);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.pepper-member-initials[data-role="admin"] {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.pepper-member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.pepper-member-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pepper-member-email {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pepper-member-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pepper-profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 360px;
 }
 
 .pepper-status-dot {
