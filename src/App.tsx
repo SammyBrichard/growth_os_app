@@ -51,6 +51,8 @@ export default function App() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
   const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
   const [inviteLanding, setInviteLanding] = useState<{ companyName: string | null; inviterName: string | null } | null>(null)
+  // True if we landed with a pending invite token — holds the render until processing completes
+  const [inviteProcessing, setInviteProcessing] = useState(() => !!localStorage.getItem('pending_invite_token'))
   const cleanupRef = useRef<(() => void) | null>(null)
 
   // Fix #10: Cleanup subscription on unmount
@@ -167,10 +169,14 @@ export default function App() {
             } else {
               mob.setInputBarEnabled(true)
             }
+            setInviteProcessing(false)
             return
           }
+          // Non-ok response — let the normal dashboard show
+          setInviteProcessing(false)
         } catch (err) {
           console.error('[invite/accept] error:', err)
+          setInviteProcessing(false)
         }
       }
 
@@ -511,6 +517,7 @@ export default function App() {
     if (pendingToken) return <InviteSignup token={pendingToken} />
     return <LoginPage />
   }
+  if (inviteProcessing) return null
   if (inviteLanding) {
     return <InviteLanding
       companyName={inviteLanding.companyName}
