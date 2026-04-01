@@ -91,6 +91,7 @@ export default function useMobilisation({
     setCurrentMobilisation(null)
     setCurrentStep(null)
     setOptions(null)
+    setQueueChecked(false) // Reset so queue is re-checked after every mobilisation ends
     if (!userDetailsId) return
     await supabase
       .from('user_details')
