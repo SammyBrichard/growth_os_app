@@ -29,6 +29,7 @@ import RightSidebar from './components/RightSidebar'
 import ContactDetailSidebar from './components/ContactDetailSidebar'
 import WarrenAnalyst from './components/WarrenAnalyst'
 import PepperAdmin from './components/PepperAdmin'
+import InviteSignup from './components/InviteSignup'
 import type { CampaignContact } from './hooks/useCampaigns'
 
 import './App.css'
@@ -488,7 +489,11 @@ export default function App() {
   }
 
   if (user === undefined) return null
-  if (user === null) return <p>Not logged in</p>
+  if (user === null) {
+    const pendingToken = localStorage.getItem('pending_invite_token')
+    if (pendingToken) return <InviteSignup token={pendingToken} />
+    return <p>Not logged in</p>
+  }
 
   return (
     <Layout
