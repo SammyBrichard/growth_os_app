@@ -43,6 +43,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
   const [companies, setCompanies] = useState<CompanyRecord[]>([])
   const userFirstNameRef = useRef('')
   const userDetailsIdRef = useRef<string | null>(null)
+  const companiesRef = useRef<CompanyRecord[]>([])
   const initialiseRan = useRef(false)
 
   /**
@@ -73,6 +74,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       active_step_id: r.active_step_id,
       role: r.role ?? null,
     }))
+    companiesRef.current = mapped
     setCompanies(mapped)
 
     // Restore last active company from localStorage if valid
@@ -110,14 +112,18 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     if (error || !data) return null
 
     // Keep companies list in sync with fresh data
-    setCompanies(prev => prev.map(c => c.id === targetId ? {
-      ...c,
-      signup_complete: data.signup_complete,
-      firstname: data.firstname,
-      active_mobilisation: data.active_mobilisation,
-      active_step_id: data.active_step_id,
-      role: (data as any).role ?? null,
-    } : c))
+    setCompanies(prev => {
+      const next = prev.map(c => c.id === targetId ? {
+        ...c,
+        signup_complete: data.signup_complete,
+        firstname: data.firstname,
+        active_mobilisation: data.active_mobilisation,
+        active_step_id: data.active_step_id,
+        role: (data as any).role ?? null,
+      } : c)
+      companiesRef.current = next
+      return next
+    })
 
     localStorage.setItem('active_company_id', targetId)
     userDetailsIdRef.current = targetId
@@ -133,11 +139,19 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
    * Add a newly created company to the local companies list and activate it.
    */
   const updateCompanyName = useCallback((accountId: string, name: string) => {
-    setCompanies(prev => prev.map(c => c.account_id === accountId ? { ...c, account_name: name } : c))
+    setCompanies(prev => {
+      const next = prev.map(c => c.account_id === accountId ? { ...c, account_name: name } : c)
+      companiesRef.current = next
+      return next
+    })
   }, [])
 
   const addCompany = useCallback((company: CompanyRecord) => {
-    setCompanies(prev => [...prev, company])
+    setCompanies(prev => {
+      const next = [...prev, company]
+      companiesRef.current = next
+      return next
+    })
     localStorage.setItem('active_company_id', company.id)
     userDetailsIdRef.current = company.id
     setUserDetailsId(company.id)
@@ -245,6 +259,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     userFirstName,
     userFirstNameRef,
     userDetailsIdRef,
+    companiesRef,
     initialiseRan,
     companies,
     role,

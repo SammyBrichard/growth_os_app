@@ -135,7 +135,7 @@ export default function App() {
             mob.setInputBarEnabled(false)
 
             const targetId = invData.user_details_id
-            const alreadyLoaded = ud.companies.some(c => c.id === targetId)
+            const alreadyLoaded = ud.companiesRef.current.some(c => c.id === targetId)
 
             if (!alreadyLoaded) {
               const newCompany = {

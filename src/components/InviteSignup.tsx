@@ -183,7 +183,7 @@ export default function InviteSignup({ token }: { token: string }) {
             </div>
             {fieldError && <div className="auth-error">{fieldError}</div>}
             <button className="auth-btn" type="submit" disabled={isSubmitting || !email.trim()}>
-              {isSubmitting ? 'Sending link...' : 'Send login link →'}
+              {isSubmitting ? 'Sending link...' : 'Log in →'}
             </button>
             <button
               className="auth-btn-ghost"
