@@ -319,7 +319,7 @@ export default function App() {
       if (details.active_mobilisation && details.active_step_id) {
         mob.resumeMobilisation(details.active_mobilisation, details.active_step_id, details.id)
       } else {
-        mob.startMobilisation('sign_up_get_website')
+        mob.startMobilisation('sign_up_get_website', { startStep: 'welcome_returning' })
       }
     } else {
       mob.setInputBarEnabled(true)
@@ -396,8 +396,8 @@ export default function App() {
     })
     cleanupRef.current = cleanup
 
-    // Start the signup flow — startMobilisation uses userDetailsIdRef.current (new company's ID)
-    await mob.startMobilisation('sign_up_get_website')
+    // Start the signup flow with the returning welcome message
+    await mob.startMobilisation('sign_up_get_website', { startStep: 'welcome_returning' })
   }
 
   async function handleDeleteCompany() {

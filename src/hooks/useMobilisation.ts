@@ -132,7 +132,7 @@ export default function useMobilisation({
 
   // ── Start mobilisation ───────────────────────────────────────────────
 
-  const startMobilisation = useCallback(async (name: string) => {
+  const startMobilisation = useCallback(async (name: string, options?: { startStep?: string }) => {
     // Use ref so we always act on the current userDetailsId, even when called
     // immediately after a company switch before React re-renders.
     const currentUdId = userDetailsIdRef.current
@@ -154,7 +154,7 @@ export default function useMobilisation({
       const res = await fetch(`${API_URL}/api/mobilisation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobilisation: name, user_details_id: currentUdId }),
+        body: JSON.stringify({ mobilisation: name, user_details_id: currentUdId, start_step: options?.startStep ?? null }),
       })
       const result = await res.json()
       if (result.step) {
