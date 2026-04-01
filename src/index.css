@@ -2607,7 +2607,7 @@ body {
   transition: background 0.15s;
 }
 
-.pepper-member-row:hover { background: var(--cream); }
+.pepper-sender-card.pepper-member-row { padding: 12px 16px; }
 
 .pepper-member-initials {
   width: 30px;
