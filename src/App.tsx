@@ -107,18 +107,10 @@ export default function App() {
     ud.initialiseRan.current = true
     ;(async () => {
       const details = await ud.initialise()
-      if (!details) return
-      const msgs = await ud.loadMessages(details.id)
-      msg.setMessages(msgs)
-      const cleanup = ud.subscribeToMessages(details.id, {
-        setIsTyping: msg.setIsTyping,
-        setMessages: msg.setMessages,
-        startMobilisation: mob.startMobilisation,
-      })
-      // Store cleanup for when component unmounts
-      cleanupRef.current = cleanup
 
-      // Process pending invite token (saved from URL before or after login)
+      // Process pending invite token BEFORE the early-return check.
+      // A brand-new invited user has no user_details yet so initialise() returns
+      // null — the invite accept is what creates their first user_details record.
       const inviteToken = localStorage.getItem('pending_invite_token')
       if (inviteToken) {
         localStorage.removeItem('pending_invite_token')
@@ -131,46 +123,55 @@ export default function App() {
           if (invRes.ok) {
             const invData = await invRes.json()
             setSelectedEmployee(employees[0])
-            if (!invData.already_member) {
-              // New membership — add company and switch to it
-              cleanupRef.current?.()
-              msg.setMessages([])
-              mob.resetLocalMobilisationState()
-              mob.setActiveSidebar(null)
-              mob.setSidebarData(() => ({}))
-              mob.setInputBarEnabled(false)
+            cleanupRef.current?.()
+            msg.setMessages([])
+            mob.resetLocalMobilisationState()
+            mob.setActiveSidebar(null)
+            mob.setSidebarData(() => ({}))
+            mob.setInputBarEnabled(false)
 
-              const newCompany = {
-                id: invData.user_details_id,
-                account_id: invData.account_id,
-                account_name: invData.account_name,
-                website: invData.website,
-                signup_complete: true,
-                firstname: invData.firstname ?? (ud.userFirstNameRef.current || null),
-                active_mobilisation: null,
-                active_step_id: null,
-                role: invData.role,
-              }
-              ud.addCompany(newCompany)
-
-              const invCleanup = ud.subscribeToMessages(invData.user_details_id, {
-                setIsTyping: msg.setIsTyping,
-                setMessages: msg.setMessages,
-                startMobilisation: mob.startMobilisation,
-              })
-              cleanupRef.current = invCleanup
-              await mob.startMobilisation('invited_member_welcome')
-              return
-            } else {
-              // Already a member — just switch to that company
-              await handleSwitchCompany(invData.user_details_id)
-              return
+            const targetId = invData.user_details_id
+            const newCompany = {
+              id: targetId,
+              account_id: invData.account_id,
+              account_name: invData.account_name,
+              website: invData.website,
+              signup_complete: true,
+              firstname: invData.firstname ?? (ud.userFirstNameRef.current || null),
+              active_mobilisation: null,
+              active_step_id: null,
+              role: invData.role,
             }
+            ud.addCompany(newCompany)
+
+            const invCleanup = ud.subscribeToMessages(targetId, {
+              setIsTyping: msg.setIsTyping,
+              setMessages: msg.setMessages,
+              startMobilisation: mob.startMobilisation,
+            })
+            cleanupRef.current = invCleanup
+
+            if (!invData.already_member) {
+              await mob.startMobilisation('invited_member_welcome')
+            } else {
+              mob.setInputBarEnabled(true)
+            }
+            return
           }
         } catch (err) {
           console.error('[invite/accept] error:', err)
         }
       }
+
+      if (!details) return
+      const msgs = await ud.loadMessages(details.id)
+      msg.setMessages(msgs)
+      const cleanup = ud.subscribeToMessages(details.id, {
+        setIsTyping: msg.setIsTyping,
+        setMessages: msg.setMessages,
+        startMobilisation: mob.startMobilisation,
+      })
+      cleanupRef.current = cleanup
 
       if (!details.signup_complete) {
         if (details.active_mobilisation && details.active_step_id) {
