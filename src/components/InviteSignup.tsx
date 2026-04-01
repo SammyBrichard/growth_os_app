@@ -7,14 +7,12 @@ type PageState =
   | { type: 'invalid'; message: string }
   | { type: 'form'; accountName: string | null }
   | { type: 'submitting'; accountName: string | null }
-  | { type: 'success'; loginUrl: string; accountName: string | null }
 
 export default function InviteSignup({ token }: { token: string }) {
   const [state, setState] = useState<PageState>({ type: 'loading' })
   const [firstname, setFirstname] = useState('')
   const [email, setEmail] = useState('')
   const [fieldError, setFieldError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetch(`${API_URL}/api/user/invite/preview`, {
@@ -61,20 +59,14 @@ export default function InviteSignup({ token }: { token: string }) {
         return
       }
 
-      setState({ type: 'success', loginUrl: data.login_url, accountName })
+      window.location.href = data.login_url
     } catch {
       setState({ type: 'form', accountName })
       setFieldError('Something went wrong. Please try again.')
     }
   }
 
-  async function handleCopy(url: string) {
-    await navigator.clipboard.writeText(url)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  if (state.type === 'loading') {
+if (state.type === 'loading') {
     return (
       <div className="invite-page">
         <div className="invite-card">
@@ -102,32 +94,9 @@ export default function InviteSignup({ token }: { token: string }) {
   }
 
   const accountName =
-    state.type === 'form' || state.type === 'submitting' || state.type === 'success'
+    state.type === 'form' || state.type === 'submitting'
       ? state.accountName
       : null
-
-  if (state.type === 'success') {
-    return (
-      <div className="invite-page">
-        <div className="invite-card">
-          <div className="invite-wordmark">GrowthOS</div>
-          <h2 className="invite-title">You're in.</h2>
-          <p className="invite-body">
-            Click the link below to enter {accountName ?? 'GrowthOS'}. You can also copy it and open it in any browser on this device.
-          </p>
-          <a href={(state as any).loginUrl} className="invite-login-link">
-            Enter GrowthOS →
-          </a>
-          <div className="invite-link-row">
-            <span className="invite-link-text">{(state as any).loginUrl}</span>
-            <button className="invite-copy-btn" onClick={() => handleCopy((state as any).loginUrl)}>
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="invite-page">
