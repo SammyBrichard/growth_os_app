@@ -55,7 +55,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
   const [removingId, setRemovingId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isAdmin || !account?.id) return
+    if (!account?.id) return
     setMembersLoading(true)
     fetch(`${API_URL}/api/user/members`, {
       method: 'POST',
@@ -65,7 +65,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
       .then(r => r.json())
       .then(({ members: m }) => { setMembers(m ?? []); setMembersLoading(false) })
       .catch(() => setMembersLoading(false))
-  }, [account?.id, isAdmin])
+  }, [account?.id])
 
   async function handleGenerateInvite() {
     if (!userDetailsId) return
@@ -335,72 +335,70 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
         </div>
       )}
 
-      {/* Team — admin only */}
-      {isAdmin && (
-        <>
-          <div className="pepper-senders-header">
-            <div className="pepper-section-title">Team</div>
-            <button className="pepper-add-btn" onClick={handleGenerateInvite} disabled={generatingLink}>
-              {generatingLink ? 'Generating...' : '+ Invite member'}
-            </button>
-          </div>
+      {/* Team — visible to all, actions admin-only */}
+      <div className="pepper-senders-header">
+        <div className="pepper-section-title">Team</div>
+        {isAdmin && (
+          <button className="pepper-add-btn" onClick={handleGenerateInvite} disabled={generatingLink}>
+            {generatingLink ? 'Generating...' : '+ Invite member'}
+          </button>
+        )}
+      </div>
 
-          {inviteLink && (
-            <div className="pepper-invite-box">
-              <span className="pepper-invite-link">{inviteLink}</span>
-              <button className="pepper-copy-btn" onClick={handleCopyLink}>{copied ? 'Copied!' : 'Copy'}</button>
-              {inviteExpiry && (
-                <span className="pepper-invite-expiry">
-                  Expires {new Date(inviteExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                </span>
-              )}
-            </div>
+      {isAdmin && inviteLink && (
+        <div className="pepper-invite-box">
+          <span className="pepper-invite-link">{inviteLink}</span>
+          <button className="pepper-copy-btn" onClick={handleCopyLink}>{copied ? 'Copied!' : 'Copy'}</button>
+          {inviteExpiry && (
+            <span className="pepper-invite-expiry">
+              Expires {new Date(inviteExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+            </span>
           )}
+        </div>
+      )}
 
-          {membersLoading ? (
-            <div className="pepper-empty">Loading team...</div>
-          ) : members.length === 0 ? (
-            <div className="pepper-empty">No team members yet.</div>
-          ) : (
-            <div className="pepper-senders-list">
-              {members.map(member => (
-                <div key={member.id} className="pepper-sender-card">
-                  <div className="pepper-sender-row">
-                    <div className="pepper-sender-info">
-                      <span className="pepper-sender-email">{member.firstname ?? member.email ?? 'Unknown'}</span>
-                      {member.email && member.firstname && (
-                        <span className="pepper-sender-name">{member.email}</span>
-                      )}
-                      <span className={`pepper-role-badge ${member.role === 'admin' ? 'admin' : 'member'}`}>
-                        {member.role}
-                      </span>
-                    </div>
-                    {member.id !== userDetailsId && (
-                      <div className="pepper-edit-actions">
-                        <button
-                          className="pepper-edit-btn"
-                          disabled={!!updatingRoleId}
-                          onClick={() => handleUpdateRole(member.id, member.role === 'admin' ? 'member' : 'admin')}
-                        >
-                          {updatingRoleId === member.id
-                            ? '...'
-                            : member.role === 'admin' ? 'Make member' : 'Make admin'}
-                        </button>
-                        <button
-                          className="pepper-cancel-btn"
-                          disabled={!!removingId}
-                          onClick={() => handleRemoveMember(member.id)}
-                        >
-                          {removingId === member.id ? '...' : 'Remove'}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+      {membersLoading ? (
+        <div className="pepper-empty">Loading team...</div>
+      ) : members.length === 0 ? (
+        <div className="pepper-empty">No team members yet.</div>
+      ) : (
+        <div className="pepper-senders-list">
+          {members.map(member => (
+            <div key={member.id} className="pepper-sender-card">
+              <div className="pepper-sender-row">
+                <div className="pepper-sender-info">
+                  <span className="pepper-sender-email">{member.firstname ?? member.email ?? 'Unknown'}</span>
+                  {member.email && member.firstname && (
+                    <span className="pepper-sender-name">{member.email}</span>
+                  )}
+                  <span className={`pepper-role-badge ${member.role === 'admin' ? 'admin' : 'member'}`}>
+                    {member.role}
+                  </span>
                 </div>
-              ))}
+                {isAdmin && member.id !== userDetailsId && (
+                  <div className="pepper-edit-actions">
+                    <button
+                      className="pepper-edit-btn"
+                      disabled={!!updatingRoleId}
+                      onClick={() => handleUpdateRole(member.id, member.role === 'admin' ? 'member' : 'admin')}
+                    >
+                      {updatingRoleId === member.id
+                        ? '...'
+                        : member.role === 'admin' ? 'Make member' : 'Make admin'}
+                    </button>
+                    <button
+                      className="pepper-cancel-btn"
+                      disabled={!!removingId}
+                      onClick={() => handleRemoveMember(member.id)}
+                    >
+                      {removingId === member.id ? '...' : 'Remove'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
 
       {/* Danger Zone */}

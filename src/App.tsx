@@ -30,6 +30,7 @@ import ContactDetailSidebar from './components/ContactDetailSidebar'
 import WarrenAnalyst from './components/WarrenAnalyst'
 import PepperAdmin from './components/PepperAdmin'
 import InviteSignup from './components/InviteSignup'
+import InviteLanding from './components/InviteLanding'
 import LoginPage from './components/LoginPage'
 import type { CampaignContact } from './hooks/useCampaigns'
 
@@ -49,6 +50,7 @@ const employees: Employee[] = [
 export default function App() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
   const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
+  const [inviteLanding, setInviteLanding] = useState<{ companyName: string | null; inviterName: string | null } | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
 
   // Fix #10: Cleanup subscription on unmount
@@ -158,7 +160,10 @@ export default function App() {
             cleanupRef.current = invCleanup
 
             if (!invData.already_member) {
-              await mob.startMobilisation('invited_member_welcome')
+              setInviteLanding({
+                companyName: invData.account_name ?? null,
+                inviterName: invData.inviter_firstname ?? null,
+              })
             } else {
               mob.setInputBarEnabled(true)
             }
@@ -491,6 +496,11 @@ export default function App() {
     await handleSwitchCompany(remaining[0].id)
   }
 
+  async function handleInviteEnter() {
+    setInviteLanding(null)
+    await mob.startMobilisation('invited_member_welcome')
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut()
   }
@@ -500,6 +510,13 @@ export default function App() {
     const pendingToken = localStorage.getItem('pending_invite_token')
     if (pendingToken) return <InviteSignup token={pendingToken} />
     return <LoginPage />
+  }
+  if (inviteLanding) {
+    return <InviteLanding
+      companyName={inviteLanding.companyName}
+      inviterName={inviteLanding.inviterName}
+      onEnter={handleInviteEnter}
+    />
   }
 
   return (
