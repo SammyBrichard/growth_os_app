@@ -477,7 +477,7 @@ export default function useMobilisation({
     })
 
     setActiveSidebar(null)
-    startMobilisation('signup_ideal_target_profile')
+    startMobilisation('upload_customers')
   }, [accountId, sidebarData, setMessages, saveMessage, startMobilisation])
 
   // ── Save ITP sidebar ─────────────────────────────────────────────────
@@ -533,7 +533,7 @@ export default function useMobilisation({
     }
 
     setActiveSidebar(null)
-    startMobilisation('upload_customers')
+    startMobilisation('signed_up_first_message')
   }, [sidebarData, setMessages, saveMessage, startMobilisation, userDetailsId])
 
   // ── Manual customer add ──────────────────────────────────────────────
