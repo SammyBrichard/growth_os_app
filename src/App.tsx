@@ -145,7 +145,7 @@ export default function App() {
                 account_name: invData.account_name,
                 website: invData.website,
                 signup_complete: true,
-                firstname: invData.firstname ?? ud.userFirstNameRef.current || null,
+                firstname: invData.firstname ?? (ud.userFirstNameRef.current || null),
                 active_mobilisation: null,
                 active_step_id: null,
                 role: invData.role,
