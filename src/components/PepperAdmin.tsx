@@ -189,7 +189,6 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
           </div>
         )}
       </div>
-      {pepperSummary}
 
       {/* Team */}
       <div className="pepper-section">
