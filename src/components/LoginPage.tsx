@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import logoImg from '../assets/hero.png'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -29,7 +30,6 @@ export default function LoginPage() {
         return
       }
 
-      // Redirect straight to the magic link — user is logged in immediately
       window.location.href = data.login_url
     } catch {
       setError('Something went wrong. Please try again.')
@@ -38,15 +38,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="invite-page">
-      <div className="invite-card">
-        <div className="invite-wordmark">GrowthOS</div>
-        <h2 className="invite-title">Sign in.</h2>
-        <form className="invite-form" onSubmit={handleSubmit}>
-          <div className="invite-field">
-            <label className="invite-label">Email</label>
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <img src={logoImg} alt="GrowthOS" className="auth-logo-img" />
+          <span className="auth-logo-name">GrowthOS</span>
+        </div>
+        <div className="auth-divider" />
+        <h2 className="auth-title">Welcome back.</h2>
+        <p className="auth-body">Enter your email to sign in to your workspace.</p>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label className="auth-label">Email</label>
             <input
-              className="invite-input"
+              className="auth-input"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -56,13 +61,13 @@ export default function LoginPage() {
               disabled={state === 'submitting'}
             />
           </div>
-          {error && <div className="invite-field-error">{error}</div>}
+          {error && <div className="auth-error">{error}</div>}
           <button
-            className="invite-submit-btn"
+            className="auth-btn"
             type="submit"
             disabled={state === 'submitting' || !email.trim()}
           >
-            {state === 'submitting' ? 'Signing in...' : 'Sign in'}
+            {state === 'submitting' ? 'Signing in...' : 'Sign in →'}
           </button>
         </form>
       </div>

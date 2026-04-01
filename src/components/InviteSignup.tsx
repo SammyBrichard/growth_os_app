@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import logoImg from '../assets/hero.png'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -53,7 +54,7 @@ export default function InviteSignup({ token }: { token: string }) {
         setState({ type: 'form', accountName })
         setFieldError(
           data.error === 'user_exists'
-            ? 'An account with this email already exists. Open your invite link from a browser where you\'re already logged in to GrowthOS.'
+            ? "An account with this email already exists. Open your invite link from a browser where you're already logged in to GrowthOS."
             : data.error ?? 'Something went wrong. Please try again.',
         )
         return
@@ -66,12 +67,20 @@ export default function InviteSignup({ token }: { token: string }) {
     }
   }
 
-if (state.type === 'loading') {
+  const Logo = () => (
+    <div className="auth-logo">
+      <img src={logoImg} alt="GrowthOS" className="auth-logo-img" />
+      <span className="auth-logo-name">GrowthOS</span>
+    </div>
+  )
+
+  if (state.type === 'loading') {
     return (
-      <div className="invite-page">
-        <div className="invite-card">
-          <div className="invite-wordmark">GrowthOS</div>
-          <div className="invite-loading">Loading invite...</div>
+      <div className="auth-page">
+        <div className="auth-card">
+          <Logo />
+          <div className="auth-divider" />
+          <span className="auth-loading">Loading invite...</span>
         </div>
       </div>
     )
@@ -79,14 +88,16 @@ if (state.type === 'loading') {
 
   if (state.type === 'invalid') {
     return (
-      <div className="invite-page">
-        <div className="invite-card">
-          <div className="invite-wordmark">GrowthOS</div>
-          <h2 className="invite-title">This invite isn't valid.</h2>
-          <p className="invite-body">{state.message}</p>
-          <p className="invite-body">Ask the person who invited you to generate a new link.</p>
-          <button className="invite-submit-btn" onClick={() => window.location.reload()}>
-            Back to login
+      <div className="auth-page">
+        <div className="auth-card">
+          <Logo />
+          <div className="auth-divider" />
+          <h2 className="auth-title">This invite isn't valid.</h2>
+          <p className="auth-body">
+            {state.message} Ask the person who invited you to generate a new link.
+          </p>
+          <button className="auth-btn-ghost" onClick={() => window.location.reload()}>
+            ← Back to login
           </button>
         </div>
       </div>
@@ -94,23 +105,24 @@ if (state.type === 'loading') {
   }
 
   const accountName =
-    state.type === 'form' || state.type === 'submitting'
-      ? state.accountName
-      : null
+    state.type === 'form' || state.type === 'submitting' ? state.accountName : null
 
   return (
-    <div className="invite-page">
-      <div className="invite-card">
-        <div className="invite-wordmark">GrowthOS</div>
-        <h2 className="invite-title">
-          {accountName ? `You've been invited to join ${accountName}.` : "You've been invited to join a GrowthOS workspace."}
+    <div className="auth-page">
+      <div className="auth-card">
+        <Logo />
+        <div className="auth-divider" />
+        <h2 className="auth-title">
+          {accountName
+            ? `You've been invited to join ${accountName}.`
+            : "You've been invited to join a GrowthOS workspace."}
         </h2>
-        <p className="invite-body">Create your account to get started.</p>
-        <form className="invite-form" onSubmit={handleSubmit}>
-          <div className="invite-field">
-            <label className="invite-label">First name</label>
+        <p className="auth-body">Create your account to get started.</p>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label className="auth-label">First name</label>
             <input
-              className="invite-input"
+              className="auth-input"
               type="text"
               value={firstname}
               onChange={e => setFirstname(e.target.value)}
@@ -119,10 +131,10 @@ if (state.type === 'loading') {
               disabled={state.type === 'submitting'}
             />
           </div>
-          <div className="invite-field">
-            <label className="invite-label">Email</label>
+          <div className="auth-field">
+            <label className="auth-label">Email</label>
             <input
-              className="invite-input"
+              className="auth-input"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -131,13 +143,13 @@ if (state.type === 'loading') {
               disabled={state.type === 'submitting'}
             />
           </div>
-          {fieldError && <div className="invite-field-error">{fieldError}</div>}
+          {fieldError && <div className="auth-error">{fieldError}</div>}
           <button
-            className="invite-submit-btn"
+            className="auth-btn"
             type="submit"
             disabled={state.type === 'submitting' || !email.trim()}
           >
-            {state.type === 'submitting' ? 'Creating account...' : 'Get access link'}
+            {state.type === 'submitting' ? 'Creating account...' : 'Get access link →'}
           </button>
         </form>
       </div>

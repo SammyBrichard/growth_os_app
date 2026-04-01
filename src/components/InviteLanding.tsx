@@ -1,3 +1,5 @@
+import logoImg from '../assets/hero.png'
+
 interface InviteLandingProps {
   companyName: string | null
   inviterName: string | null
@@ -8,16 +10,20 @@ export default function InviteLanding({ companyName, inviterName, onEnter }: Inv
   const company = companyName ?? 'a GrowthOS workspace'
 
   return (
-    <div className="invite-page">
-      <div className="invite-card">
-        <div className="invite-wordmark">GrowthOS</div>
-        <h2 className="invite-title">
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <img src={logoImg} alt="GrowthOS" className="auth-logo-img" />
+          <span className="auth-logo-name">GrowthOS</span>
+        </div>
+        <div className="auth-divider" />
+        <h2 className="auth-title">
           {inviterName
             ? `${inviterName} has invited you to join ${company}.`
             : `You've been invited to join ${company}.`}
         </h2>
-        <p className="invite-body">Your account is ready. Click below to enter your workspace.</p>
-        <button className="invite-submit-btn" onClick={onEnter}>
+        <p className="auth-body">Your account is ready. Click below to enter your workspace.</p>
+        <button className="auth-btn" onClick={onEnter}>
           Enter workspace →
         </button>
       </div>
