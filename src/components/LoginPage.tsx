@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import supabase from '../services/supabase'
 
-type PageState = 'idle' | 'submitting' | 'sent'
+const API_URL = import.meta.env.VITE_API_URL
+
+type PageState = 'idle' | 'submitting'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,32 +15,26 @@ export default function LoginPage() {
     setState('submitting')
     setError(null)
 
-    const { error: err } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: { emailRedirectTo: window.location.origin },
-    })
+    try {
+      const res = await fetch(`${API_URL}/api/user/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json()
 
-    if (err) {
-      setError(err.message)
+      if (!res.ok) {
+        setError(data.error ?? 'Something went wrong.')
+        setState('idle')
+        return
+      }
+
+      // Redirect straight to the magic link — user is logged in immediately
+      window.location.href = data.login_url
+    } catch {
+      setError('Something went wrong. Please try again.')
       setState('idle')
-      return
     }
-
-    setState('sent')
-  }
-
-  if (state === 'sent') {
-    return (
-      <div className="invite-page">
-        <div className="invite-card">
-          <div className="invite-wordmark">GrowthOS</div>
-          <h2 className="invite-title">Check your email.</h2>
-          <p className="invite-body">
-            We've sent a login link to <strong>{email}</strong>. Click it to sign in.
-          </p>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -67,7 +62,7 @@ export default function LoginPage() {
             type="submit"
             disabled={state === 'submitting' || !email.trim()}
           >
-            {state === 'submitting' ? 'Sending...' : 'Send login link'}
+            {state === 'submitting' ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>
