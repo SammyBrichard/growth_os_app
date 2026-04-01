@@ -183,7 +183,7 @@ export default function InviteSignup({ token }: { token: string }) {
             </div>
             {fieldError && <div className="auth-error">{fieldError}</div>}
             <button className="auth-btn" type="submit" disabled={isSubmitting || !email.trim()}>
-              {isSubmitting ? 'Sending link...' : 'Log in →'}
+              {isSubmitting ? 'Logging in...' : 'Log in →'}
             </button>
             <button
               className="auth-btn-ghost"
@@ -214,7 +214,7 @@ export default function InviteSignup({ token }: { token: string }) {
           </p>
           {fieldError && <div className="auth-error">{fieldError}</div>}
           <button className="auth-btn" onClick={handleLoginToAccept} disabled={isLoggingIn}>
-            {isLoggingIn ? 'Sending link...' : 'Log in to accept →'}
+            {isLoggingIn ? 'Logging in...' : 'Log in to accept →'}
           </button>
           <button
             className="auth-btn-ghost"
