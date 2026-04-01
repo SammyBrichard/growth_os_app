@@ -119,6 +119,18 @@ export default function useMobilisation({
   const startMobilisation = useCallback(async (name: string) => {
     setMobilisationResponses({})
     setInputBarEnabled(false)
+    // Clear this mobilisation from the DB queue if it was queued as a safety net.
+    // Prevents double-firing if the broadcast already triggered it and the user
+    // later reconnects or navigates back to the Watson tab.
+    if (userDetailsId) {
+      const { data: ud } = await supabase.from('user_details').select('queued_mobilisations').eq('id', userDetailsId).single()
+      const queue: { mobilisation: string }[] = ud?.queued_mobilisations ?? []
+      if (queue.some(q => q.mobilisation === name)) {
+        await supabase.from('user_details').update({
+          queued_mobilisations: queue.filter(q => q.mobilisation !== name),
+        }).eq('id', userDetailsId)
+      }
+    }
     try {
       const res = await fetch(`${API_URL}/api/mobilisation/start`, {
         method: 'POST',
@@ -477,7 +489,7 @@ export default function useMobilisation({
     })
 
     setActiveSidebar(null)
-    startMobilisation('signup_ideal_target_profile')
+    startMobilisation('upload_customers')
   }, [accountId, sidebarData, setMessages, saveMessage, startMobilisation])
 
   // ── Save ITP sidebar ─────────────────────────────────────────────────
@@ -525,7 +537,7 @@ export default function useMobilisation({
           })
           setSidebarData(() => sidebarInfo)
           setActiveSidebar('approve_sic_codes')
-          return // Don't start upload_customers yet — wait for SIC approval
+          return // Don't start signed_up_first_message yet — wait for SIC approval
         }
       } catch (err) {
         console.error('[handleSaveItp] SIC code generation error:', err)
@@ -533,7 +545,7 @@ export default function useMobilisation({
     }
 
     setActiveSidebar(null)
-    startMobilisation('upload_customers')
+    startMobilisation('signed_up_first_message')
   }, [sidebarData, setMessages, saveMessage, startMobilisation, userDetailsId])
 
   // ── Manual customer add ──────────────────────────────────────────────
@@ -611,11 +623,16 @@ export default function useMobilisation({
       }).filter(r => r.organisation_name)
 
       if (accountId && rows.length) {
-        await supabase.from('customers').insert(rows.map(r => ({
-          account_id: accountId,
-          organisation_name: r.organisation_name,
-          organisation_website: r.organisation_website || null,
-        })))
+        // Insert in batches of 500 to handle large CSVs
+        const BATCH_SIZE = 500
+        for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+          const batch = rows.slice(i, i + BATCH_SIZE)
+          await supabase.from('customers').insert(batch.map(r => ({
+            account_id: accountId,
+            organisation_name: r.organisation_name,
+            organisation_website: r.organisation_website || null,
+          })))
+        }
       }
       setCsvRows(rows)
     }
