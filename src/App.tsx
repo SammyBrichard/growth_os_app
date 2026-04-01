@@ -487,7 +487,6 @@ export default function App() {
 
   async function handleLogout() {
     await supabase.auth.signOut()
-    window.location.href = CLIENT_URL
   }
 
   if (user === undefined) return null
