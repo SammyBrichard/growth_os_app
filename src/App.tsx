@@ -261,17 +261,7 @@ export default function App() {
     msg.setMessages(prev => [...prev, { message_body: text, is_agent: false, timestamp: new Date() }])
     ud.saveMessage(text, false, false)
 
-    // Check if customers already exist — if so, this is a refinement flow
-    // and we should continue to signed_up_first_message instead of upload_customers
-    if (ud.accountId) {
-      const { count } = await supabase
-        .from('customers').select('id', { count: 'exact', head: true }).eq('account_id', ud.accountId)
-      if (count && count > 0) {
-        mob.startMobilisation('signed_up_first_message')
-        return
-      }
-    }
-    mob.startMobilisation('upload_customers')
+    mob.startMobilisation('signed_up_first_message')
   }
 
   async function handleSenderSelect(senderId: string) {
