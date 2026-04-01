@@ -32,6 +32,17 @@ function formatTimestamp(dateStr: string) {
   return `${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
 }
 
+function getInitials(firstname: string | null, email: string | null): string {
+  if (firstname) {
+    const parts = firstname.trim().split(/\s+/)
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase()
+  }
+  if (email) return email.slice(0, 2).toUpperCase()
+  return '?'
+}
+
 const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activityLog, senders, onUpdateUserFirstname, onUpdateSender, onAddSender, onDeleteCompany, canDeleteCompany, isAdmin, userDetailsId, pepperSummary }) => {
   const [editingName, setEditingName] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
@@ -44,7 +55,6 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Team section state (admin only)
   const [members, setMembers] = useState<Member[]>([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [inviteLink, setInviteLink] = useState<string | null>(null)
@@ -128,14 +138,6 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
     }
   }
 
-  const activeSkillName = userDetails?.active_skill
-    ? typeof userDetails.active_skill === 'object'
-      ? `${userDetails.active_skill.employee}/${userDetails.active_skill.skill}`
-      : String(userDetails.active_skill)
-    : null
-
-  const queuedCount = userDetails?.queued_mobilisations?.length ?? 0
-
   function startEditName() {
     setNameDraft(userDetails?.firstname ?? '')
     setEditingName(true)
@@ -165,7 +167,6 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
   async function saveSender() {
     if (!editingSenderId) return
     setSavingSender(true)
-    // Only include password if user actually entered one
     const updates: Partial<Sender> = { ...senderDraft }
     if (!updates.smtp_password) delete updates.smtp_password
     await onUpdateSender(editingSenderId, updates)
@@ -175,6 +176,7 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
 
   return (
     <div id="main-body" style={{ padding: '30px' }}>
+      {/* Pepper Summary */}
       <div className="draper-summary">
         <div className="agent-label">PEPPER</div>
         {pepperSummary ? (
@@ -188,203 +190,56 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
         )}
       </div>
       {pepperSummary && <hr className="draper-divider" />}
-      {/* Overview Cards */}
-      <div className="pepper-overview">
-        <div className="pepper-card">
-          <div className="pepper-card-title">Account</div>
-          <div className="pepper-card-fields">
-            <div className="pepper-field">
-              <span className="pepper-label">Organisation</span>
-              <span className="pepper-value">{account?.organisation_name ?? '—'}</span>
-            </div>
-            <div className="pepper-field">
-              <span className="pepper-label">Website</span>
-              {account?.organisation_website ? (
-                <a href={account.organisation_website.startsWith('http') ? account.organisation_website : `https://${account.organisation_website}`} target="_blank" rel="noreferrer" className="pepper-link">
-                  {account.organisation_website}
-                </a>
-              ) : <span className="pepper-value">—</span>}
-            </div>
-            <div className="pepper-field">
-              <span className="pepper-label">Description</span>
-              <span className="pepper-value">{account?.description ?? '—'}</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="pepper-card">
-          <div className="pepper-card-header">
-            <div className="pepper-card-title">User</div>
-            {!editingName && (
-              <button className="pepper-edit-btn" onClick={startEditName}>Edit</button>
-            )}
-          </div>
-          <div className="pepper-card-fields">
-            <div className="pepper-field">
-              <span className="pepper-label">Name</span>
-              {editingName ? (
-                <div className="pepper-inline-edit">
-                  <input className="pepper-input" value={nameDraft} onChange={e => setNameDraft(e.target.value)} />
-                  <div className="pepper-edit-actions">
-                    <button className="pepper-save-btn" onClick={saveName} disabled={savingName}>{savingName ? 'Saving...' : 'Save'}</button>
-                    <button className="pepper-cancel-btn" onClick={() => setEditingName(false)} disabled={savingName}>Cancel</button>
-                  </div>
-                </div>
-              ) : (
-                <span className="pepper-value">{userDetails?.firstname ?? '—'}</span>
-              )}
-            </div>
-            <div className="pepper-field">
-              <span className="pepper-label">Email</span>
-              <span className="pepper-value">{userDetails?.email ?? '—'}</span>
-            </div>
-            <div className="pepper-field">
-              <span className="pepper-label">Status</span>
-              <span className="pepper-value">
-                <span className={`pepper-status-dot ${userDetails?.signup_complete ? 'complete' : 'pending'}`} />
-                {userDetails?.signup_complete ? 'Onboarding complete' : 'Onboarding in progress'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="pepper-section-title">System Status</div>
-      <div className="pepper-status-bar">
-        <div className="pepper-status-item">
-          <span className="pepper-label">Active Skill</span>
-          {activeSkillName
-            ? <span className="pepper-status-pill active">{activeSkillName}</span>
-            : <span className="pepper-status-pill idle">None</span>
-          }
-        </div>
-        <div className="pepper-status-item">
-          <span className="pepper-label">Queued Tasks</span>
-          <span className="pepper-status-pill idle">{queuedCount}</span>
-        </div>
-      </div>
-
-      {/* Senders */}
-      <div className="pepper-senders-header">
-        <div className="pepper-section-title">Email Senders</div>
-        <button className="pepper-add-btn" onClick={onAddSender}>+ Add sender</button>
-      </div>
-      {senders.length === 0 ? (
-        <div className="pepper-empty">No senders configured.</div>
-      ) : (
-        <div className="pepper-senders-list">
-          {senders.map(sender => {
-            const isEditing = editingSenderId === sender.id
-            return (
-              <div key={sender.id} className={`pepper-sender-card${isEditing ? ' editing' : ''}`}>
-                {isEditing ? (
-                  <>
-                    <div className="pepper-sender-edit-grid">
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">Email</label>
-                        <input className="pepper-input" value={senderDraft.email ?? ''} onChange={e => setSenderDraft(d => ({ ...d, email: e.target.value }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">Display Name</label>
-                        <input className="pepper-input" value={senderDraft.display_name ?? ''} onChange={e => setSenderDraft(d => ({ ...d, display_name: e.target.value }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">SMTP Host</label>
-                        <input className="pepper-input" value={senderDraft.smtp_host ?? ''} onChange={e => setSenderDraft(d => ({ ...d, smtp_host: e.target.value }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">SMTP Port</label>
-                        <input className="pepper-input" type="number" value={senderDraft.smtp_port ?? 587} onChange={e => setSenderDraft(d => ({ ...d, smtp_port: parseInt(e.target.value) || 587 }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">SMTP Username</label>
-                        <input className="pepper-input" value={senderDraft.smtp_username ?? ''} onChange={e => setSenderDraft(d => ({ ...d, smtp_username: e.target.value }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">App Password</label>
-                        <input className="pepper-input" type="password" placeholder="Leave blank to keep current" value={senderDraft.smtp_password ?? ''} onChange={e => setSenderDraft(d => ({ ...d, smtp_password: e.target.value }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">IMAP Host</label>
-                        <input className="pepper-input" value={senderDraft.imap_host ?? ''} onChange={e => setSenderDraft(d => ({ ...d, imap_host: e.target.value }))} />
-                      </div>
-                      <div className="pepper-sender-edit-field">
-                        <label className="pepper-label">IMAP Port</label>
-                        <input className="pepper-input" type="number" value={senderDraft.imap_port ?? 993} onChange={e => setSenderDraft(d => ({ ...d, imap_port: parseInt(e.target.value) || 993 }))} />
-                      </div>
-                    </div>
-                    <div className="pepper-edit-actions">
-                      <button className="pepper-save-btn" onClick={saveSender} disabled={savingSender}>{savingSender ? 'Saving...' : 'Save'}</button>
-                      <button className="pepper-cancel-btn" onClick={() => setEditingSenderId(null)} disabled={savingSender}>Cancel</button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="pepper-sender-row">
-                    <div className="pepper-sender-info">
-                      <span className="pepper-sender-email">{sender.email}</span>
-                      {sender.display_name && <span className="pepper-sender-name">{sender.display_name}</span>}
-                      <span className="pepper-sender-host">{sender.smtp_host ?? '—'}</span>
-                    </div>
-                    <button className="pepper-edit-btn" onClick={() => startEditSender(sender)}>Edit</button>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Team — visible to all, actions admin-only */}
-      <div className="pepper-senders-header">
-        <div className="pepper-section-title">Team</div>
-        {isAdmin && (
-          <button className="pepper-add-btn" onClick={handleGenerateInvite} disabled={generatingLink}>
-            {generatingLink ? 'Generating...' : '+ Invite member'}
-          </button>
-        )}
-      </div>
-
-      {isAdmin && inviteLink && (
-        <div className="pepper-invite-box">
-          <span className="pepper-invite-link">{inviteLink}</span>
-          <button className="pepper-copy-btn" onClick={handleCopyLink}>{copied ? 'Copied!' : 'Copy'}</button>
-          {inviteExpiry && (
-            <span className="pepper-invite-expiry">
-              Expires {new Date(inviteExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-            </span>
+      {/* Team */}
+      <div className="pepper-section">
+        <div className="pepper-section-hd">
+          <span className="pepper-section-title">Team</span>
+          {isAdmin && (
+            <button className="pepper-add-btn" onClick={handleGenerateInvite} disabled={generatingLink}>
+              {generatingLink ? 'Generating...' : '+ Invite member'}
+            </button>
           )}
         </div>
-      )}
-
-      {membersLoading ? (
-        <div className="pepper-empty">Loading team...</div>
-      ) : members.length === 0 ? (
-        <div className="pepper-empty">No team members yet.</div>
-      ) : (
-        <div className="pepper-senders-list">
-          {members.map(member => (
-            <div key={member.id} className="pepper-sender-card">
-              <div className="pepper-sender-row">
-                <div className="pepper-sender-info">
-                  <span className="pepper-sender-email">{member.firstname ?? member.email ?? 'Unknown'}</span>
-                  {member.email && member.firstname && (
-                    <span className="pepper-sender-name">{member.email}</span>
-                  )}
-                  <span className={`pepper-role-badge ${member.role === 'admin' ? 'admin' : 'member'}`}>
-                    {member.role}
-                  </span>
+        {isAdmin && inviteLink && (
+          <div className="pepper-invite-box">
+            <span className="pepper-invite-link">{inviteLink}</span>
+            <button className="pepper-copy-btn" onClick={handleCopyLink}>{copied ? 'Copied!' : 'Copy'}</button>
+            {inviteExpiry && (
+              <span className="pepper-invite-expiry">
+                Expires {new Date(inviteExpiry).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+              </span>
+            )}
+          </div>
+        )}
+        {membersLoading ? (
+          <div className="pepper-empty">Loading team...</div>
+        ) : members.length === 0 ? (
+          <div className="pepper-empty">No team members yet.</div>
+        ) : (
+          <div className="pepper-member-list">
+            {members.map(member => (
+              <div key={member.id} className="pepper-member-row">
+                <div className="pepper-member-initials" data-role={member.role}>
+                  {getInitials(member.firstname, member.email)}
                 </div>
+                <div className="pepper-member-info">
+                  <span className="pepper-member-name">{member.firstname ?? member.email ?? 'Unknown'}</span>
+                  {member.firstname && member.email && (
+                    <span className="pepper-member-email">{member.email}</span>
+                  )}
+                </div>
+                <span className={`pepper-role-badge ${member.role === 'admin' ? 'admin' : 'member'}`}>
+                  {member.role}
+                </span>
                 {isAdmin && member.id !== userDetailsId && (
-                  <div className="pepper-edit-actions">
+                  <div className="pepper-member-actions">
                     <button
                       className="pepper-edit-btn"
                       disabled={!!updatingRoleId}
                       onClick={() => handleUpdateRole(member.id, member.role === 'admin' ? 'member' : 'admin')}
                     >
-                      {updatingRoleId === member.id
-                        ? '...'
-                        : member.role === 'admin' ? 'Make member' : 'Make admin'}
+                      {updatingRoleId === member.id ? '...' : member.role === 'admin' ? 'Make member' : 'Make admin'}
                     </button>
                     <button
                       className="pepper-cancel-btn"
@@ -396,57 +251,170 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
                   </div>
                 )}
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Danger Zone */}
-      <div className="pepper-section-title pepper-danger-title">Danger Zone</div>
-      <div className="pepper-danger-zone">
-        {confirmingDelete ? (
-          <div className="pepper-danger-confirm">
-            <span className="pepper-danger-warning">This will permanently delete this company and all its data. This cannot be undone.</span>
-            <div className="pepper-edit-actions">
-              <button
-                className="pepper-delete-confirm-btn"
-                onClick={async () => { setDeleting(true); await onDeleteCompany(); setDeleting(false); setConfirmingDelete(false) }}
-                disabled={deleting}
-              >
-                {deleting ? 'Deleting...' : 'Yes, delete company'}
-              </button>
-              <button className="pepper-cancel-btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
-            </div>
+            ))}
           </div>
-        ) : (
-          <button
-            className="pepper-delete-btn"
-            onClick={() => setConfirmingDelete(true)}
-            disabled={!canDeleteCompany}
-            title={!canDeleteCompany ? 'You cannot delete your only company' : undefined}
-          >
-            Delete this company
-          </button>
         )}
       </div>
 
-      {/* Activity Log */}
-      <div className="pepper-section-title">Recent Activity</div>
-      {activityLog.length === 0 ? (
-        <div className="pepper-empty">No activity yet.</div>
-      ) : (
-        <div className="pepper-activity-log">
-          {activityLog.map(msg => (
-            <div key={msg.id} className={`pepper-activity-item${msg.is_status ? ' status' : ''}`}>
-              <span className="pepper-activity-time">{formatTimestamp(msg.created_at)}</span>
-              <span className={`pepper-activity-sender ${msg.is_agent ? 'agent' : 'user'}`}>
-                {msg.is_agent ? 'AGENT' : 'YOU'}
-              </span>
-              <span className="pepper-activity-body">
-                {msg.message_body.length > 150 ? msg.message_body.slice(0, 150) + '...' : msg.message_body}
-              </span>
+      {/* Profile */}
+      <div className="pepper-section">
+        <div className="pepper-section-hd">
+          <span className="pepper-section-title">Profile</span>
+          {!editingName && (
+            <button className="pepper-edit-btn" onClick={startEditName}>Edit</button>
+          )}
+        </div>
+        <div className="pepper-profile-fields">
+          <div className="pepper-field">
+            <span className="pepper-label">Name</span>
+            {editingName ? (
+              <div className="pepper-inline-edit">
+                <input className="pepper-input" value={nameDraft} onChange={e => setNameDraft(e.target.value)} autoFocus />
+                <div className="pepper-edit-actions">
+                  <button className="pepper-save-btn" onClick={saveName} disabled={savingName}>{savingName ? 'Saving...' : 'Save'}</button>
+                  <button className="pepper-cancel-btn" onClick={() => setEditingName(false)} disabled={savingName}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <span className="pepper-value">{userDetails?.firstname ?? '—'}</span>
+            )}
+          </div>
+          <div className="pepper-field">
+            <span className="pepper-label">Email</span>
+            <span className="pepper-value">{userDetails?.email ?? '—'}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Email Senders */}
+      <div className="pepper-section">
+        <div className="pepper-section-hd">
+          <span className="pepper-section-title">Email Senders</span>
+          <button className="pepper-add-btn" onClick={onAddSender}>+ Add sender</button>
+        </div>
+        {senders.length === 0 ? (
+          <div className="pepper-empty">No senders configured.</div>
+        ) : (
+          <div className="pepper-senders-list">
+            {senders.map(sender => {
+              const isEditing = editingSenderId === sender.id
+              return (
+                <div key={sender.id} className={`pepper-sender-card${isEditing ? ' editing' : ''}`}>
+                  {isEditing ? (
+                    <>
+                      <div className="pepper-sender-edit-grid">
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">Email</label>
+                          <input className="pepper-input" value={senderDraft.email ?? ''} onChange={e => setSenderDraft(d => ({ ...d, email: e.target.value }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">Display Name</label>
+                          <input className="pepper-input" value={senderDraft.display_name ?? ''} onChange={e => setSenderDraft(d => ({ ...d, display_name: e.target.value }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">SMTP Host</label>
+                          <input className="pepper-input" value={senderDraft.smtp_host ?? ''} onChange={e => setSenderDraft(d => ({ ...d, smtp_host: e.target.value }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">SMTP Port</label>
+                          <input className="pepper-input" type="number" value={senderDraft.smtp_port ?? 587} onChange={e => setSenderDraft(d => ({ ...d, smtp_port: parseInt(e.target.value) || 587 }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">SMTP Username</label>
+                          <input className="pepper-input" value={senderDraft.smtp_username ?? ''} onChange={e => setSenderDraft(d => ({ ...d, smtp_username: e.target.value }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">App Password</label>
+                          <input className="pepper-input" type="password" placeholder="Leave blank to keep current" value={senderDraft.smtp_password ?? ''} onChange={e => setSenderDraft(d => ({ ...d, smtp_password: e.target.value }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">IMAP Host</label>
+                          <input className="pepper-input" value={senderDraft.imap_host ?? ''} onChange={e => setSenderDraft(d => ({ ...d, imap_host: e.target.value }))} />
+                        </div>
+                        <div className="pepper-sender-edit-field">
+                          <label className="pepper-label">IMAP Port</label>
+                          <input className="pepper-input" type="number" value={senderDraft.imap_port ?? 993} onChange={e => setSenderDraft(d => ({ ...d, imap_port: parseInt(e.target.value) || 993 }))} />
+                        </div>
+                      </div>
+                      <div className="pepper-edit-actions">
+                        <button className="pepper-save-btn" onClick={saveSender} disabled={savingSender}>{savingSender ? 'Saving...' : 'Save'}</button>
+                        <button className="pepper-cancel-btn" onClick={() => setEditingSenderId(null)} disabled={savingSender}>Cancel</button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="pepper-sender-row">
+                      <div className="pepper-sender-info">
+                        <span className="pepper-sender-email">{sender.email}</span>
+                        {sender.display_name && <span className="pepper-sender-name">{sender.display_name}</span>}
+                        <span className="pepper-sender-host">{sender.smtp_host ?? '—'}</span>
+                      </div>
+                      <button className="pepper-edit-btn" onClick={() => startEditSender(sender)}>Edit</button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Workspace */}
+      <div className="pepper-section">
+        <div className="pepper-section-hd">
+          <span className="pepper-section-title">Workspace</span>
+        </div>
+        <div className="pepper-profile-fields">
+          <div className="pepper-field">
+            <span className="pepper-label">Organisation</span>
+            <span className="pepper-value">{account?.organisation_name ?? '—'}</span>
+          </div>
+          <div className="pepper-field">
+            <span className="pepper-label">Website</span>
+            {account?.organisation_website ? (
+              <a
+                href={account.organisation_website.startsWith('http') ? account.organisation_website : `https://${account.organisation_website}`}
+                target="_blank"
+                rel="noreferrer"
+                className="pepper-link"
+              >
+                {account.organisation_website}
+              </a>
+            ) : <span className="pepper-value">—</span>}
+          </div>
+          {account?.description && (
+            <div className="pepper-field">
+              <span className="pepper-label">Description</span>
+              <span className="pepper-value">{account.description}</span>
             </div>
-          ))}
+          )}
+        </div>
+      </div>
+
+      {/* Danger Zone */}
+      {canDeleteCompany && (
+        <div className="pepper-section">
+          <div className="pepper-section-title pepper-danger-title">Danger Zone</div>
+          <div className="pepper-danger-zone">
+            {confirmingDelete ? (
+              <div className="pepper-danger-confirm">
+                <span className="pepper-danger-warning">This will permanently delete this company and all its data. This cannot be undone.</span>
+                <div className="pepper-edit-actions">
+                  <button
+                    className="pepper-delete-confirm-btn"
+                    onClick={async () => { setDeleting(true); await onDeleteCompany(); setDeleting(false); setConfirmingDelete(false) }}
+                    disabled={deleting}
+                  >
+                    {deleting ? 'Deleting...' : 'Yes, delete company'}
+                  </button>
+                  <button className="pepper-cancel-btn" onClick={() => setConfirmingDelete(false)} disabled={deleting}>Cancel</button>
+                </div>
+              </div>
+            ) : (
+              <button className="pepper-delete-btn" onClick={() => setConfirmingDelete(true)}>
+                Delete this company
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
