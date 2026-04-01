@@ -24,10 +24,17 @@ export default function InviteSignup({ token }: { token: string }) {
     })
       .then(r => r.json())
       .then(data => {
-        if (data.error) setState({ type: 'invalid', message: data.error })
-        else setState({ type: 'form', accountName: data.account_name })
+        if (data.error) {
+          localStorage.removeItem('pending_invite_token')
+          setState({ type: 'invalid', message: data.error })
+        } else {
+          setState({ type: 'form', accountName: data.account_name })
+        }
       })
-      .catch(() => setState({ type: 'invalid', message: 'Something went wrong. Please try again.' }))
+      .catch(() => {
+        localStorage.removeItem('pending_invite_token')
+        setState({ type: 'invalid', message: 'Something went wrong. Please try again.' })
+      })
   }, [token])
 
   async function handleSubmit(e: React.FormEvent) {
@@ -86,6 +93,9 @@ export default function InviteSignup({ token }: { token: string }) {
           <h2 className="invite-title">This invite isn't valid.</h2>
           <p className="invite-body">{state.message}</p>
           <p className="invite-body">Ask the person who invited you to generate a new link.</p>
+          <button className="invite-submit-btn" onClick={() => window.location.reload()}>
+            Back to login
+          </button>
         </div>
       </div>
     )
