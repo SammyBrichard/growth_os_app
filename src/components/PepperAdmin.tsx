@@ -217,21 +217,23 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
           <div className="pepper-empty">No team members yet.</div>
         ) : (
           <div className="pepper-member-list">
-            {members.map(member => (
+            {[...members].sort((a, b) => (a.id === userDetailsId ? -1 : b.id === userDetailsId ? 1 : 0)).map(member => {
+              const isSelf = member.id === userDetailsId
+              return (
               <div key={member.id} className="pepper-sender-card pepper-member-row">
                 <div className="pepper-member-initials" data-role={member.role}>
                   {getInitials(member.firstname, member.email)}
                 </div>
                 <div className="pepper-member-info">
-                  <span className="pepper-member-name">{member.firstname ?? member.email ?? 'Unknown'}</span>
-                  {member.firstname && member.email && (
+                  <span className="pepper-member-name">{isSelf ? 'You' : (member.firstname ?? member.email ?? 'Unknown')}</span>
+                  {member.email && (
                     <span className="pepper-member-email">{member.email}</span>
                   )}
                 </div>
                 <span className={`pepper-role-badge ${member.role === 'admin' ? 'admin' : 'member'}`}>
                   {member.role}
                 </span>
-                {isAdmin && member.id !== userDetailsId && (
+                {isAdmin && !isSelf && (
                   <div className="pepper-member-actions">
                     <button
                       className="pepper-edit-btn"
@@ -250,7 +252,8 @@ const PepperAdmin: React.FC<PepperAdminProps> = ({ account, userDetails, activit
                   </div>
                 )}
               </div>
-            ))}
+            )})}
+
           </div>
         )}
       </div>
