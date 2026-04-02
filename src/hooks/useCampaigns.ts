@@ -152,7 +152,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
           .finally(() => setDraperSummaryLoading(false))
       }
     }
-  }, [selectedEmployee, accountId, fetchCampaigns])
+  }, [selectedEmployee, accountId, fetchCampaigns, draperSummary, draperSummaryLoading])
 
   // Fetch contacts + ITP when a campaign is selected
   useEffect(() => {

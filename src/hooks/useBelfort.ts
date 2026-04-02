@@ -40,7 +40,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
         .catch(() => {})
         .finally(() => setBelfortSummaryLoading(false))
     }
-  }, [selectedEmployee, accountId])
+  }, [selectedEmployee, accountId, belfortSummary, belfortSummaryLoading])
 
   // Load ITPs when Belfort is selected
   useEffect(() => {

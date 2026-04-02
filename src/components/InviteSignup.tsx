@@ -166,7 +166,7 @@ export default function InviteSignup({ token }: { token: string }) {
           <Logo />
           <div className="auth-divider" />
           <h2 className="auth-title">Log in to accept your invite.</h2>
-          <p className="auth-body">Enter your email and we'll send you a sign-in link for {company}.</p>
+          <p className="auth-body">Enter your email to get a sign-in link for {company}.</p>
           <form className="auth-form" onSubmit={handleDirectLogin}>
             <div className="auth-field">
               <label className="auth-label">Email</label>
@@ -209,7 +209,7 @@ export default function InviteSignup({ token }: { token: string }) {
           <div className="auth-divider" />
           <h2 className="auth-title">You already have an account.</h2>
           <p className="auth-body">
-            Log in to accept your invite to {company}. We'll send a sign-in link to{' '}
+            Log in to accept your invite to {company}. A sign-in link will be generated for{' '}
             <strong>{state.email}</strong>.
           </p>
           {fieldError && <div className="auth-error">{fieldError}</div>}
