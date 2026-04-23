@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Lead } from '../types/index'
 
 interface BelfortTargetsProps {
@@ -11,9 +11,12 @@ interface BelfortTargetsProps {
   hasMoreLeads?: boolean
   onLoadMoreLeads?: () => void
   belfortSummary?: string | null
+  pendingRefinementCount?: number
+  refining?: boolean
   onSelectItp: (id: string) => void
   onSelectSubTab: (tab: string) => void
   onSelectLead: (lead: Lead | null) => void
+  onRefineItp?: (itpId: string) => Promise<string | null>
 }
 
 const BelfortTargets: React.FC<BelfortTargetsProps> = ({
@@ -26,13 +29,25 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   hasMoreLeads,
   onLoadMoreLeads,
   belfortSummary,
+  pendingRefinementCount = 0,
+  refining = false,
   onSelectItp,
   onSelectSubTab,
   onSelectLead,
+  onRefineItp,
 }) => {
+  const [refineSummary, setRefineSummary] = useState<string | null>(null)
+
   const filtered = belfortLeads.filter(l =>
     belfortSubTab === 'approved' ? l.approved : (!l.approved && !l.rejected)
   )
+
+  const handleRefine = async () => {
+    if (!onRefineItp || !belfortSelectedItpId) return
+    setRefineSummary(null)
+    const summary = await onRefineItp(belfortSelectedItpId)
+    if (summary) setRefineSummary(summary)
+  }
 
   return (
     <div id="main-body" style={{ padding: '30px' }}>
@@ -73,10 +88,29 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
         >
           Approved
         </button>
+        {belfortSubTab === 'approved' && pendingRefinementCount > 0 && (
+          <button
+            className="belfort-subtab refine-itp-btn"
+            onClick={handleRefine}
+            disabled={refining}
+          >
+            {refining ? 'Refining…' : `Refine ITP (${pendingRefinementCount} rejection${pendingRefinementCount !== 1 ? 's' : ''})`}
+          </button>
+        )}
       </div>
+      {refineSummary && (
+        <div className="refine-summary-banner">
+          {refineSummary}
+        </div>
+      )}
       {belfortSubTab === 'needs_approval' && (
         <p style={{ margin: '12px 0 4px', fontSize: '13px', color: 'var(--muted)' }}>
           Please approve or reject all of the following targets that Belfort has found.
+        </p>
+      )}
+      {belfortSubTab === 'approved' && pendingRefinementCount === 0 && (
+        <p style={{ margin: '12px 0 4px', fontSize: '13px', color: 'var(--muted)' }}>
+          Click a lead to view details or reject it. Rejected leads will update your ITP when you refine.
         </p>
       )}
       <table className="targets-table">

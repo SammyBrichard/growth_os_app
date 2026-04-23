@@ -574,6 +574,9 @@ export default function App() {
               hasMoreLeads={bel.hasMoreLeads}
               onLoadMoreLeads={bel.loadMoreLeads}
               belfortSummary={bel.belfortSummary}
+              pendingRefinementCount={bel.pendingRefinementCount}
+              refining={bel.refining}
+              onRefineItp={bel.refineItp}
             />
           )}
           {selectedEmployee.name === 'Draper' && (
@@ -668,7 +671,13 @@ export default function App() {
           lead={bel.selectedLead}
           onClose={() => bel.setSelectedLead(null)}
           onApprove={bel.approveLead}
-          onReject={(lead, reason) => bel.rejectLead({ ...lead, rejection_reason: reason })}
+          onReject={(lead, reason) => {
+            if (lead.approved) {
+              bel.rejectApprovedLead(lead, reason ?? '')
+            } else {
+              bel.rejectLead({ ...lead, rejection_reason: reason })
+            }
+          }}
         />
       )}
 

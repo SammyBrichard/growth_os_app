@@ -49,33 +49,33 @@ const TargetDetailSidebar: React.FC<TargetDetailSidebarProps> = ({ lead, onClose
             <div className="target-no-contacts">No contacts found for this company</div>
           )}
         </div>
-        {!lead.approved && (
-          <>
-            <div className="sidebar-field">
-              <textarea
-                className="sidebar-field-input"
-                rows={4}
-                placeholder="Adding the reason you have rejected a target will help Belfort find better ones next time."
-                value={rejectionReason}
-                onChange={e => setRejectionReason(e.target.value)}
-              />
-            </div>
-            <div className="target-detail-actions">
-              <button
-                className="target-action-btn reject"
-                onClick={() => onReject(lead, rejectionReason || null)}
-              >
-                Reject
-              </button>
-              <button
-                className="target-action-btn approve"
-                onClick={() => onApprove(lead)}
-              >
-                Approve
-              </button>
-            </div>
-          </>
-        )}
+        <div className="sidebar-field">
+          <textarea
+            className="sidebar-field-input"
+            rows={4}
+            placeholder={lead.approved
+              ? "Why are you rejecting this lead? This will help refine the ITP."
+              : "Adding the reason you have rejected a target will help Belfort find better ones next time."}
+            value={rejectionReason}
+            onChange={e => setRejectionReason(e.target.value)}
+          />
+        </div>
+        <div className="target-detail-actions">
+          <button
+            className="target-action-btn reject"
+            onClick={() => onReject(lead, rejectionReason || null)}
+          >
+            Reject
+          </button>
+          {!lead.approved && (
+            <button
+              className="target-action-btn approve"
+              onClick={() => onApprove(lead)}
+            >
+              Approve
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   )

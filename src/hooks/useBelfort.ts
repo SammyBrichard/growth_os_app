@@ -25,6 +25,8 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
   const [loading, setLoading] = useState(false)
   const [belfortSummary, setBelfortSummary] = useState<string | null>(null)
   const [belfortSummaryLoading, setBelfortSummaryLoading] = useState(false)
+  const [pendingRefinementCount, setPendingRefinementCount] = useState(0)
+  const [refining, setRefining] = useState(false)
 
   // Load ITPs + summary when Belfort is selected
   useEffect(() => {
@@ -151,7 +153,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     }
   }, [userDetailsId])
 
-  /** Reject a lead. */
+  /** Reject a pending lead (not yet approved). */
   const rejectLead = useCallback(async (lead: Lead) => {
     await supabase.from('leads').update({ rejected: true, rejection_reason: lead.rejection_reason ?? null }).eq('id', lead.id)
     setBelfortLeads(prev => prev.filter(l => l.id !== lead.id))
@@ -165,6 +167,35 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     setBelfortLeads(prev => prev.map(l => l.id === lead.id ? updated : l))
     setSelectedLead(null)
   }, [])
+
+  /** Reject an already-approved lead with a reason. Increments the pending refinement counter. */
+  const rejectApprovedLead = useCallback(async (lead: Lead, reason: string) => {
+    await supabase.from('leads').update({ approved: false, rejected: true, rejection_reason: reason }).eq('id', lead.id)
+    setBelfortLeads(prev => prev.map(l => l.id === lead.id ? { ...l, approved: false, rejected: true, rejection_reason: reason } : l))
+    setSelectedLead(null)
+    setPendingRefinementCount(prev => prev + 1)
+  }, [])
+
+  /** Refine the ITP based on accumulated rejections. Returns the changes summary. */
+  const refineItp = useCallback(async (itpId: string): Promise<string | null> => {
+    if (!userDetailsId) return null
+    setRefining(true)
+    try {
+      const res = await fetch(`${API_URL}/api/itp/refine`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itp_id: itpId, user_details_id: userDetailsId }),
+      })
+      const data = await res.json()
+      setPendingRefinementCount(0)
+      return data.changes_summary ?? null
+    } catch (err) {
+      console.error('[refineItp]', err)
+      return null
+    } finally {
+      setRefining(false)
+    }
+  }, [userDetailsId])
 
   return {
     belfortItps,
@@ -184,5 +215,9 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     checkAndQueueTargetMobilisation,
     rejectLead,
     approveLead,
+    rejectApprovedLead,
+    refineItp,
+    pendingRefinementCount,
+    refining,
   }
 }
