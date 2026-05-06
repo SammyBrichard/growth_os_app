@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Lead } from '../types/index'
 
 interface BelfortTargetsProps {
@@ -37,10 +37,24 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   onRefineItp,
 }) => {
   const [refineSummary, setRefineSummary] = useState<string | null>(null)
+  const [contactFilter, setContactFilter] = useState<'all' | 'with' | 'without'>('all')
 
-  const filtered = belfortLeads.filter(l =>
+  useEffect(() => { setContactFilter('all') }, [belfortSubTab])
+
+  const subtabFiltered = belfortLeads.filter(l =>
     belfortSubTab === 'approved' ? l.approved : (!l.approved && !l.rejected)
   )
+
+  const withContactsCount = subtabFiltered.filter(l => (l.targets?.contacts?.length ?? 0) > 0).length
+  const withoutContactsCount = subtabFiltered.filter(l => (l.targets?.contacts?.length ?? 0) === 0).length
+
+  const filtered = belfortSubTab === 'approved'
+    ? subtabFiltered.filter(l => {
+        if (contactFilter === 'with') return (l.targets?.contacts?.length ?? 0) > 0
+        if (contactFilter === 'without') return (l.targets?.contacts?.length ?? 0) === 0
+        return true
+      })
+    : subtabFiltered
 
   const handleRefine = async () => {
     if (!onRefineItp || !belfortSelectedItpId) return
@@ -98,6 +112,28 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           </button>
         )}
       </div>
+      {belfortSubTab === 'approved' && (
+        <div className="belfort-subtabs" style={{ marginTop: '8px' }}>
+          <button
+            className={`belfort-subtab${contactFilter === 'all' ? ' active' : ''}`}
+            onClick={() => setContactFilter('all')}
+          >
+            All ({subtabFiltered.length})
+          </button>
+          <button
+            className={`belfort-subtab${contactFilter === 'with' ? ' active' : ''}`}
+            onClick={() => setContactFilter('with')}
+          >
+            With contacts ({withContactsCount})
+          </button>
+          <button
+            className={`belfort-subtab${contactFilter === 'without' ? ' active' : ''}`}
+            onClick={() => setContactFilter('without')}
+          >
+            No contacts ({withoutContactsCount})
+          </button>
+        </div>
+      )}
       {refineSummary && (
         <div className="refine-summary-banner">
           {refineSummary}
@@ -139,7 +175,11 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
             <tr><td colSpan={4} className="targets-empty">Loading targets...</td></tr>
           )}
           {!loading && filtered.length === 0 && (
-            <tr><td colSpan={4} className="targets-empty">{belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}</td></tr>
+            <tr><td colSpan={4} className="targets-empty">
+              {contactFilter !== 'all'
+                ? `No approved targets ${contactFilter === 'with' ? 'with contacts' : 'without contacts'}.`
+                : belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}
+            </td></tr>
           )}
         </tbody>
       </table>
