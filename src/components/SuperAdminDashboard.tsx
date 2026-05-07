@@ -2,6 +2,39 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL
 
+function getNextFires(expr: string, count: number): string[] {
+  const parts = expr.trim().split(/\s+/)
+  if (parts.length !== 5) return []
+  const [minStr, hourStr, , , dowStr] = parts
+  const min = parseInt(minStr), hour = parseInt(hourStr)
+  if (isNaN(min) || isNaN(hour)) return []
+  let allowed: number[]
+  if (dowStr === '*') allowed = [0,1,2,3,4,5,6]
+  else if (dowStr === '1-5') allowed = [1,2,3,4,5]
+  else { const d = parseInt(dowStr); allowed = isNaN(d) ? [0,1,2,3,4,5,6] : [d] }
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const results: string[] = []
+  const cursor = new Date(); cursor.setSeconds(0,0); cursor.setMinutes(cursor.getMinutes()+1)
+  let iters = 0
+  while (results.length < count && iters++ < 10000) {
+    const h = cursor.getHours(), m = cursor.getMinutes(), dow = cursor.getDay()
+    if (h === hour && m === min) {
+      if (allowed.includes(dow)) {
+        results.push(`${days[dow]} ${cursor.getDate()} ${months[cursor.getMonth()]}, ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+        cursor.setMinutes(m + 1)
+      } else {
+        cursor.setDate(cursor.getDate()+1); cursor.setHours(0,0,0,0)
+      }
+    } else if (h > hour || (h === hour && m > min)) {
+      cursor.setDate(cursor.getDate()+1); cursor.setHours(0,0,0,0)
+    } else {
+      cursor.setHours(hour, min, 0, 0)
+    }
+  }
+  return results
+}
+
 // ── Design tokens ────────────────────────────────────────────────────────────
 const C = {
   bg: '#f6f3ee', fg: '#1a1a18', muted: '#8a857b', accent: '#c44e2b',
@@ -383,6 +416,8 @@ function TargetFinderTab({ campaigns, crons, setCrons, userDetailsId, loading }:
     return `${m} ${h} * * ${d}`
   }, [schedPreset, schedCustom, schedFreq, schedDay, schedTime])
 
+  const nextFires = useMemo(() => getNextFires(cronExpr, 4), [cronExpr])
+
   async function handleRunNow() {
     if (!runSel.size || !userDetailsId) return
     setRunLoading(true); setRunResult(null)
@@ -495,7 +530,9 @@ function TargetFinderTab({ campaigns, crons, setCrons, userDetailsId, loading }:
           <div style={{ background: C.cream, border: `1px solid ${C.border}`, borderRadius: 8, padding: '18px 20px', alignSelf: 'start', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Next 4 fires</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {['Next occurrence', '+1 week', '+2 weeks', '+3 weeks'].map((d, i) => (
+              {nextFires.length === 0
+                ? <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Select a schedule above</div>
+                : nextFires.map((d, i) => (
                 <div key={i} style={{ fontFamily: MONO, fontSize: 12, color: C.fg, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ width: 4, height: 4, borderRadius: '50%', background: i === 0 ? C.accent : C.border }} />
                   {d}
