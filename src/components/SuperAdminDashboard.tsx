@@ -80,7 +80,7 @@ interface AdminUser {
   auth_id: string; firstname: string | null; email: string | null; is_super_admin: boolean
   companies: { user_details_id: string; account_id: string | null; account_name: string | null; role: string | null }[]
 }
-interface SmartleadStatus { sync_enabled: boolean; connected: boolean; connectError: string | null; updated_at: string | null }
+interface SmartleadStatus { sync_enabled: boolean; connected: boolean; connectError: string | null; campaignStatus: 'ACTIVE' | 'PAUSED' | 'MIXED' | null; updated_at: string | null }
 interface SyncResult { created: number; contacts_pushed: number; skipped: number; errors: string[] }
 interface SetStatusResult { updated: number; errors: string[] }
 
@@ -703,8 +703,9 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
 function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: SmartleadStatus | null; onToggle: () => void; loading: boolean; userDetailsId: string | null }) {
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
-  const [settingStatus, setSettingStatus] = useState<'ACTIVE' | 'PAUSED' | null>(null)
+  const [settingStatus, setSettingStatus] = useState(false)
   const [statusResult, setStatusResult] = useState<{ status: string } & SetStatusResult | null>(null)
+  const [displayedCampaignStatus, setDisplayedCampaignStatus] = useState(status.campaignStatus)
 
   const handleSync = async () => {
     if (!userDetailsId || syncing) return
@@ -717,11 +718,13 @@ function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: Sm
 
   const handleSetStatus = async (s: 'ACTIVE' | 'PAUSED') => {
     if (!userDetailsId || settingStatus) return
-    setSettingStatus(s); setStatusResult(null)
+    setSettingStatus(true); setStatusResult(null)
     try {
       const res = await fetch(`${API_URL}/api/admin/smartlead/set-status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId, status: s }) })
-      setStatusResult({ status: s, ...(await res.json()) })
-    } finally { setSettingStatus(null) }
+      const data = await res.json()
+      setStatusResult({ status: s, ...data })
+      if (!data.errors?.length) setDisplayedCampaignStatus(s)
+    } finally { setSettingStatus(false) }
   }
 
   if (loading) return <LoadingState />
@@ -792,19 +795,28 @@ function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: Sm
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '16px 18px', border: `1px solid ${C.border}`, borderRadius: 8, background: C.cream }}>
-            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>Campaign sending status</div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>Set all synced Smartlead campaigns to active (sending) or paused (draft).</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => handleSetStatus('ACTIVE')} disabled={!!settingStatus || !status.connected} style={{ padding: '8px 18px', borderRadius: 6, border: 'none', background: C.green, color: '#fff', fontSize: 13, fontWeight: 600, cursor: settingStatus || !status.connected ? 'not-allowed' : 'pointer', opacity: settingStatus || !status.connected ? 0.5 : 1 }}>
-                {settingStatus === 'ACTIVE' ? 'Activating…' : 'Set active'}
-              </button>
-              <button onClick={() => handleSetStatus('PAUSED')} disabled={!!settingStatus || !status.connected} style={{ padding: '8px 18px', borderRadius: 6, border: `1px solid ${C.border}`, background: '#fff', color: C.fg, fontSize: 13, fontWeight: 600, cursor: settingStatus || !status.connected ? 'not-allowed' : 'pointer', opacity: settingStatus || !status.connected ? 0.5 : 1 }}>
-                {settingStatus === 'PAUSED' ? 'Pausing…' : 'Set draft'}
+          <div style={{ padding: '16px 18px', border: `1px solid ${C.border}`, borderRadius: 8, background: displayedCampaignStatus === 'ACTIVE' ? `color-mix(in srgb, ${C.green} 4%, transparent)` : C.cream }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 4 }}>
+                  Campaign sending
+                  {displayedCampaignStatus === 'MIXED' && <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 400, color: C.gold, marginLeft: 8, background: `color-mix(in srgb, ${C.gold} 12%, transparent)`, padding: '2px 7px', borderRadius: 999 }}>MIXED</span>}
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>
+                  {displayedCampaignStatus === 'ACTIVE' ? 'Campaigns are actively sending emails.' : displayedCampaignStatus === 'MIXED' ? 'Some campaigns are active, others are paused.' : 'Campaigns are paused — no emails will be sent.'}
+                  {displayedCampaignStatus === null && !status.connected && ' Connect Smartlead to manage sending.'}
+                </div>
+              </div>
+              <button
+                onClick={() => handleSetStatus(displayedCampaignStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE')}
+                disabled={settingStatus || !status.connected || displayedCampaignStatus === null}
+                style={{ width: 56, height: 30, borderRadius: 999, border: 'none', background: displayedCampaignStatus === 'ACTIVE' ? C.green : C.border, position: 'relative', cursor: settingStatus || !status.connected || displayedCampaignStatus === null ? 'not-allowed' : 'pointer', flexShrink: 0, transition: 'background 0.2s', opacity: settingStatus ? 0.6 : 1 }}
+              >
+                <span style={{ position: 'absolute', top: 3, left: displayedCampaignStatus === 'ACTIVE' ? 29 : 3, width: 24, height: 24, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.15)', transition: 'left 0.2s' }} />
               </button>
             </div>
             {statusResult && (
-              <div style={{ fontFamily: MONO, fontSize: 11, marginTop: 4 }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, marginTop: 10 }}>
                 {statusResult.errors.length > 0
                   ? <span style={{ color: C.accent }}>{statusResult.errors.length} error(s)</span>
                   : <span style={{ color: C.green }}>{statusResult.updated} campaign(s) set to {statusResult.status.toLowerCase()}</span>
