@@ -80,7 +80,7 @@ interface AdminUser {
   auth_id: string; firstname: string | null; email: string | null; is_super_admin: boolean
   companies: { user_details_id: string; account_id: string | null; account_name: string | null; role: string | null }[]
 }
-interface SmartleadStatus { sync_enabled: boolean; connected: boolean; updated_at: string | null }
+interface SmartleadStatus { sync_enabled: boolean; connected: boolean; connectError: string | null; updated_at: string | null }
 
 
 const COMPANY_COLORS = ['#c44e2b','#00a071','#b8860b','#3b6e8f','#7a5cb0','#5a8d6e','#d44a2b','#2d6a8f']
@@ -758,9 +758,14 @@ function SmartleadTab({ status, onToggle, loading }: { status: SmartleadStatus |
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 13, color: C.muted }}>{l}</span>
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: C.fg, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', marginTop: 2 }}>{v}</div>
+                <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: v === 'Down' ? C.accent : C.fg, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', marginTop: 2 }}>{v}</div>
               </div>
             ))}
+            {!status.connected && status.connectError && (
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.accent, background: `color-mix(in srgb, ${C.accent} 6%, transparent)`, border: `1px solid color-mix(in srgb, ${C.accent} 20%, transparent)`, borderRadius: 6, padding: '8px 10px', wordBreak: 'break-all' }}>
+                {status.connectError}
+              </div>
+            )}
           </div>
         </div>
         <div style={{ background: C.cream, border: `1px solid ${C.border}`, borderRadius: 10, padding: '18px 20px' }}>
