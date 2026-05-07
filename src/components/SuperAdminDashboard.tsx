@@ -81,6 +81,8 @@ interface AdminUser {
   companies: { user_details_id: string; account_id: string | null; account_name: string | null; role: string | null }[]
 }
 interface SmartleadStatus { sync_enabled: boolean; connected: boolean; connectError: string | null; updated_at: string | null }
+interface SyncResult { created: number; contacts_pushed: number; skipped: number; errors: string[] }
+interface SetStatusResult { updated: number; errors: string[] }
 
 
 const COMPANY_COLORS = ['#c44e2b','#00a071','#b8860b','#3b6e8f','#7a5cb0','#5a8d6e','#d44a2b','#2d6a8f']
@@ -698,7 +700,30 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
 }
 
 // ── Smartlead tab ─────────────────────────────────────────────────────────────
-function SmartleadTab({ status, onToggle, loading }: { status: SmartleadStatus | null; onToggle: () => void; loading: boolean }) {
+function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: SmartleadStatus | null; onToggle: () => void; loading: boolean; userDetailsId: string | null }) {
+  const [syncing, setSyncing] = useState(false)
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
+  const [settingStatus, setSettingStatus] = useState<'ACTIVE' | 'PAUSED' | null>(null)
+  const [statusResult, setStatusResult] = useState<{ status: string } & SetStatusResult | null>(null)
+
+  const handleSync = async () => {
+    if (!userDetailsId || syncing) return
+    setSyncing(true); setSyncResult(null)
+    try {
+      const res = await fetch(`${API_URL}/api/admin/smartlead/sync-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId }) })
+      setSyncResult(await res.json())
+    } finally { setSyncing(false) }
+  }
+
+  const handleSetStatus = async (s: 'ACTIVE' | 'PAUSED') => {
+    if (!userDetailsId || settingStatus) return
+    setSettingStatus(s); setStatusResult(null)
+    try {
+      const res = await fetch(`${API_URL}/api/admin/smartlead/set-status`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId, status: s }) })
+      setStatusResult({ status: s, ...(await res.json()) })
+    } finally { setSettingStatus(null) }
+  }
+
   if (loading) return <LoadingState />
   if (!status) return null
 
@@ -747,6 +772,47 @@ function SmartleadTab({ status, onToggle, loading }: { status: SmartleadStatus |
         {status.updated_at && (
           <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>Last changed: {new Date(status.updated_at).toLocaleString()}</div>
         )}
+
+        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Actions</div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '16px 18px', border: `1px solid ${C.border}`, borderRadius: 8, background: C.cream }}>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>Sync campaigns to Smartlead</div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>Create any campaigns not yet in Smartlead and push all unsynced contacts.</div>
+            <button onClick={handleSync} disabled={syncing || !status.connected} style={{ alignSelf: 'flex-start', padding: '8px 18px', borderRadius: 6, border: 'none', background: C.fg, color: '#fff', fontSize: 13, fontWeight: 600, cursor: syncing || !status.connected ? 'not-allowed' : 'pointer', opacity: syncing || !status.connected ? 0.5 : 1 }}>
+              {syncing ? 'Syncing…' : 'Sync now'}
+            </button>
+            {syncResult && (
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>
+                {syncResult.errors.length > 0
+                  ? <span style={{ color: C.accent }}>{syncResult.errors.length} error(s): {syncResult.errors.join(', ')}</span>
+                  : <span style={{ color: C.green }}>Done — {syncResult.created} campaign(s) created, {syncResult.contacts_pushed} contact(s) pushed{syncResult.skipped > 0 ? `, ${syncResult.skipped} skipped` : ''}</span>
+                }
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '16px 18px', border: `1px solid ${C.border}`, borderRadius: 8, background: C.cream }}>
+            <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>Campaign sending status</div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 8, lineHeight: 1.5 }}>Set all synced Smartlead campaigns to active (sending) or paused (draft).</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => handleSetStatus('ACTIVE')} disabled={!!settingStatus || !status.connected} style={{ padding: '8px 18px', borderRadius: 6, border: 'none', background: C.green, color: '#fff', fontSize: 13, fontWeight: 600, cursor: settingStatus || !status.connected ? 'not-allowed' : 'pointer', opacity: settingStatus || !status.connected ? 0.5 : 1 }}>
+                {settingStatus === 'ACTIVE' ? 'Activating…' : 'Set active'}
+              </button>
+              <button onClick={() => handleSetStatus('PAUSED')} disabled={!!settingStatus || !status.connected} style={{ padding: '8px 18px', borderRadius: 6, border: `1px solid ${C.border}`, background: '#fff', color: C.fg, fontSize: 13, fontWeight: 600, cursor: settingStatus || !status.connected ? 'not-allowed' : 'pointer', opacity: settingStatus || !status.connected ? 0.5 : 1 }}>
+                {settingStatus === 'PAUSED' ? 'Pausing…' : 'Set draft'}
+              </button>
+            </div>
+            {statusResult && (
+              <div style={{ fontFamily: MONO, fontSize: 11, marginTop: 4 }}>
+                {statusResult.errors.length > 0
+                  ? <span style={{ color: C.accent }}>{statusResult.errors.length} error(s)</span>
+                  : <span style={{ color: C.green }}>{statusResult.updated} campaign(s) set to {statusResult.status.toLowerCase()}</span>
+                }
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1041,7 +1107,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
         {activeTab === 'overview'      && <OverviewTab analytics={analytics} loading={loading} />}
         {activeTab === 'target-finder' && <TargetFinderTab campaigns={campaigns} crons={crons} setCrons={setCrons} userDetailsId={userDetailsId} loading={loading} />}
         {activeTab === 'analytics'     && <AnalyticsTab analytics={analytics} loading={loading} />}
-        {activeTab === 'smartlead'     && <SmartleadTab status={smartlead} onToggle={handleToggleSmartlead} loading={loading} />}
+        {activeTab === 'smartlead'     && <SmartleadTab status={smartlead} onToggle={handleToggleSmartlead} loading={loading} userDetailsId={userDetailsId} />}
         {activeTab === 'users'         && <UsersTab users={users} setUsers={setUsers} loading={loading} userDetailsId={userDetailsId} />}
       </div>
 
