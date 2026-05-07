@@ -639,7 +639,7 @@ export default function App() {
         </div>
 
         {/* Watson chat — always rendered, transitions between full and sidebar */}
-        <div id="watson-panel" className={`${selectedEmployee.name === 'Watson' ? 'watson-full' : (mob.activeSidebar || bel.selectedLead || selectedCampaignContact) ? 'watson-hidden' : 'watson-sidebar'}${fromClient ? ' from-client' : ''}${camp.selectedCampaign ? ' watson-narrow' : ''}`}>
+        <div id="watson-panel" className={`${selectedEmployee.name === 'Watson' ? 'watson-full' : (selectedEmployee.name === 'Admin' || mob.activeSidebar || bel.selectedLead || selectedCampaignContact) ? 'watson-hidden' : 'watson-sidebar'}${fromClient ? ' from-client' : ''}${camp.selectedCampaign ? ' watson-narrow' : ''}`}>
           {selectedEmployee.name !== 'Watson' && (
             <div className="watson-sidebar-header">
               <div className="topbar-agent-status">
