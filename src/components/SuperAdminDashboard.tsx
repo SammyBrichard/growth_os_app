@@ -64,7 +64,14 @@ interface RunRecord {
   campaigns: { name: string; account: { organisation_name: string } | null } | null
 }
 interface Analytics {
-  aggregated: { totalLeads: number; avgScore: number; totalCampaignContacts: number; totalCampaigns: number; totalCompanies: number; leadsThisWeek: number; contactsThisWeek: number }
+  aggregated: {
+    totalLeads: number; avgScore: number; totalCampaignContacts: number; totalCampaigns: number; totalCompanies: number
+    leadsThisWeek: number; leadsLastWeek: number
+    contactsThisWeek: number; contactsLastWeek: number
+    avgScoreLastWeek: number
+    campaignsThisWeek: number; campaignsLastWeek: number
+    companiesThisWeek: number; companiesLastWeek: number
+  }
   recentRuns: RunRecord[]
   perCompany: { account_id: string; account_name: string; campaigns: any[]; leadCount: number; contactCount: number }[]
 }
@@ -108,7 +115,7 @@ function Sparkline({ data, color = C.accent, height = 28, width = 96 }: { data: 
   )
 }
 
-function StatCard({ label, value, spark, sparkColor, delta, big }: { label: string; value: string | number; spark?: number[]; sparkColor?: string; delta?: number; big?: boolean }) {
+function StatCard({ label, value, spark, sparkColor, delta, big }: { label: string; value: string | number; spark?: number[]; sparkColor?: string; delta?: number | null; big?: boolean }) {
   return (
     <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: big ? '20px 22px' : '16px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
       <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</div>
@@ -324,12 +331,12 @@ function OverviewTab({ analytics, loading }: { analytics: Analytics | null; load
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
-        <StatCard label="Companies"     value={aggregated.totalCompanies}    spark={SPARK.companies}    delta={20} sparkColor="#3b6e8f" />
-        <StatCard label="Campaigns"     value={aggregated.totalCampaigns}    spark={SPARK.campaigns}    delta={5}  sparkColor="#7a5cb0" />
-        <StatCard label="Total leads"   value={aggregated.totalLeads.toLocaleString()} spark={SPARK.totalLeads} delta={12} />
-        <StatCard label="Avg score"     value={aggregated.avgScore}          spark={SPARK.avgScore}     delta={3}  sparkColor={C.gold} />
-        <StatCard label="Leads / week"  value={aggregated.leadsThisWeek}     spark={SPARK.leadsWeek}    delta={8}  sparkColor={C.green} />
-        <StatCard label="Contacts / wk" value={aggregated.contactsThisWeek}  spark={SPARK.contactsWeek} delta={14} sparkColor={C.green} />
+        <StatCard label="Companies"     value={aggregated.totalCompanies}    spark={SPARK.companies}    delta={pctDelta(aggregated.companiesThisWeek, aggregated.companiesLastWeek)}   sparkColor="#3b6e8f" />
+        <StatCard label="Campaigns"     value={aggregated.totalCampaigns}    spark={SPARK.campaigns}    delta={pctDelta(aggregated.campaignsThisWeek, aggregated.campaignsLastWeek)}   sparkColor="#7a5cb0" />
+        <StatCard label="Total leads"   value={aggregated.totalLeads.toLocaleString()} spark={SPARK.totalLeads} delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)} />
+        <StatCard label="Avg score"     value={aggregated.avgScore}          spark={SPARK.avgScore}     delta={pctDelta(aggregated.avgScore, aggregated.avgScoreLastWeek)}              sparkColor={C.gold} />
+        <StatCard label="Leads / week"  value={aggregated.leadsThisWeek}     spark={SPARK.leadsWeek}    delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)}            sparkColor={C.green} />
+        <StatCard label="Contacts / wk" value={aggregated.contactsThisWeek}  spark={SPARK.contactsWeek} delta={pctDelta(aggregated.contactsThisWeek, aggregated.contactsLastWeek)}    sparkColor={C.green} />
       </div>
 
       <div>
@@ -613,10 +620,10 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-        <StatCard label="Total leads"     value={aggregated.totalLeads.toLocaleString()} spark={SPARK.totalLeads}   delta={12} big />
-        <StatCard label="Avg lead score"  value={aggregated.avgScore}                     spark={SPARK.avgScore}     delta={3}  sparkColor={C.gold} big />
-        <StatCard label="Total contacted" value={aggregated.totalCampaignContacts.toLocaleString()} spark={SPARK.contactsWeek} delta={14} sparkColor={C.green} big />
-        <StatCard label="Companies"       value={aggregated.totalCompanies}               spark={SPARK.companies}    delta={20} sparkColor="#3b6e8f" big />
+        <StatCard label="Total leads"     value={aggregated.totalLeads.toLocaleString()} spark={SPARK.totalLeads}   delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)} big />
+        <StatCard label="Avg lead score"  value={aggregated.avgScore}                     spark={SPARK.avgScore}     delta={pctDelta(aggregated.avgScore, aggregated.avgScoreLastWeek)} sparkColor={C.gold} big />
+        <StatCard label="Total contacted" value={aggregated.totalCampaignContacts.toLocaleString()} spark={SPARK.contactsWeek} delta={pctDelta(aggregated.contactsThisWeek, aggregated.contactsLastWeek)} sparkColor={C.green} big />
+        <StatCard label="Companies"       value={aggregated.totalCompanies}               spark={SPARK.companies}    delta={pctDelta(aggregated.companiesThisWeek, aggregated.companiesLastWeek)} sparkColor="#3b6e8f" big />
       </div>
 
       <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '20px 22px' }}>
@@ -927,6 +934,11 @@ function timeUntilNextFire(expr: string): string {
   if (h2 < 24) return m2 > 0 ? `in ${h2}h ${m2}m` : `in ${h2}h`
   const days = Math.floor(h2 / 24), remH = h2 % 24
   return remH > 0 ? `in ${days}d ${remH}h` : `in ${days}d`
+}
+
+function pctDelta(current: number, previous: number): number | null {
+  if (previous === 0) return current > 0 ? 100 : null
+  return Math.round(((current - previous) / previous) * 100)
 }
 
 function formatRelativeTime(iso: string): string {
