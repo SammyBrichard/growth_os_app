@@ -60,9 +60,10 @@ interface CronJob {
 }
 interface RunRecord {
   id: string; campaign_id: string; status: string; estimated_cost_pence: number | null
-  created_at: string
-  campaigns: { name: string; account: { organisation_name: string } | null } | null
+  created_at: string; lead_count: number | null
+  campaigns: { name: string; itp_id: string | null; account: { organisation_name: string } | null } | null
 }
+interface HealthStatus { status: 'ok' | 'warning' | 'error'; failed_runs_24h: number; stuck_runs: number; active_crons: number }
 interface Analytics {
   aggregated: {
     totalLeads: number; avgScore: number; totalCampaignContacts: number; totalCampaigns: number; totalCompanies: number
@@ -357,7 +358,9 @@ function OverviewTab({ analytics, loading }: { analytics: Analytics | null; load
                       </span>
                     </td>
                     <td style={{ padding: '12px 14px' }}><StatusPill status={r.status} /></td>
-                    <td style={{ fontFamily: MONO, padding: '12px 14px', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>—</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 14px', color: r.lead_count != null ? C.fg : C.muted, fontVariantNumeric: 'tabular-nums' }}>
+                      {r.lead_count != null ? r.lead_count : '—'}
+                    </td>
                     <td style={{ fontFamily: MONO, padding: '12px 14px', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
                       {r.estimated_cost_pence != null ? `£${(r.estimated_cost_pence / 100).toFixed(2)}` : '—'}
                     </td>
@@ -1041,6 +1044,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
   const [crons, setCrons] = useState<CronJob[]>([])
   const [users, setUsers] = useState<AdminUser[]>([])
   const [smartlead, setSmartlead] = useState<SmartleadStatus | null>(null)
+  const [health, setHealth] = useState<HealthStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -1048,6 +1052,11 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
     const res = await fetch(`${API_URL}/api/admin${path}?user_details_id=${userDetailsId}`)
     if (!res.ok) throw new Error(await res.text())
     return res.json()
+  }, [userDetailsId])
+
+  useEffect(() => {
+    if (!userDetailsId) return
+    get('/health').then(setHealth).catch(() => {/* silent — header degrades gracefully */})
   }, [userDetailsId])
 
   useEffect(() => {
@@ -1082,10 +1091,15 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
             <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 30, letterSpacing: '-0.02em', margin: 0 }}>Super Admin</h1>
           </div>
           <div style={{ fontFamily: MONO, display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: C.muted, paddingBottom: 6 }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.green }} />
-              All systems operational
-            </span>
+            {health && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: health.status === 'ok' ? C.green : health.status === 'warning' ? C.gold : C.accent }} />
+                {health.status === 'ok' ? 'All systems operational'
+                  : health.status === 'warning' ? 'No active crons'
+                  : `${health.failed_runs_24h > 0 ? `${health.failed_runs_24h} failed run${health.failed_runs_24h !== 1 ? 's' : ''}` : ''}${health.failed_runs_24h > 0 && health.stuck_runs > 0 ? ', ' : ''}${health.stuck_runs > 0 ? `${health.stuck_runs} stuck run${health.stuck_runs !== 1 ? 's' : ''}` : ''}`
+                }
+              </span>
+            )}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 4, marginBottom: -1 }}>
