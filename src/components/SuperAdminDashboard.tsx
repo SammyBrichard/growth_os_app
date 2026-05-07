@@ -431,7 +431,8 @@ function TargetFinderTab({ campaigns, crons, setCrons, userDetailsId, loading }:
     if (!schedLabel || !schedSel.size || !userDetailsId) return
     setSchedLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/admin/crons`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId, label: schedLabel, campaign_ids: [...schedSel], cron_expression: cronExpr }) })
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const res = await fetch(`${API_URL}/api/admin/crons`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId, label: schedLabel, campaign_ids: [...schedSel], cron_expression: cronExpr, timezone }) })
       const { cron } = await res.json()
       const enriched: CronJob = {
         ...cron,
