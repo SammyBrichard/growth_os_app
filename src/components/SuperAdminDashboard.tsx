@@ -44,11 +44,12 @@ const SERIF = '"Source Serif 4", Georgia, serif'
 const MONO  = '"DM Mono", ui-monospace, monospace'
 
 // ── Types ────────────────────────────────────────────────────────────────────
-type Tab = 'overview' | 'target-finder' | 'analytics' | 'smartlead' | 'users'
+type Tab = 'overview' | 'target-finder' | 'campaigns' | 'analytics' | 'smartlead' | 'users'
 
 interface Campaign {
   id: string; name: string; status: string; account_id: string; itp_id: string
-  smartlead_campaign_id: string | null
+  smartlead_campaign_id: string | null; created_at: string
+  contact_count: number; lead_count: number
   account: { organisation_name: string } | null
   itp: { name: string } | null
 }
@@ -692,6 +693,119 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
   )
 }
 
+// ── Campaigns tab ─────────────────────────────────────────────────────────────
+function CampaignsTab({ campaigns, loading }: { campaigns: Campaign[]; loading: boolean }) {
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+
+  const slLabel = (id: string | null) => {
+    if (!id) return { text: 'Not synced', color: C.muted }
+    if (id === 'syncing') return { text: 'Syncing…', color: C.gold }
+    return { text: `#${id}`, color: C.green }
+  }
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase()
+    return campaigns.filter(c => {
+      if (statusFilter !== 'all' && c.status !== statusFilter) return false
+      if (!q) return true
+      return c.name.toLowerCase().includes(q) ||
+        c.account?.organisation_name?.toLowerCase().includes(q) ||
+        c.itp?.name?.toLowerCase().includes(q)
+    })
+  }, [campaigns, search, statusFilter])
+
+  // Group by company
+  const groups = useMemo(() => {
+    const map: Record<string, { name: string; color: string; campaigns: Campaign[] }> = {}
+    filtered.forEach(c => {
+      const key = c.account_id
+      const name = c.account?.organisation_name || 'Unknown'
+      if (!map[key]) {
+        const idx = Object.keys(map).length
+        map[key] = { name, color: COMPANY_COLORS[idx % COMPANY_COLORS.length], campaigns: [] }
+      }
+      map[key].campaigns.push(c)
+    })
+    return Object.values(map)
+  }, [filtered])
+
+  const totalLeads    = campaigns.reduce((s, c) => s + (c.lead_count || 0), 0)
+  const totalContacts = campaigns.reduce((s, c) => s + (c.contact_count || 0), 0)
+  const activeCampaigns = campaigns.filter(c => c.status === 'active').length
+  const syncedCampaigns = campaigns.filter(c => c.smartlead_campaign_id && c.smartlead_campaign_id !== 'syncing').length
+
+  if (loading) return <LoadingState />
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <StatCard label="Total campaigns" value={campaigns.length} />
+        <StatCard label="Active"          value={activeCampaigns} />
+        <StatCard label="Total leads"     value={totalLeads.toLocaleString()} />
+        <StatCard label="Total contacts"  value={totalContacts.toLocaleString()} />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 6, padding: '8px 12px' }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>⌕</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search campaigns, companies, or ITPs…"
+            style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: 13, fontFamily: SERIF, color: C.fg }} />
+        </div>
+        {(['all','active','paused','draft'] as const).map(s => (
+          <button key={s} onClick={() => setStatusFilter(s)}
+            style={{ fontFamily: MONO, fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', padding: '7px 14px', borderRadius: 6, border: `1px solid ${statusFilter === s ? C.accent : C.border}`, background: statusFilter === s ? `color-mix(in srgb, ${C.accent} 10%, transparent)` : '#fff', color: statusFilter === s ? C.accent : C.muted, cursor: 'pointer' }}>
+            {s === 'all' ? `All (${campaigns.length})` : s}
+          </button>
+        ))}
+      </div>
+
+      {groups.length === 0 && (
+        <div style={{ padding: 40, textAlign: 'center', color: C.muted, fontSize: 13, fontFamily: MONO }}>No campaigns match</div>
+      )}
+
+      {groups.map(g => (
+        <div key={g.name} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', background: C.cream, borderBottom: `1px solid ${C.border}` }}>
+            <span style={{ fontFamily: MONO, width: 22, height: 22, borderRadius: 4, background: g.color, color: '#fff', fontSize: 10, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+              {g.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+            </span>
+            <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: C.fg, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{g.name}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>{g.campaigns.length} campaign{g.campaigns.length !== 1 ? 's' : ''}</span>
+          </div>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: C.cream }}>
+                {['Campaign','ITP','Status','Leads','Contacts','Smartlead','Created'].map(h => (
+                  <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '8px 16px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}`, borderTop: `1px solid ${C.border}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {g.campaigns.map((c, i) => {
+                const sl = slLabel(c.smartlead_campaign_id)
+                return (
+                  <tr key={c.id} style={{ borderBottom: i === g.campaigns.length - 1 ? 'none' : `1px solid ${C.border}` }}>
+                    <td style={{ padding: '11px 16px', fontWeight: 500, maxWidth: 220 }}>
+                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                    </td>
+                    <td style={{ padding: '11px 16px', color: C.muted, fontSize: 12 }}>{c.itp?.name || '—'}</td>
+                    <td style={{ padding: '11px 16px' }}><StatusPill status={c.status} /></td>
+                    <td style={{ fontFamily: MONO, padding: '11px 16px', fontVariantNumeric: 'tabular-nums' }}>{c.lead_count.toLocaleString()}</td>
+                    <td style={{ fontFamily: MONO, padding: '11px 16px', fontVariantNumeric: 'tabular-nums' }}>{c.contact_count.toLocaleString()}</td>
+                    <td style={{ fontFamily: MONO, padding: '11px 16px', fontSize: 12, color: sl.color }}>{sl.text}</td>
+                    <td style={{ fontFamily: MONO, padding: '11px 16px', color: C.muted, fontSize: 12 }}>{formatRelativeTime(c.created_at)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Smartlead tab ─────────────────────────────────────────────────────────────
 function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: SmartleadStatus | null; onToggle: () => void; loading: boolean; userDetailsId: string | null }) {
   const [syncing, setSyncing] = useState(false)
@@ -1032,6 +1146,7 @@ function makeCompanyColorMap(perCompany: { account_name: string }[]): Record<str
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview',       label: 'Overview' },
   { id: 'target-finder',  label: 'Target Finder' },
+  { id: 'campaigns',      label: 'Campaigns' },
   { id: 'analytics',      label: 'Analytics' },
   { id: 'smartlead',      label: 'Smartlead' },
   { id: 'users',          label: 'Users' },
@@ -1065,6 +1180,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
     const loaders: Record<Tab, () => Promise<void>> = {
       'overview':      async () => { const d = await get('/analytics'); setAnalytics(d) },
       'target-finder': async () => { const [c, cr] = await Promise.all([get('/campaigns'), get('/crons')]); setCampaigns(c.campaigns); setCrons(cr.crons) },
+      'campaigns':     async () => { const c = await get('/campaigns'); setCampaigns(c.campaigns) },
       'analytics':     async () => { const d = await get('/analytics'); setAnalytics(d) },
       'smartlead':     async () => { const d = await get('/smartlead/status'); setSmartlead(d) },
       'users':         async () => { const d = await get('/users'); setUsers(d.users) },
@@ -1123,6 +1239,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
         )}
         {activeTab === 'overview'      && <OverviewTab analytics={analytics} loading={loading} />}
         {activeTab === 'target-finder' && <TargetFinderTab campaigns={campaigns} crons={crons} setCrons={setCrons} userDetailsId={userDetailsId} loading={loading} />}
+        {activeTab === 'campaigns'     && <CampaignsTab campaigns={campaigns} loading={loading} />}
         {activeTab === 'analytics'     && <AnalyticsTab analytics={analytics} loading={loading} />}
         {activeTab === 'smartlead'     && <SmartleadTab status={smartlead} onToggle={handleToggleSmartlead} loading={loading} userDetailsId={userDetailsId} />}
         {activeTab === 'users'         && <UsersTab users={users} setUsers={setUsers} loading={loading} userDetailsId={userDetailsId} />}
