@@ -433,7 +433,14 @@ function TargetFinderTab({ campaigns, crons, setCrons, userDetailsId, loading }:
     try {
       const res = await fetch(`${API_URL}/api/admin/crons`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId, label: schedLabel, campaign_ids: [...schedSel], cron_expression: cronExpr }) })
       const { cron } = await res.json()
-      setCrons(prev => [cron, ...prev])
+      const enriched: CronJob = {
+        ...cron,
+        campaigns: (cron.campaign_ids || []).map((id: string) => {
+          const c = campaigns.find(c => c.id === id)
+          return { id, name: c?.name ?? 'Unknown', company: c?.account?.organisation_name ?? '' }
+        }),
+      }
+      setCrons(prev => [enriched, ...prev])
       setSchedLabel(''); setSchedSel(new Set())
     } catch { /* handled silently */ } finally { setSchedLoading(false) }
   }
