@@ -71,6 +71,7 @@ interface Analytics {
     avgScoreLastWeek: number
     campaignsThisWeek: number; campaignsLastWeek: number
     companiesThisWeek: number; companiesLastWeek: number
+    sparks: { leads: number[]; contacts: number[]; campaigns: number[]; companies: number[]; avgScore: number[] }
   }
   recentRuns: RunRecord[]
   perCompany: { account_id: string; account_name: string; campaigns: any[]; leadCount: number; contactCount: number }[]
@@ -81,15 +82,6 @@ interface AdminUser {
 }
 interface SmartleadStatus { sync_enabled: boolean; connected: boolean; updated_at: string | null }
 
-// ── Static sparkline seeds (visual only) ────────────────────────────────────
-const SPARK = {
-  companies:    [4,4,4,5,5,5,5,5,6,6,6,6,6,6],
-  campaigns:    [18,19,19,20,20,21,21,21,22,22,22,22,22,22],
-  totalLeads:   [2840,2902,2964,3010,3088,3154,3221,3308,3392,3478,3552,3640,3722,3804],
-  avgScore:     [70,71,71,72,73,73,74,74,74,74,73,74,74,74],
-  leadsWeek:    [120,142,168,184,196,220,244,268,292,316,340,372,410,442],
-  contactsWeek: [42,58,71,84,96,108,124,138,152,166,184,198,214,232],
-}
 
 const COMPANY_COLORS = ['#c44e2b','#00a071','#b8860b','#3b6e8f','#7a5cb0','#5a8d6e','#d44a2b','#2d6a8f']
 
@@ -331,12 +323,12 @@ function OverviewTab({ analytics, loading }: { analytics: Analytics | null; load
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(6, minmax(0, 1fr))' }}>
-        <StatCard label="Companies"     value={aggregated.totalCompanies}    spark={SPARK.companies}    delta={pctDelta(aggregated.companiesThisWeek, aggregated.companiesLastWeek)}   sparkColor="#3b6e8f" />
-        <StatCard label="Campaigns"     value={aggregated.totalCampaigns}    spark={SPARK.campaigns}    delta={pctDelta(aggregated.campaignsThisWeek, aggregated.campaignsLastWeek)}   sparkColor="#7a5cb0" />
-        <StatCard label="Total leads"   value={aggregated.totalLeads.toLocaleString()} spark={SPARK.totalLeads} delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)} />
-        <StatCard label="Avg score"     value={aggregated.avgScore}          spark={SPARK.avgScore}     delta={pctDelta(aggregated.avgScore, aggregated.avgScoreLastWeek)}              sparkColor={C.gold} />
-        <StatCard label="Leads / week"  value={aggregated.leadsThisWeek}     spark={SPARK.leadsWeek}    delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)}            sparkColor={C.green} />
-        <StatCard label="Contacts / wk" value={aggregated.contactsThisWeek}  spark={SPARK.contactsWeek} delta={pctDelta(aggregated.contactsThisWeek, aggregated.contactsLastWeek)}    sparkColor={C.green} />
+        <StatCard label="Companies"     value={aggregated.totalCompanies}    spark={aggregated.sparks.companies} delta={pctDelta(aggregated.companiesThisWeek, aggregated.companiesLastWeek)}   sparkColor="#3b6e8f" />
+        <StatCard label="Campaigns"     value={aggregated.totalCampaigns}    spark={aggregated.sparks.campaigns} delta={pctDelta(aggregated.campaignsThisWeek, aggregated.campaignsLastWeek)}   sparkColor="#7a5cb0" />
+        <StatCard label="Total leads"   value={aggregated.totalLeads.toLocaleString()} spark={aggregated.sparks.leads} delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)} />
+        <StatCard label="Avg score"     value={aggregated.avgScore}          spark={aggregated.sparks.avgScore}  delta={pctDelta(aggregated.avgScore, aggregated.avgScoreLastWeek)}              sparkColor={C.gold} />
+        <StatCard label="Leads / week"  value={aggregated.leadsThisWeek}     spark={aggregated.sparks.leads}     delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)}            sparkColor={C.green} />
+        <StatCard label="Contacts / wk" value={aggregated.contactsThisWeek}  spark={aggregated.sparks.contacts}  delta={pctDelta(aggregated.contactsThisWeek, aggregated.contactsLastWeek)}    sparkColor={C.green} />
       </div>
 
       <div>
@@ -620,10 +612,10 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-        <StatCard label="Total leads"     value={aggregated.totalLeads.toLocaleString()} spark={SPARK.totalLeads}   delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)} big />
-        <StatCard label="Avg lead score"  value={aggregated.avgScore}                     spark={SPARK.avgScore}     delta={pctDelta(aggregated.avgScore, aggregated.avgScoreLastWeek)} sparkColor={C.gold} big />
-        <StatCard label="Total contacted" value={aggregated.totalCampaignContacts.toLocaleString()} spark={SPARK.contactsWeek} delta={pctDelta(aggregated.contactsThisWeek, aggregated.contactsLastWeek)} sparkColor={C.green} big />
-        <StatCard label="Companies"       value={aggregated.totalCompanies}               spark={SPARK.companies}    delta={pctDelta(aggregated.companiesThisWeek, aggregated.companiesLastWeek)} sparkColor="#3b6e8f" big />
+        <StatCard label="Total leads"     value={aggregated.totalLeads.toLocaleString()} spark={aggregated.sparks.leads}    delta={pctDelta(aggregated.leadsThisWeek, aggregated.leadsLastWeek)} big />
+        <StatCard label="Avg lead score"  value={aggregated.avgScore}                     spark={aggregated.sparks.avgScore} delta={pctDelta(aggregated.avgScore, aggregated.avgScoreLastWeek)} sparkColor={C.gold} big />
+        <StatCard label="Total contacted" value={aggregated.totalCampaignContacts.toLocaleString()} spark={aggregated.sparks.contacts} delta={pctDelta(aggregated.contactsThisWeek, aggregated.contactsLastWeek)} sparkColor={C.green} big />
+        <StatCard label="Companies"       value={aggregated.totalCompanies}               spark={aggregated.sparks.companies} delta={pctDelta(aggregated.companiesThisWeek, aggregated.companiesLastWeek)} sparkColor="#3b6e8f" big />
       </div>
 
       <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '20px 22px' }}>
