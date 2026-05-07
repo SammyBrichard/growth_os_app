@@ -81,6 +81,7 @@ interface AdminUser {
   companies: { user_details_id: string; account_id: string | null; account_name: string | null; role: string | null }[]
 }
 interface SmartleadStatus { sync_enabled: boolean; connected: boolean; connectError: string | null; campaignStatus: 'ACTIVE' | 'PAUSED' | 'MIXED' | null; updated_at: string | null }
+interface SyncResult { created: number; contacts_pushed: number; skipped: number; errors: string[] }
 interface SetStatusResult { updated: number; errors: string[] }
 
 
@@ -701,7 +702,7 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
 // ── Smartlead tab ─────────────────────────────────────────────────────────────
 function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: SmartleadStatus | null; onToggle: () => void; loading: boolean; userDetailsId: string | null }) {
   const [syncing, setSyncing] = useState(false)
-  const [syncStarted, setSyncStarted] = useState(false)
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
   const [settingStatus, setSettingStatus] = useState(false)
   const [statusResult, setStatusResult] = useState<{ status: string } & SetStatusResult | null>(null)
   const [displayedCampaignStatus, setDisplayedCampaignStatus] = useState(status?.campaignStatus ?? null)
@@ -709,10 +710,10 @@ function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: Sm
 
   const handleSync = async () => {
     if (!userDetailsId || syncing) return
-    setSyncing(true); setSyncStarted(false)
+    setSyncing(true); setSyncResult(null)
     try {
-      await fetch(`${API_URL}/api/admin/smartlead/sync-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId }) })
-      setSyncStarted(true)
+      const res = await fetch(`${API_URL}/api/admin/smartlead/sync-all`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_details_id: userDetailsId }) })
+      setSyncResult(await res.json())
     } finally { setSyncing(false) }
   }
 
@@ -785,9 +786,12 @@ function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: Sm
             <button onClick={handleSync} disabled={syncing || !status.connected} style={{ alignSelf: 'flex-start', padding: '8px 18px', borderRadius: 6, border: 'none', background: C.fg, color: '#fff', fontSize: 13, fontWeight: 600, cursor: syncing || !status.connected ? 'not-allowed' : 'pointer', opacity: syncing || !status.connected ? 0.5 : 1 }}>
               {syncing ? 'Syncing…' : 'Sync now'}
             </button>
-            {syncStarted && (
-              <div style={{ fontFamily: MONO, fontSize: 11, color: C.green, marginTop: 4 }}>
-                Sync running in background — results will appear in Railway logs.
+            {syncResult && (
+              <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, marginTop: 4 }}>
+                {syncResult.errors?.length > 0
+                  ? <span style={{ color: C.accent }}>{syncResult.errors.length} error(s): {syncResult.errors.join(', ')}</span>
+                  : <span style={{ color: C.green }}>Done — {syncResult.created} campaign(s) created, {syncResult.contacts_pushed} contact(s) pushed{syncResult.skipped > 0 ? `, ${syncResult.skipped} skipped` : ''}</span>
+                }
               </div>
             )}
           </div>
