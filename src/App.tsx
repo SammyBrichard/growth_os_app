@@ -29,6 +29,7 @@ import RightSidebar from './components/RightSidebar'
 import ContactDetailSidebar from './components/ContactDetailSidebar'
 import WarrenAnalyst from './components/WarrenAnalyst'
 import PepperAdmin from './components/PepperAdmin'
+import SuperAdminDashboard from './components/SuperAdminDashboard'
 import InviteSignup from './components/InviteSignup'
 import InviteLanding from './components/InviteLanding'
 import LoginPage from './components/LoginPage'
@@ -39,7 +40,7 @@ import './App.css'
 const API_URL = import.meta.env.VITE_API_URL
 const CLIENT_URL = import.meta.env.VITE_CLIENT_URL
 
-const employees: Employee[] = [
+const BASE_EMPLOYEES: Employee[] = [
   { name: 'Watson', role: 'Head of Growth', img: watsonImg },
   { name: 'Belfort', role: 'Lead Generation Expert', img: belfortImg },
   { name: 'Warren', role: 'Business Analyst', img: warrenImg },
@@ -48,7 +49,7 @@ const employees: Employee[] = [
 ]
 
 export default function App() {
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee>(employees[0])
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee>(BASE_EMPLOYEES[0])
   const [selectedCampaignContact, setSelectedCampaignContact] = useState<CampaignContact | null>(null)
   const [inviteLanding, setInviteLanding] = useState<{ companyName: string | null; inviterName: string | null } | null>(null)
   // True if we landed with a pending invite token — holds the render until processing completes
@@ -105,6 +106,10 @@ export default function App() {
   const war = useWarren({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee, firstname: ud.userFirstNameRef?.current })
   const pep = usePepper({ accountId: ud.accountId, userDetailsId: ud.userDetailsId, selectedEmployee, firstname: ud.userFirstNameRef?.current })
 
+  const employees = ud.isSuperAdmin
+    ? [...BASE_EMPLOYEES, { name: 'Admin', role: 'Super Admin', img: pepperImg }]
+    : BASE_EMPLOYEES
+
   // Initialise user details + wire up subscriptions once user is loaded
   useEffect(() => {
     if (!user || ud.initialiseRan.current) return
@@ -148,6 +153,7 @@ export default function App() {
                 active_mobilisation: null,
                 active_step_id: null,
                 role: invData.role,
+                is_super_admin: false,
               }
               ud.addCompany(newCompany)
             } else {
@@ -474,6 +480,7 @@ export default function App() {
       active_mobilisation: null,
       active_step_id: null,
       role: 'admin',
+      is_super_admin: false,
     })
 
     // Subscribe to new company's realtime channel
@@ -625,6 +632,9 @@ export default function App() {
               userDetailsId={ud.userDetailsId}
               pepperSummary={pep.pepperSummary}
             />
+          )}
+          {selectedEmployee.name === 'Admin' && ud.isSuperAdmin && (
+            <SuperAdminDashboard userDetailsId={ud.userDetailsId} />
           )}
         </div>
 

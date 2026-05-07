@@ -15,6 +15,7 @@ export interface CompanyRecord {
   active_mobilisation: string | null
   active_step_id: string | null
   role: string | null
+  is_super_admin: boolean
 }
 
 interface UserDetailsData {
@@ -73,6 +74,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
       active_mobilisation: r.active_mobilisation,
       active_step_id: r.active_step_id,
       role: r.role ?? null,
+      is_super_admin: r.is_super_admin ?? false,
     }))
     companiesRef.current = mapped
     setCompanies(mapped)
@@ -105,7 +107,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
   const switchCompany = useCallback(async (targetId: string): Promise<UserDetailsData | null> => {
     const { data, error } = await supabase
       .from('user_details')
-      .select('id, account_id, signup_complete, firstname, active_mobilisation, active_step_id, role')
+      .select('id, account_id, signup_complete, firstname, active_mobilisation, active_step_id, role, is_super_admin')
       .eq('id', targetId)
       .single()
 
@@ -120,6 +122,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
         active_mobilisation: data.active_mobilisation,
         active_step_id: data.active_step_id,
         role: (data as any).role ?? null,
+        is_super_admin: (data as any).is_super_admin ?? false,
       } : c)
       companiesRef.current = next
       return next
@@ -252,6 +255,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
   }, [])
 
   const role = companies.find(c => c.id === userDetailsId)?.role ?? null
+  const isSuperAdmin = companies.find(c => c.id === userDetailsId)?.is_super_admin ?? false
 
   return {
     userDetailsId,
@@ -263,6 +267,7 @@ export default function useUserDetails({ user }: UseUserDetailsParams) {
     initialiseRan,
     companies,
     role,
+    isSuperAdmin,
     setCompanies,
     initialise,
     switchCompany,
