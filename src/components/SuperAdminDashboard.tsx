@@ -77,8 +77,8 @@ interface Analytics {
   perCompany: { account_id: string; account_name: string; campaigns: any[]; leadCount: number; contactCount: number }[]
 }
 interface AdminUser {
-  id: string; firstname: string | null; role: string | null; is_super_admin: boolean
-  account_id: string | null; email: string | null; account: { organisation_name: string } | null
+  auth_id: string; firstname: string | null; email: string | null; is_super_admin: boolean
+  companies: { user_details_id: string; account_id: string | null; account_name: string | null; role: string | null }[]
 }
 interface SmartleadStatus { sync_enabled: boolean; connected: boolean; updated_at: string | null }
 
@@ -788,30 +788,40 @@ function PingDots() {
 }
 
 // ── Users tab ─────────────────────────────────────────────────────────────────
-function UsersTab({ users, setUsers, loading }: { users: AdminUser[]; setUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>; loading: boolean; userDetailsId: string | null }) {
+function UsersTab({ users, setUsers, loading, userDetailsId }: { users: AdminUser[]; setUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>; loading: boolean; userDetailsId: string | null }) {
   const [search, setSearch] = useState('')
-  const [companyFilter, setCompanyFilter] = useState('all')
-  const [roleFilter, setRoleFilter] = useState('all')
 
-  const companies = useMemo(() => [...new Set(users.map(u => u.account?.organisation_name).filter(Boolean))] as string[], [users])
+  const allCompanyNames = useMemo(() =>
+    [...new Set(users.flatMap(u => u.companies.map(c => c.account_name).filter(Boolean)))] as string[]
+  , [users])
 
   const filtered = useMemo(() => users.filter(u => {
-    if (companyFilter !== 'all' && u.account?.organisation_name !== companyFilter) return false
-    if (roleFilter !== 'all' && u.role !== roleFilter) return false
-    if (search) { const q = search.toLowerCase(); if (!u.firstname?.toLowerCase().includes(q) && !u.email?.toLowerCase().includes(q)) return false }
-    return true
-  }), [users, search, companyFilter, roleFilter])
+    if (!search) return true
+    const q = search.toLowerCase()
+    return u.firstname?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) ||
+      u.companies.some(c => c.account_name?.toLowerCase().includes(q))
+  }), [users, search])
 
   const superCount = users.filter(u => u.is_super_admin).length
   const companyColorMap: Record<string, string> = {}
-  companies.forEach((n, i) => { companyColorMap[n] = COMPANY_COLORS[i % COMPANY_COLORS.length] })
+  allCompanyNames.forEach((n, i) => { companyColorMap[n] = COMPANY_COLORS[i % COMPANY_COLORS.length] })
+
+  async function handleToggleSuperAdmin(u: AdminUser) {
+    const newVal = !u.is_super_admin
+    const res = await fetch(`${API_URL}/api/admin/users/${u.auth_id}/super-admin`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_details_id: userDetailsId, is_super_admin: newVal }),
+    })
+    if (res.ok) setUsers(prev => prev.map(x => x.auth_id === u.auth_id ? { ...x, is_super_admin: newVal } : x))
+  }
 
   if (loading) return <LoadingState />
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
-        {[['Total users', users.length, false], ['Super admins', superCount, true], ['Companies', companies.length, false], ['Showing', filtered.length, false]].map(([l, v, accent]) => (
+        {[['Total users', users.length, false], ['Super admins', superCount, true], ['Companies', allCompanyNames.length, false], ['Showing', filtered.length, false]].map(([l, v, accent]) => (
           <div key={String(l)} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '14px 18px' }}>
             <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{String(l)}</div>
             <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, marginTop: 4, color: accent ? C.accent : C.fg, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{String(v)}</div>
@@ -819,19 +829,9 @@ function UsersTab({ users, setUsers, loading }: { users: AdminUser[]; setUsers: 
         ))}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 200 }}>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>⌕</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or email" style={{ border: 'none', outline: 'none', background: 'transparent', flex: 1, fontSize: 13, fontFamily: SERIF, color: C.fg }} />
-        </div>
-        {[
-          { value: companyFilter, onChange: setCompanyFilter, options: [['all','All companies'], ...companies.map(c => [c, c])] },
-          { value: roleFilter, onChange: setRoleFilter, options: [['all','All roles'],['admin','Admin'],['member','Member']] },
-        ].map((sel, i) => (
-          <select key={i} value={sel.value} onChange={e => sel.onChange(e.target.value)} style={{ fontFamily: MONO, background: C.cream, border: `1px solid ${C.border}`, borderRadius: 6, padding: '6px 10px', fontSize: 12, color: C.fg, cursor: 'pointer' }}>
-            {sel.options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
-        ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '10px 14px' }}>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>⌕</span>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email or company" style={{ border: 'none', outline: 'none', background: 'transparent', flex: 1, fontSize: 13, fontFamily: SERIF, color: C.fg }} />
         <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>{filtered.length} match</span>
       </div>
 
@@ -839,20 +839,17 @@ function UsersTab({ users, setUsers, loading }: { users: AdminUser[]; setUsers: 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
           <thead>
             <tr style={{ background: C.cream }}>
-              {['User','Email','Company','Role','Super Admin'].map(h => (
+              {['User','Email','Companies','Super Admin'].map(h => (
                 <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '11px 16px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}` }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((u, i) => {
-              const coName = u.account?.organisation_name || ''
-              const color = companyColorMap[coName] || C.muted
-              const short = coName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??'
-              const initials = (u.firstname || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+              const initials = (u.firstname || u.email || '?').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
               const avatarColor = COMPANY_COLORS[i % COMPANY_COLORS.length]
               return (
-                <tr key={u.id} style={{ borderBottom: i === filtered.length - 1 ? 'none' : `1px solid ${C.border}` }}>
+                <tr key={u.auth_id} style={{ borderBottom: i === filtered.length - 1 ? 'none' : `1px solid ${C.border}` }}>
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ fontFamily: MONO, width: 28, height: 28, borderRadius: '50%', background: avatarColor, color: '#fff', fontSize: 11, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{initials}</span>
@@ -861,18 +858,23 @@ function UsersTab({ users, setUsers, loading }: { users: AdminUser[]; setUsers: 
                   </td>
                   <td style={{ fontFamily: MONO, padding: '12px 16px', color: C.muted, fontSize: 12 }}>{u.email || '—'}</td>
                   <td style={{ padding: '12px 16px' }}>
-                    {coName ? (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: MONO, width: 18, height: 18, borderRadius: 3, background: color, color: '#fff', fontSize: 9, fontWeight: 600, display: 'grid', placeItems: 'center' }}>{short}</span>
-                        <span>{coName}</span>
-                      </span>
-                    ) : '—'}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {u.companies.map(c => {
+                        const name = c.account_name || '—'
+                        const color = companyColorMap[name] || C.muted
+                        const short = name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+                        return (
+                          <span key={c.user_details_id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: `color-mix(in srgb, ${color} 10%, transparent)`, border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`, borderRadius: 4, padding: '2px 7px 2px 4px', fontSize: 11 }}>
+                            <span style={{ fontFamily: MONO, width: 14, height: 14, borderRadius: 2, background: color, color: '#fff', fontSize: 8, fontWeight: 600, display: 'grid', placeItems: 'center' }}>{short}</span>
+                            <span>{name}</span>
+                            {c.role && <span style={{ fontFamily: MONO, fontSize: 9, color, opacity: 0.7, textTransform: 'uppercase' }}>{c.role}</span>}
+                          </span>
+                        )
+                      })}
+                    </div>
                   </td>
                   <td style={{ padding: '12px 16px' }}>
-                    <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 500, padding: '2px 8px', borderRadius: 999, background: C.cream, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em', border: `1px solid ${C.border}` }}>{u.role || '—'}</span>
-                  </td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <button onClick={() => setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_super_admin: !x.is_super_admin } : x))}
+                    <button onClick={() => handleToggleSuperAdmin(u)}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 12px', borderRadius: 999, border: `1px solid ${u.is_super_admin ? `color-mix(in srgb, ${C.accent} 30%, transparent)` : C.border}`, background: u.is_super_admin ? `color-mix(in srgb, ${C.accent} 8%, transparent)` : '#fff', cursor: 'pointer', fontFamily: SERIF }}>
                       <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 600, color: u.is_super_admin ? C.accent : C.muted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{u.is_super_admin ? 'Granted' : 'Off'}</span>
                       <span style={{ width: 28, height: 16, borderRadius: 999, background: u.is_super_admin ? C.accent : C.border, position: 'relative', flexShrink: 0 }}>
@@ -883,7 +885,7 @@ function UsersTab({ users, setUsers, loading }: { users: AdminUser[]; setUsers: 
                 </tr>
               )
             })}
-            {filtered.length === 0 && <tr><td colSpan={5} style={{ padding: 20, textAlign: 'center', color: C.muted }}>No users found</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={4} style={{ padding: 20, textAlign: 'center', color: C.muted }}>No users found</td></tr>}
           </tbody>
         </table>
       </div>
