@@ -74,7 +74,7 @@ interface Analytics {
     sparks: { leads: number[]; contacts: number[]; campaigns: number[]; companies: number[]; avgScore: number[] }
   }
   recentRuns: RunRecord[]
-  perCompany: { account_id: string; account_name: string; campaigns: any[]; leadCount: number; contactCount: number }[]
+  perCompany: { account_id: string; account_name: string; campaigns: any[]; leadCount: number; contactCount: number; leadCountThisWeek: number; leadSeries: number[] }[]
 }
 interface AdminUser {
   auth_id: string; firstname: string | null; email: string | null; is_super_admin: boolean
@@ -170,18 +170,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 // ── Stacked area chart ────────────────────────────────────────────────────────
-function StackedAreaChart({ perCompany }: { perCompany: { account_name: string; leadCount: number; color: string }[] }) {
+function StackedAreaChart({ perCompany }: { perCompany: { account_name: string; leadSeries: number[]; color: string }[] }) {
   const W = 700, H = 200, PAD = 28, DAYS = 7
   const innerW = W - PAD * 2, innerH = H - PAD * 2
-  const dayLabels = ['Wed','Thu','Fri','Sat','Sun','Mon','Tue']
-
-  // Synthesise time series from real totals
-  const series = perCompany.map((co, idx) => {
-    const factor = co.leadCount || 0
-    const base = COMPANY_TIMESERIES_SEEDS[idx % COMPANY_TIMESERIES_SEEDS.length]
-    const scale = factor / (base[6] || 1)
-    return { name: co.account_name, color: co.color, data: base.map(v => Math.round(v * scale)) }
+  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  const dayLabels = Array.from({ length: DAYS }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (DAYS - 1 - i)); return dayNames[d.getDay()]
   })
+
+  const series = perCompany.map(co => ({
+    name: co.account_name, color: co.color, data: co.leadSeries ?? Array(DAYS).fill(0),
+  }))
 
   const totals = Array(DAYS).fill(0)
   series.forEach(s => s.data.forEach((v, i) => { totals[i] += v }))
@@ -224,15 +223,6 @@ function StackedAreaChart({ perCompany }: { perCompany: { account_name: string; 
     </svg>
   )
 }
-
-const COMPANY_TIMESERIES_SEEDS = [
-  [188,196,220,232,248,261,280],
-  [142,148,156,168,174,188,196],
-  [98,104,112,118,124,132,144],
-  [76,82,88,94,98,108,116],
-  [54,58,62,68,72,78,84],
-  [42,46,50,54,58,62,68],
-]
 
 // ── Campaign picker ───────────────────────────────────────────────────────────
 function CampaignPickerList({ campaigns, selected, setSelected, search, setSearch }: {
@@ -609,7 +599,7 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
   if (loading || !analytics) return <LoadingState />
   const { aggregated, perCompany } = analytics
   const maxLeads = Math.max(...perCompany.map(c => c.leadCount), 1)
-  const chartData = perCompany.map((co, i) => ({ account_name: co.account_name, leadCount: co.leadCount, color: COMPANY_COLORS[i % COMPANY_COLORS.length] }))
+  const chartData = perCompany.map((co, i) => ({ account_name: co.account_name, leadSeries: co.leadSeries, color: COMPANY_COLORS[i % COMPANY_COLORS.length] }))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -664,7 +654,7 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
                   <div style={{ fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>contacts</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontFamily: MONO, fontSize: 13, color: C.green, fontVariantNumeric: 'tabular-nums' }}>+{Math.round(co.leadCount * 0.06)}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 13, color: C.green, fontVariantNumeric: 'tabular-nums' }}>+{co.leadCountThisWeek ?? 0}</div>
                   <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>this wk</div>
                 </div>
                 <span style={{ fontFamily: MONO, color: C.muted, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
