@@ -55,6 +55,7 @@ interface Campaign {
 interface CronJob {
   id: string; label: string; campaign_ids: string[]; cron_expression: string
   active: boolean; last_run_at: string | null; created_at: string
+  timezone: string | null; last_run_leads: number | null
   campaigns: { id: string; name: string; company: string }[]
 }
 interface RunRecord {
@@ -575,10 +576,14 @@ function TargetFinderTab({ campaigns, crons, setCrons, userDetailsId, loading }:
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{s.label}</div>
                   <span style={{ fontFamily: MONO, background: C.cream, border: `1px solid ${C.border}`, borderRadius: 4, padding: '1px 7px', fontSize: 10, color: C.muted }}>{s.cron_expression}</span>
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>
-                  {s.campaigns.length} campaign{s.campaigns.length !== 1 ? 's' : ''}{s.last_run_at ? ` · last ran ${formatRelativeTime(s.last_run_at)}` : ''}
+                <div style={{ fontFamily: MONO, fontSize: 11, color: C.muted, display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
+                  <span>{s.campaigns.length} campaign{s.campaigns.length !== 1 ? 's' : ''}</span>
+                  <span style={{ color: s.active ? C.green : C.muted }}>⏱ {timeUntilNextFire(s.cron_expression)}</span>
+                  {s.last_run_at && (
+                    <span>last ran {formatRelativeTime(s.last_run_at)}{s.last_run_leads != null ? ` · ${s.last_run_leads} lead${s.last_run_leads !== 1 ? 's' : ''} found` : ''}</span>
+                  )}
                 </div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 6, fontStyle: 'italic' }}>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 5, fontStyle: 'italic' }}>
                   {s.campaigns.map(c => `${c.name} (${c.company})`).join(' · ')}
                 </div>
               </div>
@@ -890,6 +895,38 @@ function UsersTab({ users, setUsers, loading }: { users: AdminUser[]; setUsers: 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function LoadingState() {
   return <div style={{ fontFamily: MONO, fontSize: 13, color: C.muted, padding: '40px 0' }}>Loading…</div>
+}
+
+function timeUntilNextFire(expr: string): string {
+  const fires = getNextFires(expr, 1)
+  if (!fires.length) return '—'
+  // getNextFires returns "Mon 12 May, 09:00" — parse it back to a date for diff
+  // Easier: re-run the cursor logic just for the ms diff
+  const parts = expr.trim().split(/\s+/)
+  if (parts.length !== 5) return '—'
+  const [minStr, hourStr, , , dowStr] = parts
+  const min = parseInt(minStr), hour = parseInt(hourStr)
+  if (isNaN(min) || isNaN(hour)) return '—'
+  let allowed: number[]
+  if (dowStr === '*') allowed = [0,1,2,3,4,5,6]
+  else if (dowStr === '1-5') allowed = [1,2,3,4,5]
+  else { const d = parseInt(dowStr); allowed = isNaN(d) ? [0,1,2,3,4,5,6] : [d] }
+  const cursor = new Date(); cursor.setSeconds(0,0); cursor.setMinutes(cursor.getMinutes()+1)
+  let iters = 0
+  while (iters++ < 10000) {
+    const h = cursor.getHours(), m = cursor.getMinutes(), dow = cursor.getDay()
+    if (h === hour && m === min && allowed.includes(dow)) break
+    if (h > hour || (h === hour && m > min)) { cursor.setDate(cursor.getDate()+1); cursor.setHours(0,0,0,0) }
+    else if (h === hour && m === min) { cursor.setDate(cursor.getDate()+1); cursor.setHours(0,0,0,0) }
+    else cursor.setHours(hour, min, 0, 0)
+  }
+  const diffMs = cursor.getTime() - Date.now()
+  const totalMins = Math.round(diffMs / 60000)
+  if (totalMins < 60) return `in ${totalMins}m`
+  const h2 = Math.floor(totalMins / 60), m2 = totalMins % 60
+  if (h2 < 24) return m2 > 0 ? `in ${h2}h ${m2}m` : `in ${h2}h`
+  const days = Math.floor(h2 / 24), remH = h2 % 24
+  return remH > 0 ? `in ${days}d ${remH}h` : `in ${days}d`
 }
 
 function formatRelativeTime(iso: string): string {
