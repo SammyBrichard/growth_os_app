@@ -705,7 +705,8 @@ function SmartleadTab({ status, onToggle, loading, userDetailsId }: { status: Sm
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null)
   const [settingStatus, setSettingStatus] = useState(false)
   const [statusResult, setStatusResult] = useState<{ status: string } & SetStatusResult | null>(null)
-  const [displayedCampaignStatus, setDisplayedCampaignStatus] = useState(status.campaignStatus)
+  const [displayedCampaignStatus, setDisplayedCampaignStatus] = useState(status?.campaignStatus ?? null)
+  useEffect(() => { setDisplayedCampaignStatus(status?.campaignStatus ?? null) }, [status?.campaignStatus])
 
   const handleSync = async () => {
     if (!userDetailsId || syncing) return
