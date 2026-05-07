@@ -773,11 +773,20 @@ function CampaignsTab({ campaigns, loading }: { campaigns: Campaign[]; loading: 
             <span style={{ fontFamily: MONO, fontSize: 12, fontWeight: 600, color: C.fg, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{g.name}</span>
             <span style={{ fontFamily: MONO, fontSize: 11, color: C.muted }}>{g.campaigns.length} campaign{g.campaigns.length !== 1 ? 's' : ''}</span>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '22%' }} />
+              <col style={{ width: '25%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '12%' }} />
+            </colgroup>
             <thead>
               <tr style={{ background: C.cream }}>
                 {['Campaign','ITP','Status','Leads','Contacts','Smartlead','Created'].map(h => (
-                  <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '8px 16px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}`, borderTop: `1px solid ${C.border}` }}>{h}</th>
+                  <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '8px 16px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}`, borderTop: `1px solid ${C.border}`, overflow: 'hidden' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -786,14 +795,12 @@ function CampaignsTab({ campaigns, loading }: { campaigns: Campaign[]; loading: 
                 const sl = slLabel(c.smartlead_campaign_id)
                 return (
                   <tr key={c.id} style={{ borderBottom: i === g.campaigns.length - 1 ? 'none' : `1px solid ${C.border}` }}>
-                    <td style={{ padding: '11px 16px', fontWeight: 500, maxWidth: 220 }}>
-                      <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                    </td>
-                    <td style={{ padding: '11px 16px', color: C.muted, fontSize: 12 }}>{c.itp?.name || '—'}</td>
+                    <td style={{ padding: '11px 16px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</td>
+                    <td style={{ padding: '11px 16px', color: C.muted, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.itp?.name || '—'}</td>
                     <td style={{ padding: '11px 16px' }}><StatusPill status={c.status} /></td>
                     <td style={{ fontFamily: MONO, padding: '11px 16px', fontVariantNumeric: 'tabular-nums' }}>{c.lead_count.toLocaleString()}</td>
                     <td style={{ fontFamily: MONO, padding: '11px 16px', fontVariantNumeric: 'tabular-nums' }}>{c.contact_count.toLocaleString()}</td>
-                    <td style={{ fontFamily: MONO, padding: '11px 16px', fontSize: 12, color: sl.color }}>{sl.text}</td>
+                    <td style={{ fontFamily: MONO, padding: '11px 16px', fontSize: 12, color: sl.color, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sl.text}</td>
                     <td style={{ fontFamily: MONO, padding: '11px 16px', color: C.muted, fontSize: 12 }}>{formatRelativeTime(c.created_at)}</td>
                   </tr>
                 )
