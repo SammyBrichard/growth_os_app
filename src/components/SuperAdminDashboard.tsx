@@ -44,7 +44,7 @@ const SERIF = '"Source Serif 4", Georgia, serif'
 const MONO  = '"DM Mono", ui-monospace, monospace'
 
 // ── Types ────────────────────────────────────────────────────────────────────
-type Tab = 'overview' | 'target-finder' | 'campaigns' | 'analytics' | 'smartlead' | 'users'
+type Tab = 'overview' | 'target-finder' | 'campaigns' | 'costs' | 'analytics' | 'smartlead' | 'users'
 
 interface Campaign {
   id: string; name: string; status: string; account_id: string; itp_id: string
@@ -65,6 +65,8 @@ interface RunRecord {
   campaigns: { name: string; itp_id: string | null; account: { organisation_name: string } | null } | null
 }
 interface HealthStatus { status: 'ok' | 'warning' | 'error'; failed_runs_24h: number; stuck_runs: number; active_crons: number }
+interface CostCompany { account_id: string; account_name: string; spend_pence: number; leads: number; contacts: number; replies: number; campaigns: { id: string; name: string; spend_pence: number; leads: number; contacts: number; replies: number }[] }
+interface CostsData { totals: { spend_pence: number; leads: number; contacts: number; replies: number }; perCompany: CostCompany[] }
 interface Analytics {
   aggregated: {
     totalLeads: number; avgScore: number; totalCampaignContacts: number; totalCampaigns: number; totalCompanies: number
@@ -693,6 +695,97 @@ function AnalyticsTab({ analytics, loading }: { analytics: Analytics | null; loa
   )
 }
 
+// ── Costs tab ─────────────────────────────────────────────────────────────────
+function fmt(pence: number) { return `£${(pence / 100).toFixed(2)}` }
+function cpl(spend: number, n: number) { return n > 0 ? fmt(spend / n) : '—' }
+
+function CostsTab({ costs, loading }: { costs: CostsData | null; loading: boolean }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const toggle = (id: string) => setExpanded(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+
+  if (loading || !costs) return <LoadingState />
+
+  const { totals, perCompany } = costs
+  const sorted = [...perCompany].sort((a, b) => b.spend_pence - a.spend_pence)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <StatCard label="Total spend"    value={fmt(totals.spend_pence)} big />
+        <StatCard label="Cost / lead"    value={cpl(totals.spend_pence, totals.leads)} big />
+        <StatCard label="Cost / contact" value={cpl(totals.spend_pence, totals.contacts)} big />
+        <StatCard label="Cost / reply"   value={cpl(totals.spend_pence, totals.replies)} big />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <StatCard label="Leads found"   value={totals.leads.toLocaleString()} />
+        <StatCard label="Contacts sent" value={totals.contacts.toLocaleString()} />
+        <StatCard label="Replies"       value={totals.replies.toLocaleString()} />
+        <StatCard label="Reply rate"    value={totals.contacts > 0 ? `${((totals.replies / totals.contacts) * 100).toFixed(1)}%` : '—'} />
+      </div>
+
+      <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 20px', borderBottom: `1px solid ${C.border}`, background: C.cream }}>
+          <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 16, margin: 0 }}>Per company</h2>
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: '22%' }} /><col style={{ width: '12%' }} /><col style={{ width: '10%' }} />
+            <col style={{ width: '10%' }} /><col style={{ width: '10%' }} /><col style={{ width: '12%' }} />
+            <col style={{ width: '12%' }} /><col style={{ width: '12%' }} />
+          </colgroup>
+          <thead>
+            <tr style={{ background: C.cream }}>
+              {['Company','Spend','Leads','Contacts','Replies','£/lead','£/contact','£/reply'].map(h => (
+                <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '8px 16px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}` }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((co, i) => {
+              const isOpen = expanded.has(co.account_id)
+              const color = COMPANY_COLORS[i % COMPANY_COLORS.length]
+              const short = co.account_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+              return (
+                <>
+                  <tr key={co.account_id} onClick={() => toggle(co.account_id)} style={{ borderBottom: `1px solid ${C.border}`, cursor: 'pointer', background: isOpen ? C.cream : '#fff' }}>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontFamily: MONO, width: 20, height: 20, borderRadius: 4, background: color, color: '#fff', fontSize: 9, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{short}</span>
+                        <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{co.account_name}</span>
+                        <span style={{ fontFamily: MONO, fontSize: 10, color: C.muted, flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
+                      </span>
+                    </td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', fontWeight: 600 }}>{fmt(co.spend_pence)}</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', fontVariantNumeric: 'tabular-nums' }}>{co.leads.toLocaleString()}</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', fontVariantNumeric: 'tabular-nums' }}>{co.contacts.toLocaleString()}</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', fontVariantNumeric: 'tabular-nums' }}>{co.replies.toLocaleString()}</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', color: C.muted }}>{cpl(co.spend_pence, co.leads)}</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', color: C.muted }}>{cpl(co.spend_pence, co.contacts)}</td>
+                    <td style={{ fontFamily: MONO, padding: '12px 16px', color: C.muted }}>{cpl(co.spend_pence, co.replies)}</td>
+                  </tr>
+                  {isOpen && co.campaigns.map(c => (
+                    <tr key={c.id} style={{ borderBottom: `1px solid ${C.border}`, background: `color-mix(in srgb, ${color} 4%, transparent)` }}>
+                      <td style={{ padding: '9px 16px 9px 44px', color: C.muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12 }}>{c.name}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12 }}>{fmt(c.spend_pence)}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12 }}>{c.leads.toLocaleString()}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12 }}>{c.contacts.toLocaleString()}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12 }}>{c.replies.toLocaleString()}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12, color: C.muted }}>{cpl(c.spend_pence, c.leads)}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12, color: C.muted }}>{cpl(c.spend_pence, c.contacts)}</td>
+                      <td style={{ fontFamily: MONO, padding: '9px 16px', fontSize: 12, color: C.muted }}>{cpl(c.spend_pence, c.replies)}</td>
+                    </tr>
+                  ))}
+                </>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // ── Campaigns tab ─────────────────────────────────────────────────────────────
 function CampaignsTab({ campaigns, loading }: { campaigns: Campaign[]; loading: boolean }) {
   const [search, setSearch] = useState('')
@@ -1154,6 +1247,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'overview',       label: 'Overview' },
   { id: 'target-finder',  label: 'Target Finder' },
   { id: 'campaigns',      label: 'Campaigns' },
+  { id: 'costs',          label: 'Costs' },
   { id: 'analytics',      label: 'Analytics' },
   { id: 'smartlead',      label: 'Smartlead' },
   { id: 'users',          label: 'Users' },
@@ -1167,6 +1261,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
   const [users, setUsers] = useState<AdminUser[]>([])
   const [smartlead, setSmartlead] = useState<SmartleadStatus | null>(null)
   const [health, setHealth] = useState<HealthStatus | null>(null)
+  const [costs, setCosts] = useState<CostsData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -1188,6 +1283,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
       'overview':      async () => { const d = await get('/analytics'); setAnalytics(d) },
       'target-finder': async () => { const [c, cr] = await Promise.all([get('/campaigns'), get('/crons')]); setCampaigns(c.campaigns); setCrons(cr.crons) },
       'campaigns':     async () => { const c = await get('/campaigns'); setCampaigns(c.campaigns) },
+      'costs':         async () => { const d = await get('/costs'); setCosts(d) },
       'analytics':     async () => { const d = await get('/analytics'); setAnalytics(d) },
       'smartlead':     async () => { const d = await get('/smartlead/status'); setSmartlead(d) },
       'users':         async () => { const d = await get('/users'); setUsers(d.users) },
@@ -1247,6 +1343,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
         {activeTab === 'overview'      && <OverviewTab analytics={analytics} loading={loading} />}
         {activeTab === 'target-finder' && <TargetFinderTab campaigns={campaigns} crons={crons} setCrons={setCrons} userDetailsId={userDetailsId} loading={loading} />}
         {activeTab === 'campaigns'     && <CampaignsTab campaigns={campaigns} loading={loading} />}
+        {activeTab === 'costs'         && <CostsTab costs={costs} loading={loading} />}
         {activeTab === 'analytics'     && <AnalyticsTab analytics={analytics} loading={loading} />}
         {activeTab === 'smartlead'     && <SmartleadTab status={smartlead} onToggle={handleToggleSmartlead} loading={loading} userDetailsId={userDetailsId} />}
         {activeTab === 'users'         && <UsersTab users={users} setUsers={setUsers} loading={loading} userDetailsId={userDetailsId} />}
