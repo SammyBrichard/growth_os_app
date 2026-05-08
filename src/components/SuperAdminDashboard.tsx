@@ -791,12 +791,12 @@ function CostsTab({ costs, loading }: { costs: CostsData | null; loading: boolea
 function PricingInfo() {
   const [open, setOpen] = useState(false)
   const rows = [
-    { service: 'Apollo — org enrichment',  unit: 'per call',          rate: '2.0p', note: '$99 / 4,000 credits' },
-    { service: 'Apollo — people reveal',   unit: 'per email revealed', rate: '2.0p', note: '/people/match with reveal_personal_emails' },
-    { service: 'Apollo — people search',   unit: '—',                  rate: 'Free', note: '/mixed_people/api_search is free' },
-    { service: 'Serper',                   unit: 'per search',         rate: '0.10p', note: '$60 / 50,000 credits' },
-    { service: 'Claude Haiku (scoring)',   unit: 'per batch',          rate: '0.80p', note: 'rough estimate ~$0.01/batch' },
-    { service: 'Smartlead (email sending)','unit': 'per email',        rate: 'Free', note: 'flat seat/inbox pricing' },
+    { service: 'Apollo — org enrichment',   unit: 'per call',           usd: '$0.02475', note: '$99 / 4,000 credits' },
+    { service: 'Apollo — people reveal',    unit: 'per email revealed',  usd: '$0.02475', note: '/people/match with reveal_personal_emails' },
+    { service: 'Apollo — people search',    unit: '—',                   usd: 'Free',     note: '/mixed_people/api_search is free' },
+    { service: 'Serper',                    unit: 'per search',          usd: '$0.0012',  note: '$60 / 50,000 credits' },
+    { service: 'Claude Haiku (scoring)',    unit: 'per batch',           usd: '~$0.01',   note: 'rough estimate' },
+    { service: 'Smartlead (email sending)', unit: 'per email',           usd: 'Free',     note: 'flat seat/inbox pricing' },
   ]
   return (
     <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 4 }}>
@@ -809,7 +809,7 @@ function PricingInfo() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead>
               <tr>
-                {['Service', 'Unit', 'Rate', 'Notes'].map(h => (
+                {['Service', 'Unit', 'USD price', 'Notes'].map(h => (
                   <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '8px 14px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}` }}>{h}</th>
                 ))}
               </tr>
@@ -819,14 +819,14 @@ function PricingInfo() {
                 <tr key={r.service} style={{ borderBottom: i < rows.length - 1 ? `1px solid ${C.border}` : 'none' }}>
                   <td style={{ padding: '9px 14px', fontWeight: 500 }}>{r.service}</td>
                   <td style={{ fontFamily: MONO, padding: '9px 14px', color: C.muted }}>{r.unit}</td>
-                  <td style={{ fontFamily: MONO, padding: '9px 14px', color: r.rate === 'Free' ? C.green : C.fg, fontWeight: 600 }}>{r.rate}</td>
+                  <td style={{ fontFamily: MONO, padding: '9px 14px', color: r.usd === 'Free' ? C.green : C.fg, fontWeight: 600 }}>{r.usd}</td>
                   <td style={{ padding: '9px 14px', color: C.muted }}>{r.note}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           <div style={{ fontFamily: MONO, fontSize: 10, color: C.muted, padding: '8px 14px', borderTop: `1px solid ${C.border}` }}>
-            Using $1.25 = £1 conversion · Historical runs show cost at the rates active when they ran
+            GBP costs use the live USD/GBP rate from the European Central Bank, refreshed every 12 hours
           </div>
         </div>
       )}
