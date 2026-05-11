@@ -27,14 +27,14 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
     setLoading(true)
     supabase
       .from('leads')
-      .select('id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
+      .select('id, target_id, itp_id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))')
       .eq('itp_id', itpId)
       .gte('score', 70)
       .or('approved.is.null,approved.eq.false')
       .or('rejected.is.null,rejected.eq.false')
       .order('score', { ascending: false })
       .then(({ data }) => {
-        setLeads((data ?? []) as Lead[])
+        setLeads((data ?? []) as unknown as Lead[])
         setLoading(false)
       })
   }, [itpId])

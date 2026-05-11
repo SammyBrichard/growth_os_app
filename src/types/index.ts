@@ -20,7 +20,7 @@ export interface Message {
 
 export interface MobilisationStep {
   id: string
-  type: 'free_type' | 'option_set' | 'ai_message' | 'ai_message_with_options' | 'end_flow' | 'sidebar' | 'validate'
+  type: 'free_type' | 'option_set' | 'option_set_with_input' | 'ai_message' | 'ai_message_with_options' | 'end_flow' | 'sidebar' | 'validate'
   messages: string[]
   next_id?: string
   response_key?: string
@@ -99,6 +99,7 @@ export interface Account {
   organisation_website: string | null
   description: string | null
   problem_solved: string | null
+  auto_approve_leads?: boolean
 }
 
 export interface Customer {

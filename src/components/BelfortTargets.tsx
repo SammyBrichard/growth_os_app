@@ -4,15 +4,25 @@ import { Lead } from '../types/index'
 interface BelfortTargetsProps {
   belfortItps: { id: string; name: string | null }[]
   belfortSelectedItpId: string | null
-  belfortLeads: Lead[]
   belfortSubTab: string
   selectedLead: Lead | null
   loading?: boolean
-  hasMoreLeads?: boolean
-  onLoadMoreLeads?: () => void
   belfortSummary?: string | null
   pendingRefinementCount?: number
   refining?: boolean
+  // Needs approval queue
+  needsApprovalDisplay: Lead[]
+  needsApprovalTotal: number
+  // Approved pagination
+  approvedLeads: Lead[]
+  approvedPage: number
+  approvedPageCount: number
+  approvedTotal: number
+  approvedLoading?: boolean
+  onApprovedPageChange: (page: number) => void
+  // Auto-approve
+  autoApproveLeads: boolean
+  onToggleAutoApprove: (value: boolean) => void
   onSelectItp: (id: string) => void
   onSelectSubTab: (tab: string) => void
   onSelectLead: (lead: Lead | null) => void
@@ -22,15 +32,22 @@ interface BelfortTargetsProps {
 const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   belfortItps,
   belfortSelectedItpId,
-  belfortLeads,
   belfortSubTab,
   selectedLead,
   loading,
-  hasMoreLeads,
-  onLoadMoreLeads,
   belfortSummary,
   pendingRefinementCount = 0,
   refining = false,
+  needsApprovalDisplay,
+  needsApprovalTotal,
+  approvedLeads,
+  approvedPage,
+  approvedPageCount,
+  approvedTotal,
+  approvedLoading,
+  onApprovedPageChange,
+  autoApproveLeads,
+  onToggleAutoApprove,
   onSelectItp,
   onSelectSubTab,
   onSelectLead,
@@ -41,20 +58,16 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
 
   useEffect(() => { setContactFilter('all') }, [belfortSubTab])
 
-  const subtabFiltered = belfortLeads.filter(l =>
-    belfortSubTab === 'approved' ? l.approved : (!l.approved && !l.rejected)
-  )
-
-  const withContactsCount = subtabFiltered.filter(l => (l.targets?.contacts?.length ?? 0) > 0).length
-  const withoutContactsCount = subtabFiltered.filter(l => (l.targets?.contacts?.length ?? 0) === 0).length
+  const withContactsCount = approvedLeads.filter(l => (l.targets?.contacts?.length ?? 0) > 0).length
+  const withoutContactsCount = approvedLeads.filter(l => (l.targets?.contacts?.length ?? 0) === 0).length
 
   const filtered = belfortSubTab === 'approved'
-    ? subtabFiltered.filter(l => {
+    ? approvedLeads.filter(l => {
         if (contactFilter === 'with') return (l.targets?.contacts?.length ?? 0) > 0
         if (contactFilter === 'without') return (l.targets?.contacts?.length ?? 0) === 0
         return true
       })
-    : subtabFiltered
+    : needsApprovalDisplay
 
   const handleRefine = async () => {
     if (!onRefineItp || !belfortSelectedItpId) return
@@ -89,28 +102,39 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           </button>
         ))}
       </div>
-      <div className="belfort-subtabs">
-        <button
-          className={`belfort-subtab${belfortSubTab === 'needs_approval' ? ' active' : ''}`}
-          onClick={() => { onSelectSubTab('needs_approval'); onSelectLead(null) }}
-        >
-          Need approval
-        </button>
-        <button
-          className={`belfort-subtab${belfortSubTab === 'approved' ? ' active' : ''}`}
-          onClick={() => { onSelectSubTab('approved'); onSelectLead(null) }}
-        >
-          Approved
-        </button>
-        {belfortSubTab === 'approved' && pendingRefinementCount > 0 && (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+        <div className="belfort-subtabs">
           <button
-            className="belfort-subtab refine-itp-btn"
-            onClick={handleRefine}
-            disabled={refining}
+            className={`belfort-subtab${belfortSubTab === 'needs_approval' ? ' active' : ''}`}
+            onClick={() => { onSelectSubTab('needs_approval'); onSelectLead(null) }}
           >
-            {refining ? 'Refining…' : `Refine ITP (${pendingRefinementCount} rejection${pendingRefinementCount !== 1 ? 's' : ''})`}
+            Need approval{needsApprovalTotal > 0 ? ` (${needsApprovalTotal})` : ''}
           </button>
-        )}
+          <button
+            className={`belfort-subtab${belfortSubTab === 'approved' ? ' active' : ''}`}
+            onClick={() => { onSelectSubTab('approved'); onSelectLead(null) }}
+          >
+            Approved{approvedTotal > 0 ? ` (${approvedTotal})` : ''}
+          </button>
+          {belfortSubTab === 'approved' && pendingRefinementCount > 0 && (
+            <button
+              className="belfort-subtab refine-itp-btn"
+              onClick={handleRefine}
+              disabled={refining}
+            >
+              {refining ? 'Refining…' : `Refine ITP (${pendingRefinementCount} rejection${pendingRefinementCount !== 1 ? 's' : ''})`}
+            </button>
+          )}
+        </div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <input
+            type="checkbox"
+            checked={autoApproveLeads}
+            onChange={e => onToggleAutoApprove(e.target.checked)}
+            style={{ cursor: 'pointer' }}
+          />
+          Auto-approve leads
+        </label>
       </div>
       {belfortSubTab === 'approved' && (
         <div className="belfort-subtabs" style={{ marginTop: '8px' }}>
@@ -118,7 +142,7 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
             className={`belfort-subtab${contactFilter === 'all' ? ' active' : ''}`}
             onClick={() => setContactFilter('all')}
           >
-            All ({subtabFiltered.length})
+            All ({approvedLeads.length})
           </button>
           <button
             className={`belfort-subtab${contactFilter === 'with' ? ' active' : ''}`}
@@ -165,16 +189,16 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
               className={`targets-row${selectedLead?.id === lead.id ? ' selected' : ''}`}
               onClick={() => onSelectLead(lead)}
             >
-              <td>{lead.targets?.title ?? '\u2014'}</td>
+              <td>{lead.targets?.title ?? '—'}</td>
               <td><a href={lead.targets?.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{lead.targets?.link}</a></td>
               <td className="targets-score">{lead.score}</td>
               <td><span className={`contacts-count${(lead.targets?.contacts?.length ?? 0) === 0 ? ' zero' : ''}`}>{lead.targets?.contacts?.length ?? 0}</span></td>
             </tr>
           ))}
-          {loading && (
+          {(loading || approvedLoading) && (
             <tr><td colSpan={4} className="targets-empty">Loading targets...</td></tr>
           )}
-          {!loading && filtered.length === 0 && (
+          {!loading && !approvedLoading && filtered.length === 0 && (
             <tr><td colSpan={4} className="targets-empty">
               {contactFilter !== 'all'
                 ? `No approved targets ${contactFilter === 'with' ? 'with contacts' : 'without contacts'}.`
@@ -183,8 +207,28 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           )}
         </tbody>
       </table>
-      {hasMoreLeads && (
-        <button className="load-more-btn" onClick={onLoadMoreLeads}>Load more targets</button>
+      {belfortSubTab === 'approved' && approvedPageCount > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
+          <button
+            className="load-more-btn"
+            onClick={() => onApprovedPageChange(approvedPage - 1)}
+            disabled={approvedPage <= 1}
+            style={{ margin: 0 }}
+          >
+            ← Prev
+          </button>
+          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
+            Page {approvedPage} of {approvedPageCount}
+          </span>
+          <button
+            className="load-more-btn"
+            onClick={() => onApprovedPageChange(approvedPage + 1)}
+            disabled={approvedPage >= approvedPageCount}
+            style={{ margin: 0 }}
+          >
+            Next →
+          </button>
+        </div>
       )}
     </div>
   )
