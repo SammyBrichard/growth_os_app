@@ -20,6 +20,13 @@ interface BelfortTargetsProps {
   approvedTotal: number
   approvedLoading?: boolean
   onApprovedPageChange: (page: number) => void
+  // Rejected pagination
+  rejectedLeads: Lead[]
+  rejectedPage: number
+  rejectedPageCount: number
+  rejectedTotal: number
+  rejectedLoading?: boolean
+  onRejectedPageChange: (page: number) => void
   // Auto-approve
   autoApproveLeads: boolean
   onToggleAutoApprove: (value: boolean) => void
@@ -46,6 +53,12 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
   approvedTotal,
   approvedLoading,
   onApprovedPageChange,
+  rejectedLeads,
+  rejectedPage,
+  rejectedPageCount,
+  rejectedTotal,
+  rejectedLoading,
+  onRejectedPageChange,
   autoApproveLeads,
   onToggleAutoApprove,
   onSelectItp,
@@ -116,6 +129,12 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           >
             Approved{approvedTotal > 0 ? ` (${approvedTotal})` : ''}
           </button>
+          <button
+            className={`belfort-subtab${belfortSubTab === 'rejected' ? ' active' : ''}`}
+            onClick={() => { onSelectSubTab('rejected'); onSelectLead(null) }}
+          >
+            Rejected{rejectedTotal > 0 ? ` (${rejectedTotal})` : ''}
+          </button>
           {belfortSubTab === 'approved' && pendingRefinementCount > 0 && (
             <button
               className="belfort-subtab refine-itp-btn"
@@ -175,62 +194,93 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
           Click a lead to view details or reject it. Rejected leads will update your ITP when you refine.
         </p>
       )}
-      <table className="targets-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>URL</th>
-            <th>Score</th>
-            <th>Contacts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(lead => (
-            <tr
-              key={lead.id}
-              className={`targets-row${selectedLead?.id === lead.id ? ' selected' : ''}`}
-              onClick={() => onSelectLead(lead)}
-            >
-              <td>{lead.targets?.title ?? '—'}</td>
-              <td><a href={lead.targets?.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{lead.targets?.link}</a></td>
-              <td className="targets-score">{lead.score}</td>
-              <td><span className={`contacts-count${(lead.targets?.contacts?.length ?? 0) === 0 ? ' zero' : ''}`}>{lead.targets?.contacts?.length ?? 0}</span></td>
-            </tr>
-          ))}
-          {(loading || approvedLoading) && (
-            <tr><td colSpan={4} className="targets-empty">Loading targets...</td></tr>
+      {belfortSubTab === 'rejected' && (
+        <p style={{ margin: '12px 0 4px', fontSize: '13px', color: 'var(--muted)' }}>
+          Leads you have rejected. Rejection reasons help Belfort refine your ITP.
+        </p>
+      )}
+      {belfortSubTab === 'rejected' ? (
+        <>
+          <table className="targets-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Score</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rejectedLeads.map(lead => (
+                <tr key={lead.id} className="targets-row">
+                  <td>{lead.targets?.title ?? '—'}</td>
+                  <td><a href={lead.targets?.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{lead.targets?.link}</a></td>
+                  <td className="targets-score">{lead.score}</td>
+                  <td style={{ color: lead.rejection_reason ? 'var(--fg)' : 'var(--muted)', fontStyle: lead.rejection_reason ? 'normal' : 'italic' }}>
+                    {lead.rejection_reason ?? 'No reason given'}
+                  </td>
+                </tr>
+              ))}
+              {rejectedLoading && (
+                <tr><td colSpan={4} className="targets-empty">Loading...</td></tr>
+              )}
+              {!rejectedLoading && rejectedLeads.length === 0 && (
+                <tr><td colSpan={4} className="targets-empty">No rejected leads yet.</td></tr>
+              )}
+            </tbody>
+          </table>
+          {rejectedPageCount > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
+              <button className="load-more-btn" onClick={() => onRejectedPageChange(rejectedPage - 1)} disabled={rejectedPage <= 1} style={{ margin: 0 }}>← Prev</button>
+              <span style={{ fontSize: '13px', color: 'var(--muted)' }}>Page {rejectedPage} of {rejectedPageCount}</span>
+              <button className="load-more-btn" onClick={() => onRejectedPageChange(rejectedPage + 1)} disabled={rejectedPage >= rejectedPageCount} style={{ margin: 0 }}>Next →</button>
+            </div>
           )}
-          {!loading && !approvedLoading && filtered.length === 0 && (
-            <tr><td colSpan={4} className="targets-empty">
-              {contactFilter !== 'all'
-                ? `No approved targets ${contactFilter === 'with' ? 'with contacts' : 'without contacts'}.`
-                : belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}
-            </td></tr>
+        </>
+      ) : (
+        <>
+          <table className="targets-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>URL</th>
+                <th>Score</th>
+                <th>Contacts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(lead => (
+                <tr
+                  key={lead.id}
+                  className={`targets-row${selectedLead?.id === lead.id ? ' selected' : ''}`}
+                  onClick={() => onSelectLead(lead)}
+                >
+                  <td>{lead.targets?.title ?? '—'}</td>
+                  <td><a href={lead.targets?.link} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>{lead.targets?.link}</a></td>
+                  <td className="targets-score">{lead.score}</td>
+                  <td><span className={`contacts-count${(lead.targets?.contacts?.length ?? 0) === 0 ? ' zero' : ''}`}>{lead.targets?.contacts?.length ?? 0}</span></td>
+                </tr>
+              ))}
+              {(loading || approvedLoading) && (
+                <tr><td colSpan={4} className="targets-empty">Loading targets...</td></tr>
+              )}
+              {!loading && !approvedLoading && filtered.length === 0 && (
+                <tr><td colSpan={4} className="targets-empty">
+                  {contactFilter !== 'all'
+                    ? `No approved targets ${contactFilter === 'with' ? 'with contacts' : 'without contacts'}.`
+                    : belfortSubTab === 'approved' ? 'No approved targets yet.' : 'No targets awaiting approval.'}
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+          {belfortSubTab === 'approved' && approvedPageCount > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
+              <button className="load-more-btn" onClick={() => onApprovedPageChange(approvedPage - 1)} disabled={approvedPage <= 1} style={{ margin: 0 }}>← Prev</button>
+              <span style={{ fontSize: '13px', color: 'var(--muted)' }}>Page {approvedPage} of {approvedPageCount}</span>
+              <button className="load-more-btn" onClick={() => onApprovedPageChange(approvedPage + 1)} disabled={approvedPage >= approvedPageCount} style={{ margin: 0 }}>Next →</button>
+            </div>
           )}
-        </tbody>
-      </table>
-      {belfortSubTab === 'approved' && approvedPageCount > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px', justifyContent: 'center' }}>
-          <button
-            className="load-more-btn"
-            onClick={() => onApprovedPageChange(approvedPage - 1)}
-            disabled={approvedPage <= 1}
-            style={{ margin: 0 }}
-          >
-            ← Prev
-          </button>
-          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
-            Page {approvedPage} of {approvedPageCount}
-          </span>
-          <button
-            className="load-more-btn"
-            onClick={() => onApprovedPageChange(approvedPage + 1)}
-            disabled={approvedPage >= approvedPageCount}
-            style={{ margin: 0 }}
-          >
-            Next →
-          </button>
-        </div>
+        </>
       )}
     </div>
   )
