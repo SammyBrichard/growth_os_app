@@ -21,7 +21,7 @@ interface UseBelfortParams {
 export default function useBelfort({ accountId, userDetailsId, selectedEmployee, firstname }: UseBelfortParams) {
   const [belfortItps, setBelfortItps] = useState<Pick<ITP, 'id' | 'name'>[]>([])
   const [belfortSelectedItpId, setBelfortSelectedItpId] = useState<string | null>(null)
-  const [belfortSubTab, setBelfortSubTab] = useState<'needs_approval' | 'approved'>('needs_approval')
+  const [belfortSubTab, setBelfortSubTab] = useState<'needs_approval' | 'approved' | 'rejected'>('needs_approval')
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [expandedLeadId, setExpandedLeadId] = useState<string | null>(null)
 
@@ -41,6 +41,12 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
   const [approvedPage, setApprovedPage] = useState(1)
   const [approvedTotal, setApprovedTotal] = useState(0)
   const [approvedLoading, setApprovedLoading] = useState(false)
+
+  // Rejected: server-side pagination
+  const [rejectedLeads, setRejectedLeads] = useState<Lead[]>([])
+  const [rejectedPage, setRejectedPage] = useState(1)
+  const [rejectedTotal, setRejectedTotal] = useState(0)
+  const [rejectedLoading, setRejectedLoading] = useState(false)
 
   // Auto-approve toggle
   const [autoApproveLeads, setAutoApproveLeads] = useState(false)
@@ -110,6 +116,9 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
       setApprovedLeads([])
       setApprovedTotal(0)
       setApprovedPage(1)
+      setRejectedLeads([])
+      setRejectedTotal(0)
+      setRejectedPage(1)
       naHasMore.current = false
       naBufferIds.current = new Set()
       return
@@ -122,16 +131,19 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
       naHasMore.current = false
       naBufferIds.current = new Set()
 
-      const [naCountResult, apCountResult, firstBatch] = await Promise.all([
+      const [naCountResult, apCountResult, rejCountResult, firstBatch] = await Promise.all([
         supabase.from('leads').select('id', { count: 'exact', head: true })
           .eq('itp_id', itpId).gte('score', 70).is('approved', null).is('rejected', null),
         supabase.from('leads').select('id', { count: 'exact', head: true })
           .eq('itp_id', itpId).gte('score', 70).eq('approved', true),
+        supabase.from('leads').select('id', { count: 'exact', head: true })
+          .eq('itp_id', itpId).eq('rejected', true),
         fetchNeedsApprovalBatch(itpId, []),
       ])
 
       setNeedsApprovalTotal(naCountResult.count ?? 0)
       setApprovedTotal(apCountResult.count ?? 0)
+      setRejectedTotal(rejCountResult.count ?? 0)
       firstBatch.forEach(l => naBufferIds.current.add(l.id))
       setNeedsApprovalBuffer(firstBatch)
       naHasMore.current = firstBatch.length === BUFFER_SIZE
@@ -140,6 +152,8 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
 
     setApprovedPage(1)
     setApprovedLeads([])
+    setRejectedPage(1)
+    setRejectedLeads([])
     init()
   }, [belfortSelectedItpId, fetchNeedsApprovalBatch])
 
@@ -184,6 +198,24 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
       setApprovedPage(p => p - 1)
     }
   }, [approvedLeads.length, approvedPage, belfortSubTab, approvedLoading])
+
+  // Fetch rejected page whenever tab, ITP, or page changes
+  useEffect(() => {
+    if (!belfortSelectedItpId || belfortSubTab !== 'rejected') return
+    const from = (rejectedPage - 1) * APPROVED_PAGE_SIZE
+    const to = from + APPROVED_PAGE_SIZE - 1
+    setRejectedLoading(true)
+    supabase.from('leads')
+      .select(LEAD_SELECT)
+      .eq('itp_id', belfortSelectedItpId)
+      .eq('rejected', true)
+      .order('score', { ascending: false })
+      .range(from, to)
+      .then(({ data }) => {
+        setRejectedLeads((data ?? []) as unknown as Lead[])
+        setRejectedLoading(false)
+      })
+  }, [belfortSelectedItpId, belfortSubTab, rejectedPage])
 
   const checkAndQueueTargetMobilisation = useCallback(async (itpId: string | null) => {
     if (!itpId || !userDetailsId) return
@@ -243,6 +275,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     naBufferIds.current.delete(lead.id)
     setNeedsApprovalBuffer(prev => prev.filter(l => l.id !== lead.id))
     setNeedsApprovalTotal(prev => Math.max(0, prev - 1))
+    setRejectedTotal(prev => prev + 1)
     setSelectedLead(null)
   }, [])
 
@@ -259,6 +292,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     await supabase.from('leads').update({ approved: false, rejected: true, rejection_reason: reason }).eq('id', lead.id)
     setApprovedLeads(prev => prev.filter(l => l.id !== lead.id))
     setApprovedTotal(prev => Math.max(0, prev - 1))
+    setRejectedTotal(prev => prev + 1)
     setSelectedLead(null)
     setPendingRefinementCount(prev => prev + 1)
   }, [])
@@ -313,6 +347,13 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     approvedTotal,
     approvedLoading,
     setApprovedPage,
+    // Rejected pagination
+    rejectedLeads,
+    rejectedPage,
+    rejectedPageCount: Math.max(1, Math.ceil(rejectedTotal / APPROVED_PAGE_SIZE)),
+    rejectedTotal,
+    rejectedLoading,
+    setRejectedPage,
     // Auto-approve
     autoApproveLeads,
     toggleAutoApprove,

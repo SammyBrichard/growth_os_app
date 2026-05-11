@@ -585,6 +585,12 @@ export default function App() {
               approvedTotal={bel.approvedTotal}
               approvedLoading={bel.approvedLoading}
               onApprovedPageChange={bel.setApprovedPage}
+              rejectedLeads={bel.rejectedLeads}
+              rejectedPage={bel.rejectedPage}
+              rejectedPageCount={bel.rejectedPageCount}
+              rejectedTotal={bel.rejectedTotal}
+              rejectedLoading={bel.rejectedLoading}
+              onRejectedPageChange={bel.setRejectedPage}
               autoApproveLeads={bel.autoApproveLeads}
               onToggleAutoApprove={bel.toggleAutoApprove}
               belfortSummary={bel.belfortSummary}
