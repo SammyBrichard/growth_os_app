@@ -9,7 +9,7 @@ const DISPLAY_SIZE = 20
 const BUFFER_REFILL_THRESHOLD = 10
 const APPROVED_PAGE_SIZE = 25
 
-const LEAD_SELECT = 'id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))'
+const LEAD_SELECT = 'id, target_id, itp_id, score, score_reason, approved, rejected, rejection_reason, targets(id, domain, title, link, contacts(id, first_name, last_name, email, role))'
 
 interface UseBelfortParams {
   accountId: string | null
