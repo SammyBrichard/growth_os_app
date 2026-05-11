@@ -40,7 +40,9 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
   }, [itpId])
 
   const handleApprove = useCallback(async (lead: Lead) => {
-    await supabase.from('leads').update({ approved: true }).eq('id', lead.id)
+    // confirmed_positive marks this as a human-approved calibration lead (distinct from
+    // auto-approved leads created by the production runner)
+    await supabase.from('leads').update({ approved: true, confirmed_positive: true }).eq('id', lead.id)
     setLeads(prev => prev.filter(t => t.id !== lead.id))
     setApprovedCount(prev => prev + 1)
   }, [])
@@ -77,7 +79,7 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
 
   async function handleBulkApprove() {
     const ids = leads.map(l => l.id)
-    await supabase.from('leads').update({ approved: true }).in('id', ids)
+    await supabase.from('leads').update({ approved: true, confirmed_positive: true }).in('id', ids)
     const count = ids.length
     setLeads([])
     setApprovedCount(prev => prev + count)
