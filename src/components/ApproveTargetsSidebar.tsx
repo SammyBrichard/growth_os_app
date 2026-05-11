@@ -34,7 +34,7 @@ const ApproveTargetsSidebar: React.FC<ApproveTargetsSidebarProps> = ({ itpId, us
       .or('rejected.is.null,rejected.eq.false')
       .order('score', { ascending: false })
       .then(({ data }) => {
-        setLeads((data ?? []) as Lead[])
+        setLeads((data ?? []) as unknown as Lead[])
         setLoading(false)
       })
   }, [itpId])
