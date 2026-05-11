@@ -126,14 +126,16 @@ const BelfortTargets: React.FC<BelfortTargetsProps> = ({
             </button>
           )}
         </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-          <input
-            type="checkbox"
-            checked={autoApproveLeads}
-            onChange={e => onToggleAutoApprove(e.target.checked)}
-            style={{ cursor: 'pointer' }}
-          />
-          Auto-approve leads
+        <label
+          className={`auto-approve-toggle${autoApproveLeads ? ' on' : ''}`}
+          onClick={() => onToggleAutoApprove(!autoApproveLeads)}
+        >
+          <div className="toggle-track">
+            <div className="toggle-thumb" />
+          </div>
+          <span className="toggle-text">
+            {autoApproveLeads ? 'Leads auto-approved' : 'Leads require approval'}
+          </span>
         </label>
       </div>
       {belfortSubTab === 'approved' && (
