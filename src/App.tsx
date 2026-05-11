@@ -571,15 +571,22 @@ export default function App() {
             <BelfortTargets
               belfortItps={bel.belfortItps}
               belfortSelectedItpId={bel.belfortSelectedItpId}
-              belfortLeads={bel.belfortLeads}
               belfortSubTab={bel.belfortSubTab}
               selectedLead={bel.selectedLead}
               onSelectItp={(id) => { bel.setBelfortSelectedItpId(id); bel.setExpandedLeadId(null) }}
               onSelectSubTab={(tab) => { bel.setBelfortSubTab(tab as 'needs_approval' | 'approved'); bel.setSelectedLead(null) }}
               onSelectLead={bel.setSelectedLead}
               loading={bel.loading}
-              hasMoreLeads={bel.hasMoreLeads}
-              onLoadMoreLeads={bel.loadMoreLeads}
+              needsApprovalDisplay={bel.needsApprovalDisplay}
+              needsApprovalTotal={bel.needsApprovalTotal}
+              approvedLeads={bel.approvedLeads}
+              approvedPage={bel.approvedPage}
+              approvedPageCount={bel.approvedPageCount}
+              approvedTotal={bel.approvedTotal}
+              approvedLoading={bel.approvedLoading}
+              onApprovedPageChange={bel.setApprovedPage}
+              autoApproveLeads={bel.autoApproveLeads}
+              onToggleAutoApprove={bel.toggleAutoApprove}
               belfortSummary={bel.belfortSummary}
               pendingRefinementCount={bel.pendingRefinementCount}
               refining={bel.refining}

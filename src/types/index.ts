@@ -99,6 +99,7 @@ export interface Account {
   organisation_website: string | null
   description: string | null
   problem_solved: string | null
+  auto_approve_leads?: boolean
 }
 
 export interface Customer {
