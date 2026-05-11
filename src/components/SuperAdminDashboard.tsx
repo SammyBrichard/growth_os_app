@@ -308,7 +308,98 @@ function CampaignPickerList({ campaigns, selected, setSelected, search, setSearc
 }
 
 // ── Overview tab ──────────────────────────────────────────────────────────────
-function OverviewTab({ analytics, loading }: { analytics: Analytics | null; loading: boolean }) {
+function RecentRunsTable({ recentRuns, analytics, companyColorMap, userDetailsId, onRunCancelled }: {
+  recentRuns: RunRecord[]; analytics: Analytics; companyColorMap: Record<string, string>
+  userDetailsId: string | null; onRunCancelled: () => void
+}) {
+  const [cancelling, setCancelling] = useState<string | null>(null)
+
+  async function handleCancel(runId: string) {
+    if (!userDetailsId) return
+    if (!confirm('Stop this run and clear all mobilisation queues for this account?')) return
+    setCancelling(runId)
+    try {
+      const res = await fetch(`${API_URL}/api/admin/runs/${runId}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_details_id: userDetailsId }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      onRunCancelled()
+    } catch (err: any) {
+      alert(`Failed to cancel run: ${err.message}`)
+    } finally {
+      setCancelling(null)
+    }
+  }
+
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <thead>
+          <tr style={{ background: C.cream }}>
+            {['Campaign','Company','Status','Leads','Cost','When',''].map(h => (
+              <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '10px 14px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}` }}>{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {recentRuns.map((r, i) => {
+            const coName = r.campaigns?.account?.organisation_name || '—'
+            const color = companyColorMap[coName] || C.muted
+            const short = coName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+            const isRunning = r.status === 'running'
+            const isCancelling = cancelling === r.id
+            return (
+              <tr key={r.id} style={{ borderBottom: i === recentRuns.length - 1 ? 'none' : `1px solid ${C.border}` }}>
+                <td style={{ padding: '12px 14px', fontWeight: 500 }}>{r.campaigns?.name || '—'}</td>
+                <td style={{ padding: '12px 14px' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: MONO, width: 20, height: 20, borderRadius: 4, background: color, color: '#fff', fontSize: 9, fontWeight: 600, display: 'grid', placeItems: 'center' }}>{short}</span>
+                    <span style={{ fontSize: 13 }}>{coName}</span>
+                  </span>
+                </td>
+                <td style={{ padding: '12px 14px' }}><StatusPill status={r.status} /></td>
+                <td style={{ fontFamily: MONO, padding: '12px 14px', color: r.lead_count != null ? C.fg : C.muted, fontVariantNumeric: 'tabular-nums' }}>
+                  {r.lead_count != null ? r.lead_count : '—'}
+                </td>
+                <td style={{ fontFamily: MONO, padding: '12px 14px', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
+                  {r.estimated_cost_pence != null ? `£${(r.estimated_cost_pence / 100).toFixed(2)}` : '—'}
+                </td>
+                <td style={{ fontFamily: MONO, padding: '12px 14px', color: C.muted, fontSize: 12 }}>
+                  {formatRelativeTime(r.created_at)}
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  {isRunning && (
+                    <button
+                      onClick={() => handleCancel(r.id)}
+                      disabled={!!cancelling}
+                      title="Stop run and clear mobilisation queues"
+                      style={{
+                        fontFamily: MONO, fontSize: 11, padding: '3px 8px', borderRadius: 4, cursor: cancelling ? 'not-allowed' : 'pointer',
+                        background: isCancelling ? C.cream : `color-mix(in srgb, ${C.accent} 10%, transparent)`,
+                        color: isCancelling ? C.muted : C.accent,
+                        border: `1px solid color-mix(in srgb, ${C.accent} 30%, transparent)`,
+                        opacity: cancelling && !isCancelling ? 0.4 : 1,
+                      }}
+                    >
+                      {isCancelling ? 'stopping…' : 'stop'}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+          {recentRuns.length === 0 && (
+            <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: C.muted, fontSize: 13 }}>No runs yet</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function OverviewTab({ analytics, loading, userDetailsId, refreshAnalytics }: { analytics: Analytics | null; loading: boolean; userDetailsId: string | null; refreshAnalytics: () => void }) {
   if (loading || !analytics) return <LoadingState />
   const { aggregated, recentRuns } = analytics
   const completed = recentRuns.filter(r => r.status === 'completed').length
@@ -336,49 +427,7 @@ function OverviewTab({ analytics, loading }: { analytics: Analytics | null; load
             </div>
           </div>
         </div>
-        <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr style={{ background: C.cream }}>
-                {['Campaign','Company','Status','Leads','Cost','When'].map(h => (
-                  <th key={h} style={{ fontFamily: MONO, textAlign: 'left', padding: '10px 14px', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: C.muted, borderBottom: `1px solid ${C.border}` }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentRuns.map((r, i) => {
-                const co = analytics.perCompany.find(p => p.campaigns?.some((c: any) => c.id === r.campaign_id))
-                const coName = r.campaigns?.account?.organisation_name || '—'
-                const color = companyColorMap[coName] || C.muted
-                const short = coName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-                return (
-                  <tr key={r.id} style={{ borderBottom: i === recentRuns.length - 1 ? 'none' : `1px solid ${C.border}` }}>
-                    <td style={{ padding: '12px 14px', fontWeight: 500 }}>{r.campaigns?.name || '—'}</td>
-                    <td style={{ padding: '12px 14px' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontFamily: MONO, width: 20, height: 20, borderRadius: 4, background: color, color: '#fff', fontSize: 9, fontWeight: 600, display: 'grid', placeItems: 'center' }}>{short}</span>
-                        <span style={{ fontSize: 13 }}>{coName}</span>
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 14px' }}><StatusPill status={r.status} /></td>
-                    <td style={{ fontFamily: MONO, padding: '12px 14px', color: r.lead_count != null ? C.fg : C.muted, fontVariantNumeric: 'tabular-nums' }}>
-                      {r.lead_count != null ? r.lead_count : '—'}
-                    </td>
-                    <td style={{ fontFamily: MONO, padding: '12px 14px', color: C.muted, fontVariantNumeric: 'tabular-nums' }}>
-                      {r.estimated_cost_pence != null ? `£${(r.estimated_cost_pence / 100).toFixed(2)}` : '—'}
-                    </td>
-                    <td style={{ fontFamily: MONO, padding: '12px 14px', color: C.muted, fontSize: 12 }}>
-                      {formatRelativeTime(r.created_at)}
-                    </td>
-                  </tr>
-                )
-              })}
-              {recentRuns.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: C.muted, fontSize: 13 }}>No runs yet</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        <RecentRunsTable recentRuns={recentRuns} analytics={analytics} companyColorMap={companyColorMap} userDetailsId={userDetailsId} onRunCancelled={refreshAnalytics} />
       </div>
     </div>
   )
@@ -1388,7 +1437,7 @@ export default function SuperAdminDashboard({ userDetailsId }: { userDetailsId: 
             {error}
           </div>
         )}
-        {activeTab === 'overview'      && <OverviewTab analytics={analytics} loading={loading} />}
+        {activeTab === 'overview'      && <OverviewTab analytics={analytics} loading={loading} userDetailsId={userDetailsId} refreshAnalytics={() => get('/analytics').then(setAnalytics).catch(() => {})} />}
         {activeTab === 'target-finder' && <TargetFinderTab campaigns={campaigns} crons={crons} setCrons={setCrons} userDetailsId={userDetailsId} loading={loading} />}
         {activeTab === 'campaigns'     && <CampaignsTab campaigns={campaigns} loading={loading} />}
         {activeTab === 'costs'         && <CostsTab costs={costs} loading={loading} />}
