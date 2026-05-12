@@ -1609,6 +1609,8 @@ body {
 .campaign-sequence-body p { margin: 0 0 8px; }
 .campaign-sequence-body p:last-child { margin-bottom: 0; }
 .campaign-sequence-body a { color: var(--accent); text-decoration: underline; }
+.campaign-sequence-body--editing { border: 1px solid var(--border); border-radius: 4px; padding: 10px; outline: none; min-height: 120px; }
+.campaign-sequence-body--editing:focus { border-color: var(--accent); }
 
 /* -- Pipeline Kanban -- */
 .campaign-pipeline { margin-top: 8px; }
