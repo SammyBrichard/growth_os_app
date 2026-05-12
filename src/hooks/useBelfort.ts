@@ -51,7 +51,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
   // Auto-approve toggle
   const [autoApproveLeads, setAutoApproveLeads] = useState(false)
 
-  const [pendingRefinementCount, setPendingRefinementCount] = useState(0)
+  const [pendingRefinementCounts, setPendingRefinementCounts] = useState<Record<string, number>>({})
   const [refining, setRefining] = useState(false)
 
   // Summary fetch
@@ -294,7 +294,9 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     setApprovedTotal(prev => Math.max(0, prev - 1))
     setRejectedTotal(prev => prev + 1)
     setSelectedLead(null)
-    setPendingRefinementCount(prev => prev + 1)
+    if (lead.itp_id) {
+      setPendingRefinementCounts(prev => ({ ...prev, [lead.itp_id]: (prev[lead.itp_id] ?? 0) + 1 }))
+    }
   }, [])
 
   const toggleAutoApprove = useCallback(async (value: boolean) => {
@@ -313,7 +315,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
         body: JSON.stringify({ itp_id: itpId, user_details_id: userDetailsId }),
       })
       const data = await res.json()
-      setPendingRefinementCount(0)
+      setPendingRefinementCounts(prev => ({ ...prev, [itpId]: 0 }))
       return data.changes_summary ?? null
     } catch (err) {
       console.error('[refineItp]', err)
@@ -364,7 +366,7 @@ export default function useBelfort({ accountId, userDetailsId, selectedEmployee,
     approveLead,
     rejectApprovedLead,
     refineItp,
-    pendingRefinementCount,
+    pendingRefinementCount: pendingRefinementCounts[belfortSelectedItpId ?? ''] ?? 0,
     refining,
   }
 }
