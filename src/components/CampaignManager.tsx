@@ -1,5 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import type { Campaign, CampaignContact, CampaignItp, CampaignSender } from '../hooks/useCampaigns'
+
+function BodyEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== value) {
+      ref.current.innerHTML = value
+    }
+  }, [value])
+  return (
+    <div
+      ref={ref}
+      className="campaign-sequence-body campaign-sequence-body--editing"
+      contentEditable
+      suppressContentEditableWarning
+      onBlur={() => { if (ref.current) onChange(ref.current.innerHTML) }}
+    />
+  )
+}
 
 interface CampaignManagerProps {
   campaigns: Campaign[]
@@ -347,7 +365,18 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
             ) : (
               <div className="campaign-sequence-subject">{parsedSequence[activeEmailTab]?.subject}</div>
             )}
-            <div className="campaign-sequence-body" dangerouslySetInnerHTML={{ __html: (editing ? editSequence : parsedSequence)[activeEmailTab]?.body ?? '' }} />
+            {editing ? (
+              <BodyEditor
+                value={editSequence[activeEmailTab]?.body ?? ''}
+                onChange={html => {
+                  const updated = [...editSequence]
+                  updated[activeEmailTab] = { ...updated[activeEmailTab], body: html }
+                  setEditSequence(updated)
+                }}
+              />
+            ) : (
+              <div className="campaign-sequence-body" dangerouslySetInnerHTML={{ __html: parsedSequence[activeEmailTab]?.body ?? '' }} />
+            )}
           </div>
         </div>
       )}
