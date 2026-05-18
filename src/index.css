@@ -2344,6 +2344,66 @@ body {
 .sender-create-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .sender-empty { font-size: 13px; color: var(--muted); font-style: italic; }
 
+/* Verifying state */
+.sender-verifying {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.sender-verifying-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.sender-verifying-title { font-size: 14px; font-weight: 600; color: var(--text); }
+.sender-verifying-subtitle { font-size: 12px; color: var(--muted); max-width: 220px; line-height: 1.5; }
+
+/* Verification error banner */
+.sender-verification-error {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: rgba(220, 60, 60, 0.08);
+  border: 1px solid rgba(220, 60, 60, 0.3);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.sender-verification-error-icon {
+  font-size: 12px;
+  color: #dc3c3c;
+  font-weight: 700;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.sender-verification-error-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc3c3c;
+  margin-bottom: 3px;
+}
+.sender-verification-error-message {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* Retry button */
+.sender-retry-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.sender-retry-btn:hover { background: var(--hover); opacity: 1; }
+
 /* ============================================================
    SETTINGS PANEL
    ============================================================ */
