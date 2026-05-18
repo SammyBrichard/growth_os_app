@@ -211,19 +211,6 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
 
   const activePreset = PROVIDERS.find(p => p.id === selectedProvider)
 
-  // ── Verifying state ───────────────────────────────────────────────────────
-  if (verifying) {
-    return (
-      <div className="sender-sidebar">
-        <div className="sender-verifying">
-          <div className="sender-verifying-spinner" />
-          <div className="sender-verifying-title">Verifying connection...</div>
-          <div className="sender-verifying-subtitle">Testing your SMTP credentials — this usually takes a few seconds</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="sender-sidebar">
       {senders.length > 0 && !verificationError && (
@@ -313,7 +300,6 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
               placeholder="your@email.com"
               value={newEmail}
               onChange={e => setNewEmail(e.target.value)}
-              disabled={!!verificationError && !!pendingSenderId}
             />
 
             <label className="sender-field-label">Display Name</label>
@@ -323,7 +309,6 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
               placeholder="e.g. John from Acme"
               value={newDisplayName}
               onChange={e => setNewDisplayName(e.target.value)}
-              disabled={!!verificationError && !!pendingSenderId}
             />
 
             <label className="sender-field-label">App Password</label>
@@ -335,7 +320,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
               onChange={e => setSmtpPassword(e.target.value)}
             />
 
-            {(selectedProvider === 'custom' || verificationError) && (
+            {selectedProvider === 'custom' && (
               <>
                 <label className="sender-field-label">SMTP Host</label>
                 <input
@@ -379,17 +364,17 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
               <button
                 className="sender-create-btn sender-retry-btn"
                 onClick={handleRetry}
-                disabled={!smtpHost.trim() || !smtpPassword.trim()}
+                disabled={verifying || !smtpHost.trim() || !smtpPassword.trim()}
               >
-                Retry Connection
+                {verifying ? <><span className="sender-btn-spinner" /> Verifying...</> : 'Retry Connection'}
               </button>
             ) : (
               <button
                 className="sender-create-btn"
                 onClick={handleCreateSender}
-                disabled={!newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim() || creating}
+                disabled={verifying || creating || !newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim()}
               >
-                {creating ? 'Saving...' : 'Connect Sender'}
+                {verifying ? <><span className="sender-btn-spinner" /> Verifying...</> : creating ? 'Saving...' : 'Connect Sender'}
               </button>
             )}
           </div>
