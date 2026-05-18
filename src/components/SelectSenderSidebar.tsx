@@ -190,11 +190,13 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
 
   async function handleRetry() {
     if (!pendingSenderId || !smtpHost.trim() || !smtpPassword.trim()) return
-    // Update the credentials on the existing row before re-verifying
+    // Update all fields on the existing row before re-verifying
     await fetch(`${API_URL}/api/senders/${pendingSenderId}/credentials`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        email:         newEmail.trim().toLowerCase(),
+        display_name:  newDisplayName.trim() || null,
         smtp_host:     smtpHost.trim(),
         smtp_port:     parseInt(smtpPort) || 587,
         smtp_password: smtpPassword.trim(),
