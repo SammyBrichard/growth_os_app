@@ -343,23 +343,6 @@ export default function App() {
     mob.setMobilisationResponses((prev: Record<string, string>) => ({ ...prev, campaign_id: campaignId }))
   }
 
-  async function handleSicCodesApproved(approvedCodes: { code: string; description: string }[]) {
-    const itpId = mob.sidebarData.itp_id
-    if (itpId) {
-      const codes = approvedCodes.map(c => c.code)
-      await supabase.from('itp').update({ sic_codes: codes }).eq('id', itpId)
-    }
-    mob.setActiveSidebar(null)
-
-    // User-side summary message
-    const total = mob.sidebarData.sic_codes?.length ?? 0
-    const text = `${approvedCodes.length} of ${total} industry codes approved`
-    msg.setMessages(prev => [...prev, { message_body: text, is_agent: false, timestamp: new Date() }])
-    ud.saveMessage(text, false, false)
-
-    mob.startMobilisation('signed_up_first_message')
-  }
-
   async function handleSenderSelect(senderId: string) {
     const campaignId = mob.mobilisationResponsesRef.current.campaign_id
     if (campaignId) {
@@ -738,7 +721,7 @@ export default function App() {
           accountId={ud.accountId}
           onTemplateApprove={handleTemplateApprove}
           onSenderSelect={handleSenderSelect}
-          onSicCodesApproved={handleSicCodesApproved}
+
           onClose={() => mob.setActiveSidebar(null)}
           narrow={!!camp.selectedCampaign}
         />

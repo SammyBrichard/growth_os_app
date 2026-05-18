@@ -535,37 +535,6 @@ export default function useMobilisation({
       if (saved) setMessages(prev => prev.map(m => m.tempId === tempId ? saved : m))
     })
 
-    // Generate SIC codes for approval before continuing
-    if (itpId) {
-      const sicMsg = "I've identified some industry codes based on your target profile. These codes determine which types of companies Belfort will search for — take a look and deselect any that don't match the kind of businesses you want to target."
-      setMessages(prev => [...prev, { message_body: sicMsg, is_agent: true, timestamp: new Date() }])
-      setActiveSidebar('loading_sic_codes')
-      try {
-        const res = await fetch(`${API_URL}/api/messages/generate-sic-codes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itp_id: itpId }),
-        })
-        const { sic_codes } = await res.json()
-        if (sic_codes?.length > 0) {
-          // Save message with sidebar info so it reopens on refresh
-          const sidebarInfo = { itp_id: itpId, sic_codes }
-          await supabase.from('messages').insert({
-            user_details_id: userDetailsId,
-            message_body: sicMsg,
-            is_agent: true,
-            sidebar: 'approve_sic_codes',
-            sidebar_info: sidebarInfo,
-          })
-          setSidebarData(() => sidebarInfo)
-          setActiveSidebar('approve_sic_codes')
-          return // Don't start signed_up_first_message yet — wait for SIC approval
-        }
-      } catch (err) {
-        console.error('[handleSaveItp] SIC code generation error:', err)
-      }
-    }
-
     setActiveSidebar(null)
     startMobilisation('signed_up_first_message')
   }, [sidebarData, setMessages, saveMessage, startMobilisation, userDetailsId])
