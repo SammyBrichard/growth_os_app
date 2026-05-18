@@ -21,6 +21,9 @@ export interface CampaignSender {
   id: string
   email: string
   display_name: string | null
+  verified: boolean
+  verification_error: string | null
+  smtp_host: string | null
 }
 
 export interface CampaignContact {
@@ -116,7 +119,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
     if (senderIds.length > 0) {
       const { data: senderData } = await supabase
         .from('senders')
-        .select('id, email, display_name')
+        .select('id, email, display_name, verified, verification_error, smtp_host')
         .in('id', senderIds)
       const senderMap: Record<string, CampaignSender> = {}
       for (const s of (senderData ?? []) as CampaignSender[]) {
@@ -129,7 +132,7 @@ export default function useCampaigns({ accountId, userDetailsId, selectedEmploye
   // Fetch all senders for the account (for the change dropdown)
   useEffect(() => {
     if (selectedEmployee.name === 'Draper' && accountId) {
-      supabase.from('senders').select('id, email, display_name').eq('account_id', accountId)
+      supabase.from('senders').select('id, email, display_name, verified, verification_error, smtp_host').eq('account_id', accountId)
         .then(({ data }) => setAllSenders((data ?? []) as CampaignSender[]))
     }
   }, [selectedEmployee, accountId])

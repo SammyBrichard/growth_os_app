@@ -600,6 +600,7 @@ export default function App() {
               onUpdateCampaign={camp.updateCampaign}
               hasMoreContacts={camp.hasMoreContacts}
               onLoadMoreContacts={camp.loadMoreContacts}
+              onRefresh={camp.refreshCampaigns}
             />
           )}
           {selectedEmployee.name === 'Warren' && (

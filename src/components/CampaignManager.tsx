@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import type { Campaign, CampaignContact, CampaignItp, CampaignSender } from '../hooks/useCampaigns'
 
+const API_URL = import.meta.env.VITE_API_URL
+const PRESET_SMTP_HOSTS = new Set(['smtp.gmail.com', 'smtp.office365.com', 'smtp.mail.yahoo.com'])
+
 function BodyEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -36,6 +39,7 @@ interface CampaignManagerProps {
   onUpdateCampaign: (campaignId: string, updates: { name?: string; tone?: string; email_sequence?: any[] }) => Promise<boolean>
   hasMoreContacts?: boolean
   onLoadMoreContacts?: () => void
+  onRefresh?: () => void
 }
 
 function formatDate(dateStr: string) {
@@ -72,6 +76,7 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   onUpdateCampaign,
   hasMoreContacts,
   onLoadMoreContacts,
+  onRefresh,
 }) => {
   const [activeEmailTab, setActiveEmailTab] = useState(0)
   const [editing, setEditing] = useState(false)
@@ -83,6 +88,13 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
   const [changingSender, setChangingSender] = useState(false)
   const [pendingSenderId, setPendingSenderId] = useState<string>('')
   const [savingSender, setSavingSender] = useState(false)
+  const [editingSenderCreds, setEditingSenderCreds] = useState(false)
+  const [senderCredsEmail, setSenderCredsEmail] = useState('')
+  const [senderCredsDisplayName, setSenderCredsDisplayName] = useState('')
+  const [senderCredsPassword, setSenderCredsPassword] = useState('')
+  const [senderCredsSmtpHost, setSenderCredsSmtpHost] = useState('')
+  const [senderCredsSmtpPort, setSenderCredsSmtpPort] = useState('')
+  const [savingCreds, setSavingCreds] = useState(false)
 
   // Parse email sequence once when campaign changes — reset tab index
   useEffect(() => {
@@ -303,36 +315,108 @@ const CampaignManager: React.FC<CampaignManagerProps> = ({
         </div>
         <div className="campaign-meta-item">
           <span className="campaign-meta-label">Sender</span>
-          {changingSender ? (
-            <div className="campaign-sender-change">
-              <select className="campaign-sender-select" value={pendingSenderId} onChange={e => setPendingSenderId(e.target.value)}>
-                <option value="">Select sender...</option>
-                {allSenders.map(s => (
-                  <option key={s.id} value={s.id}>{s.display_name ? `${s.display_name} (${s.email})` : s.email}</option>
-                ))}
-              </select>
-              <div className="campaign-sender-actions">
-                <button className="campaign-sender-save" disabled={!pendingSenderId || savingSender} onClick={async () => {
-                  setSavingSender(true)
-                  await onChangeSender(selectedCampaign.id, pendingSenderId)
-                  setSavingSender(false)
-                  setChangingSender(false)
-                }}>{savingSender ? 'Saving...' : 'Save'}</button>
-                <button className="campaign-sender-cancel" disabled={savingSender} onClick={() => setChangingSender(false)}>Cancel</button>
+          {(() => {
+            const currentSender = selectedCampaign.sender_id ? campaignSenders[selectedCampaign.sender_id] : null
+            const isCustomSender = currentSender ? !PRESET_SMTP_HOSTS.has(currentSender.smtp_host ?? '') : false
+            const hasError = currentSender && currentSender.verified === false && currentSender.verification_error
+
+            if (changingSender) {
+              return (
+                <div className="campaign-sender-change">
+                  <select className="campaign-sender-select" value={pendingSenderId} onChange={e => setPendingSenderId(e.target.value)}>
+                    <option value="">Select sender...</option>
+                    {allSenders.map(s => (
+                      <option key={s.id} value={s.id}>{s.display_name ? `${s.display_name} (${s.email})` : s.email}</option>
+                    ))}
+                  </select>
+                  <div className="campaign-sender-actions">
+                    <button className="campaign-sender-save" disabled={!pendingSenderId || savingSender} onClick={async () => {
+                      setSavingSender(true)
+                      await onChangeSender(selectedCampaign.id, pendingSenderId)
+                      setSavingSender(false)
+                      setChangingSender(false)
+                    }}>{savingSender ? 'Saving...' : 'Save'}</button>
+                    <button className="campaign-sender-cancel" disabled={savingSender} onClick={() => setChangingSender(false)}>Cancel</button>
+                  </div>
+                </div>
+              )
+            }
+
+            if (editingSenderCreds && currentSender) {
+              return (
+                <div className="sender-creds-form">
+                  <label className="sender-field-label">Display Name</label>
+                  <input className="sender-create-input" type="text" value={senderCredsDisplayName} onChange={e => setSenderCredsDisplayName(e.target.value)} placeholder="e.g. John from Acme" />
+                  <label className="sender-field-label">Email Address</label>
+                  <input className="sender-create-input" type="email" value={senderCredsEmail} onChange={e => setSenderCredsEmail(e.target.value)} placeholder="your@email.com" />
+                  <label className="sender-field-label">{isCustomSender ? 'SMTP Password' : 'App Password'}</label>
+                  <input className="sender-create-input" type="password" value={senderCredsPassword} onChange={e => setSenderCredsPassword(e.target.value)} placeholder="Paste your password here" />
+                  {isCustomSender && (
+                    <>
+                      <label className="sender-field-label">SMTP Host</label>
+                      <input className="sender-create-input" type="text" value={senderCredsSmtpHost} onChange={e => setSenderCredsSmtpHost(e.target.value)} placeholder="smtp.yourprovider.com" />
+                      <label className="sender-field-label">SMTP Port</label>
+                      <input className="sender-create-input" type="text" value={senderCredsSmtpPort} onChange={e => setSenderCredsSmtpPort(e.target.value)} placeholder="587" />
+                    </>
+                  )}
+                  <div className="campaign-sender-actions">
+                    <button className="campaign-sender-save" disabled={!senderCredsPassword.trim() || savingCreds} onClick={async () => {
+                      setSavingCreds(true)
+                      try {
+                        const body: Record<string, string> = {
+                          email: senderCredsEmail,
+                          display_name: senderCredsDisplayName,
+                          smtp_password: senderCredsPassword,
+                        }
+                        if (isCustomSender) {
+                          body.smtp_host = senderCredsSmtpHost
+                          body.smtp_port = senderCredsSmtpPort
+                        }
+                        await fetch(`${API_URL}/api/senders/${currentSender.id}/credentials`, {
+                          method: 'PUT',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify(body),
+                        })
+                        setEditingSenderCreds(false)
+                        onRefresh?.()
+                      } finally {
+                        setSavingCreds(false)
+                      }
+                    }}>{savingCreds ? 'Saving...' : 'Save'}</button>
+                    <button className="campaign-sender-cancel" disabled={savingCreds} onClick={() => setEditingSenderCreds(false)}>Cancel</button>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div>
+                <span className="campaign-meta-value">
+                  {currentSender
+                    ? `${currentSender.display_name ? currentSender.display_name + ' — ' : ''}${currentSender.email}`
+                    : 'No sender assigned'
+                  }
+                  <button className="campaign-sender-change-btn" onClick={() => {
+                    setPendingSenderId(selectedCampaign.sender_id ?? '')
+                    setChangingSender(true)
+                  }}>Change</button>
+                </span>
+                {hasError && (
+                  <div className="sender-error-banner">
+                    <span className="sender-error-text">⚠ {currentSender.verification_error}</span>
+                    <button className="sender-error-edit-btn" onClick={() => {
+                      setSenderCredsEmail(currentSender.email)
+                      setSenderCredsDisplayName(currentSender.display_name ?? '')
+                      setSenderCredsPassword('')
+                      setSenderCredsSmtpHost(currentSender.smtp_host ?? '')
+                      setSenderCredsSmtpPort('587')
+                      setEditingSenderCreds(true)
+                    }}>Edit credentials</button>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <span className="campaign-meta-value">
-              {selectedCampaign.sender_id && campaignSenders[selectedCampaign.sender_id]
-                ? `${campaignSenders[selectedCampaign.sender_id].display_name ? campaignSenders[selectedCampaign.sender_id].display_name + ' — ' : ''}${campaignSenders[selectedCampaign.sender_id].email}`
-                : 'No sender assigned'
-              }
-              <button className="campaign-sender-change-btn" onClick={() => {
-                setPendingSenderId(selectedCampaign.sender_id ?? '')
-                setChangingSender(true)
-              }}>Change</button>
-            </span>
-          )}
+            )
+          })()}
         </div>
       </div>
 
