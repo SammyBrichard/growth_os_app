@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import supabase from '../services/supabase'
 
-const API_URL = import.meta.env.VITE_API_URL
-
 interface Sender {
   id: string
   email: string
   display_name: string | null
   smtp_host: string | null
   verified: boolean
-  verification_error: string | null
 }
 
 interface SelectSenderSidebarProps {
@@ -102,12 +99,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
   const [smtpPassword, setSmtpPassword] = useState('')
   const [imapHost, setImapHost] = useState('')
   const [imapPort, setImapPort] = useState('993')
-
-  // Verification state
   const [creating, setCreating] = useState(false)
-  const [verifying, setVerifying] = useState(false)
-  const [verificationError, setVerificationError] = useState<string | null>(null)
-  const [pendingSenderId, setPendingSenderId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!accountId) return
@@ -123,8 +115,6 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
 
   function selectProvider(provider: Provider) {
     setSelectedProvider(provider)
-    setVerificationError(null)
-    setPendingSenderId(null)
     const preset = PROVIDERS.find(p => p.id === provider)
     if (preset) {
       setSmtpHost(preset.smtp_host)
@@ -140,25 +130,6 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
     setSmtpPassword('')
     setNewEmail('')
     setNewDisplayName('')
-  }
-
-  async function verifySender(senderId: string) {
-    setVerifying(true)
-    setVerificationError(null)
-    try {
-      const res = await fetch(`${API_URL}/api/senders/${senderId}/verify`, { method: 'POST' })
-      const result = await res.json()
-      if (result.verified) {
-        setSelecting(true)
-        onSelect(senderId)
-      } else {
-        setVerificationError(result.error ?? 'Verification failed — please check your credentials and try again')
-        setVerifying(false)
-      }
-    } catch {
-      setVerificationError('Could not reach the server — please try again')
-      setVerifying(false)
-    }
   }
 
   async function handleCreateSender() {
@@ -182,29 +153,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
       .select('id')
       .single()
     setCreating(false)
-    if (data) {
-      setPendingSenderId(data.id)
-      await verifySender(data.id)
-    }
-  }
-
-  async function handleRetry() {
-    if (!pendingSenderId || !smtpHost.trim() || !smtpPassword.trim()) return
-    // Update all fields on the existing row before re-verifying
-    await fetch(`${API_URL}/api/senders/${pendingSenderId}/credentials`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email:         newEmail.trim().toLowerCase(),
-        display_name:  newDisplayName.trim() || null,
-        smtp_host:     smtpHost.trim(),
-        smtp_port:     parseInt(smtpPort) || 587,
-        smtp_password: smtpPassword.trim(),
-        imap_host:     imapHost.trim() || null,
-        imap_port:     parseInt(imapPort) || 993,
-      }),
-    })
-    await verifySender(pendingSenderId)
+    if (data) { setSelecting(true); onSelect(data.id) }
   }
 
   if (loading) {
@@ -215,7 +164,7 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
 
   return (
     <div className="sender-sidebar">
-      {senders.length > 0 && !verificationError && (
+      {senders.length > 0 && (
         <>
           <div className="sender-section-label">Existing Senders</div>
           {senders.map(sender => (
@@ -262,28 +211,15 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
         </div>
       ) : (
         <div className="sender-setup">
-          {!verificationError && (
-            <button className="sender-back-btn" onClick={() => setSelectedProvider(null)}>
-              &larr; Back to providers
-            </button>
-          )}
+          <button className="sender-back-btn" onClick={() => setSelectedProvider(null)}>
+            &larr; Back to providers
+          </button>
 
           <div className="sender-setup-title">
             {selectedProvider === 'custom' ? 'Custom Provider' : `${activePreset?.name} Setup`}
           </div>
 
-          {/* Verification error banner */}
-          {verificationError && (
-            <div className="sender-verification-error">
-              <div className="sender-verification-error-icon">✕</div>
-              <div className="sender-verification-error-body">
-                <div className="sender-verification-error-title">Connection failed</div>
-                <div className="sender-verification-error-message">{verificationError}</div>
-              </div>
-            </div>
-          )}
-
-          {activePreset && !verificationError && (
+          {activePreset && (
             <div className="sender-instructions">
               <div className="sender-instructions-heading">How to get your app password</div>
               <ol className="sender-instructions-list">
@@ -362,23 +298,13 @@ const SelectSenderSidebar: React.FC<SelectSenderSidebarProps> = ({
               </>
             )}
 
-            {verificationError && pendingSenderId ? (
-              <button
-                className="sender-create-btn sender-retry-btn"
-                onClick={handleRetry}
-                disabled={verifying || !smtpHost.trim() || !smtpPassword.trim()}
-              >
-                {verifying ? <><span className="sender-btn-spinner" /> Verifying...</> : 'Retry Connection'}
-              </button>
-            ) : (
-              <button
-                className="sender-create-btn"
-                onClick={handleCreateSender}
-                disabled={verifying || creating || !newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim()}
-              >
-                {verifying ? <><span className="sender-btn-spinner" /> Verifying...</> : creating ? 'Saving...' : 'Connect Sender'}
-              </button>
-            )}
+            <button
+              className="sender-create-btn"
+              onClick={handleCreateSender}
+              disabled={!newEmail.trim() || !smtpHost.trim() || !smtpPassword.trim() || creating}
+            >
+              {creating ? 'Connecting...' : 'Connect Sender'}
+            </button>
           </div>
         </div>
       )}

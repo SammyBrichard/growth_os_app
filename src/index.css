@@ -2344,57 +2344,6 @@ body {
 .sender-create-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .sender-empty { font-size: 13px; color: var(--muted); font-style: italic; }
 
-/* Inline button spinner */
-.sender-btn-spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(255,255,255,0.4);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  vertical-align: middle;
-  margin-right: 6px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Verification error banner */
-.sender-verification-error {
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  background: rgba(220, 60, 60, 0.08);
-  border: 1px solid rgba(220, 60, 60, 0.3);
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-}
-.sender-verification-error-icon {
-  font-size: 12px;
-  color: #dc3c3c;
-  font-weight: 700;
-  margin-top: 1px;
-  flex-shrink: 0;
-}
-.sender-verification-error-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #dc3c3c;
-  margin-bottom: 3px;
-}
-.sender-verification-error-message {
-  font-size: 12px;
-  color: var(--text);
-  line-height: 1.5;
-}
-
-/* Retry button */
-.sender-retry-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text);
-}
-.sender-retry-btn:hover { background: var(--hover); opacity: 1; }
 
 /* ============================================================
    SETTINGS PANEL
